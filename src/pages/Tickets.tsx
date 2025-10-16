@@ -394,9 +394,9 @@ export default function Tickets() {
                   Nenhum ticket distribuído ainda
                 </p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="max-h-[600px] overflow-y-auto">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 bg-card z-10">
                       <TableRow>
                         <TableHead>Posição</TableHead>
                         <TableHead>Usuário</TableHead>
