@@ -35,6 +35,7 @@ export default function Wheels() {
   const [selectedWheel, setSelectedWheel] = useState<Wheel | null>(null);
   const [editingWheel, setEditingWheel] = useState<Wheel | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [testMode, setTestMode] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -130,8 +131,9 @@ export default function Wheels() {
     }
   };
 
-  const handleSpin = (wheel: Wheel) => {
+  const handleSpin = (wheel: Wheel, isTest: boolean = false) => {
     setSelectedWheel(wheel);
+    setTestMode(isTest);
     setSpinDialogOpen(true);
   };
 
@@ -283,14 +285,23 @@ export default function Wheels() {
                   <div className="text-sm text-muted-foreground mb-3">
                     {wheel.recompensas.length} recompensas
                   </div>
-                  {isAdmin && (
+                  <div className="flex flex-col gap-2">
                     <Button 
-                      onClick={() => handleSpin(wheel)}
-                      className="w-full bg-gradient-primary"
+                      onClick={() => handleSpin(wheel, true)}
+                      variant="outline"
+                      className="w-full"
                     >
-                      Girar Roleta
+                      🎮 Testar Roleta
                     </Button>
-                  )}
+                    {isAdmin && (
+                      <Button 
+                        onClick={() => handleSpin(wheel, false)}
+                        className="w-full bg-gradient-primary"
+                      >
+                        Girar Roleta
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -312,6 +323,7 @@ export default function Wheels() {
         open={spinDialogOpen}
         onOpenChange={setSpinDialogOpen}
         wheel={selectedWheel}
+        testMode={testMode}
       />
     </div>
   );

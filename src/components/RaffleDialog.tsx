@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { Trophy } from "lucide-react";
@@ -28,11 +30,13 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
   const [drawing, setDrawing] = useState(false);
   const [vencedor, setVencedor] = useState<Participante | null>(null);
   const [observacoes, setObservacoes] = useState("");
+  const [isModoTeste, setIsModoTeste] = useState(false);
 
   useEffect(() => {
     if (open) {
       fetchParticipantes();
       setVencedor(null);
+      setIsModoTeste(false);
     }
   }, [open]);
 
@@ -106,6 +110,14 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       setVencedor(vencedorSorteado);
       setDrawing(false);
 
+      // Se for modo teste, apenas mostrar resultado sem salvar
+      if (isModoTeste) {
+        toast.success(`🎮 TESTE: ${vencedorSorteado.nome} ganhou o sorteio!`, {
+          description: "Modo simulação - tickets não foram zerados e nada foi salvo"
+        });
+        return;
+      }
+
       try {
         // Salvar sorteio
         const { error: raffleError } = await supabase
@@ -152,10 +164,35 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Realizar Sorteio</DialogTitle>
+          <DialogTitle>
+            {isModoTeste ? "🎮 Teste: " : ""}Realizar Sorteio
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+            <Checkbox
+              id="modoTesteSorteio"
+              checked={isModoTeste}
+              onCheckedChange={(checked) => setIsModoTeste(checked as boolean)}
+              disabled={drawing}
+            />
+            <Label
+              htmlFor="modoTesteSorteio"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              Modo Teste (não zera tickets e não salva no histórico)
+            </Label>
+          </div>
+
+          {isModoTeste && (
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">
+                🎮 Modo Simulação Ativo - Tickets não serão zerados e nada será salvo
+              </p>
+            </div>
+          )}
+
           <div>
             <h3 className="font-semibold mb-2">
               Participantes ({participantes.length})
@@ -230,7 +267,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
               disabled={drawing || participantes.length === 0}
               className="bg-gradient-primary"
             >
-              {drawing ? "Sorteando..." : "Sortear Vencedor"}
+              {drawing ? "Sorteando..." : isModoTeste ? "🎮 Testar Sorteio" : "Sortear Vencedor"}
             </Button>
           )}
         </DialogFooter>

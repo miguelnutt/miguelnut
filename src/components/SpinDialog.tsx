@@ -3,10 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { CanvasWheel } from "./CanvasWheel";
 import { z } from "zod";
+import { User } from "@supabase/supabase-js";
+import { useAdmin } from "@/hooks/useAdmin";
 
 interface Recompensa {
   tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
@@ -22,6 +25,7 @@ interface SpinDialogProps {
     nome: string;
     recompensas: Recompensa[];
   } | null;
+  testMode?: boolean;
 }
 
 
@@ -29,12 +33,21 @@ const spinInputSchema = z.object({
   nomeUsuario: z.string().trim().min(1, "Nome do usuário é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)")
 });
 
-export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
+export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: SpinDialogProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const { isAdmin } = useAdmin(user);
   const [nomeUsuario, setNomeUsuario] = useState("");
   const [spinning, setSpinning] = useState(false);
   const [resultado, setResultado] = useState<Recompensa | null>(null);
   const [rotation, setRotation] = useState(0);
   const [nomeVencedor, setNomeVencedor] = useState("");
+  const [isModoTeste, setIsModoTeste] = useState(testMode);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -42,8 +55,11 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
       setResultado(null);
       setRotation(0);
       setNomeVencedor("");
+      setIsModoTeste(testMode);
+    } else {
+      setIsModoTeste(testMode);
     }
-  }, [open]);
+  }, [open, testMode]);
 
   const spin = async () => {
     // Validate input
@@ -84,6 +100,14 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
       setResultado(sorteada);
       setNomeVencedor(nomeUsuario.trim());
       setSpinning(false);
+
+      // Se for modo teste, apenas mostrar resultado sem salvar
+      if (isModoTeste) {
+        toast.success(`🎮 TESTE: ${nomeUsuario || "Usuário"} ganhou ${sorteada.valor} ${sorteada.tipo}!`, {
+          description: "Modo simulação - nada foi salvo"
+        });
+        return;
+      }
 
       try {
         // Usar a função que busca ou cria o perfil automaticamente
@@ -175,17 +199,44 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Girar: {wheel?.nome}</DialogTitle>
+          <DialogTitle>
+            {isModoTeste ? "🎮 Teste: " : "Girar: "}{wheel?.nome}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
+          {!testMode && isAdmin && (
+            <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+              <Checkbox
+                id="modoTeste"
+                checked={isModoTeste}
+                onCheckedChange={(checked) => setIsModoTeste(checked as boolean)}
+                disabled={spinning}
+              />
+              <Label
+                htmlFor="modoTeste"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Modo Teste (não salva no histórico nem distribui prêmios)
+              </Label>
+            </div>
+          )}
+
+          {isModoTeste && (
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">
+                🎮 Modo Simulação Ativo - Nenhum dado será salvo
+              </p>
+            </div>
+          )}
+
           <div>
-            <Label htmlFor="usuario">Nome do Usuário</Label>
+            <Label htmlFor="usuario">Nome do Usuário {isModoTeste && "(Opcional)"}</Label>
             <Input
               id="usuario"
               value={nomeUsuario}
               onChange={(e) => setNomeUsuario(e.target.value)}
-              placeholder="Digite o nome do usuário"
+              placeholder={isModoTeste ? "Nome para exibir (opcional)" : "Digite o nome do usuário"}
               disabled={spinning}
             />
           </div>
@@ -215,11 +266,11 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
 
           <Button
             onClick={spin}
-            disabled={spinning || !nomeUsuario.trim()}
+            disabled={spinning || (!isModoTeste && !nomeUsuario.trim())}
             className="w-full bg-gradient-primary shadow-glow"
             size="lg"
           >
-            {spinning ? "Girando..." : "Girar Roleta"}
+            {spinning ? "Girando..." : isModoTeste ? "🎮 Testar Roleta" : "Girar Roleta"}
           </Button>
         </div>
       </DialogContent>
