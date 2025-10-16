@@ -314,6 +314,27 @@ export default function Tickets() {
     }
   };
 
+  const deleteRaffle = async (raffleId: string) => {
+    if (!confirm("Tem certeza que deseja excluir este sorteio?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("raffles")
+        .delete()
+        .eq("id", raffleId);
+      
+      if (error) throw error;
+
+      toast.success("Sorteio excluído com sucesso!");
+      await fetchData();
+    } catch (error: any) {
+      console.error("Error deleting raffle:", error);
+      toast.error("Erro ao excluir sorteio: " + error.message);
+    }
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString("pt-BR");
   };
@@ -591,9 +612,21 @@ export default function Tickets() {
                           <Trophy className="h-5 w-5 text-primary" />
                           <span className="font-bold">{raffle.nome_vencedor}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(raffle.created_at)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(raffle.created_at)}
+                          </span>
+                          {isAdmin && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              onClick={() => deleteRaffle(raffle.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {raffle.participantes?.length || 0} participantes
