@@ -36,7 +36,7 @@ function contrastTextColor(color: string): string {
 function wrapText(
   ctx: CanvasRenderingContext2D,
   text: string,
-  x: number,
+  maxWidth: number,
   y: number,
   lineHeight: number,
   maxLines: number
@@ -48,7 +48,7 @@ function wrapText(
   for (let n = 0; n < words.length; n++) {
     const test = line ? line + " " + words[n] : words[n];
     const w = ctx.measureText(test).width;
-    if (w > x - 60 && n > 0) {
+    if (w > maxWidth && n > 0) {
       lines.push(line);
       line = words[n];
       if (lines.length === maxLines - 1) break;
@@ -57,7 +57,9 @@ function wrapText(
     }
   }
   if (line) lines.push(line);
-  lines.slice(0, maxLines).forEach((ln, i) => ctx.fillText(ln, x, y + i * lineHeight));
+  
+  const startY = y - ((lines.length - 1) * lineHeight) / 2;
+  lines.slice(0, maxLines).forEach((ln, i) => ctx.fillText(ln, 0, startY + i * lineHeight));
 }
 
 // Detecta qual segmento está sob a seta (no topo)
@@ -122,19 +124,19 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
       // Desenhar label
       const mid = (start + end) / 2;
       ctx.save();
-      ctx.rotate(mid);
-      ctx.textAlign = "right";
+      ctx.rotate(mid + Math.PI / 2);
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = contrastTextColor(recompensa.cor);
 
       // Fonte dinâmica baseada no número de segmentos
-      const baseFontSize = Math.max(32, Math.min(80, 600 / Math.sqrt(n)));
-      const base = Math.max(12, Math.min(80, baseFontSize));
-      ctx.font = `900 ${base}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
+      const baseFontSize = Math.max(20, Math.min(48, 400 / Math.sqrt(n)));
+      const base = Math.max(14, Math.min(48, baseFontSize));
+      ctx.font = `700 ${base}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
 
-      const x = R - 46;
-      const lineHeight = Math.round(base * 1.1);
-      const maxLines = 2;
+      const x = R * 0.65;
+      const lineHeight = Math.round(base * 1.15);
+      const maxLines = 3;
       const text = `${recompensa.valor} ${recompensa.tipo}`;
       wrapText(ctx, text, x, 0, lineHeight, maxLines);
       ctx.restore();
