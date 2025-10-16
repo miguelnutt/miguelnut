@@ -518,8 +518,7 @@ export default function Tickets() {
                         <TableRow>
                           <TableHead className="w-20">Pos.</TableHead>
                           <TableHead>Usuário</TableHead>
-                          <TableHead className="w-24 text-right">Tickets</TableHead>
-                          {isAdmin && <TableHead className="w-32 text-center">Ações</TableHead>}
+                          <TableHead className="w-32 text-right">Tickets</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -534,104 +533,101 @@ export default function Tickets() {
                               </TableCell>
                               <TableCell className="font-medium">{item.nome}</TableCell>
                               <TableCell className="text-right">{item.tickets_atual}</TableCell>
-                              {isAdmin && (
-                                <TableCell>
-                                  {editingUser !== item.user_id && (
-                                    <div className="flex gap-1 justify-center">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => {
-                                          setEditingUser(item.user_id);
-                                          setDirectValue({ [item.user_id]: item.tickets_atual.toString() });
-                                        }}
-                                        title="Editar tickets"
-                                      >
-                                        <Plus className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => removeUser(item.user_id, item.nome)}
-                                        title="Remover usuário"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  )}
-                                </TableCell>
-                              )}
                             </TableRow>
-                            {isAdmin && editingUser === item.user_id && (
-                              <TableRow key={`${item.user_id}-edit`}>
-                                <TableCell colSpan={4} className="bg-muted/30">
-                                  <div className="py-2 space-y-3">
-                                    <div className="flex gap-2 items-center">
-                                      <Label className="w-32 text-sm">Definir valor:</Label>
-                                      <Input
-                                        type="number"
-                                        min="0"
-                                        value={directValue[item.user_id] ?? item.tickets_atual}
-                                        onChange={(e) => setDirectValue({
-                                          ...directValue,
-                                          [item.user_id]: e.target.value
-                                        })}
-                                        className="w-32"
-                                        placeholder="Total"
-                                      />
-                                      <Button
-                                        size="sm"
-                                        onClick={() => {
-                                          const newVal = parseInt(directValue[item.user_id] ?? item.tickets_atual.toString());
-                                          if (!isNaN(newVal) && newVal >= 0) {
-                                            setDirectTickets(item.user_id, newVal);
-                                          }
-                                        }}
-                                        disabled={adjusting}
-                                      >
-                                        Definir
-                                      </Button>
+                            {isAdmin && (
+                              <TableRow key={`${item.user_id}-controls`}>
+                                <TableCell colSpan={3} className="py-2 bg-muted/20">
+                                  {editingUser === item.user_id ? (
+                                    <div className="space-y-3 px-2">
+                                      <div className="flex gap-2 items-center">
+                                        <Label className="w-32 text-sm">Definir valor:</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={directValue[item.user_id] ?? item.tickets_atual}
+                                          onChange={(e) => setDirectValue({
+                                            ...directValue,
+                                            [item.user_id]: e.target.value
+                                          })}
+                                          className="w-32"
+                                          placeholder="Total"
+                                        />
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            const newVal = parseInt(directValue[item.user_id] ?? item.tickets_atual.toString());
+                                            if (!isNaN(newVal) && newVal >= 0) {
+                                              setDirectTickets(item.user_id, newVal);
+                                            }
+                                          }}
+                                          disabled={adjusting}
+                                        >
+                                          Definir
+                                        </Button>
+                                      </div>
+                                      <div className="flex gap-2 items-center">
+                                        <Label className="w-32 text-sm">Ajustar (±):</Label>
+                                        <Input
+                                          type="number"
+                                          value={ticketAdjustment}
+                                          onChange={(e) => setTicketAdjustment(e.target.value)}
+                                          placeholder="Ex: +10 ou -5"
+                                          className="w-32"
+                                        />
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            const adj = parseInt(ticketAdjustment);
+                                            if (!isNaN(adj) && adj !== 0) {
+                                              adjustTickets(
+                                                item.user_id,
+                                                adj,
+                                                `Ajuste manual: ${adj > 0 ? "+" : ""}${adj}`
+                                              );
+                                            }
+                                          }}
+                                          disabled={adjusting}
+                                        >
+                                          Aplicar
+                                        </Button>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setEditingUser(null);
+                                            setTicketAdjustment("");
+                                            setDirectValue({});
+                                          }}
+                                        >
+                                          Cancelar
+                                        </Button>
+                                      </div>
                                     </div>
-                                    <div className="flex gap-2 items-center">
-                                      <Label className="w-32 text-sm">Ajustar (±):</Label>
-                                      <Input
-                                        type="number"
-                                        value={ticketAdjustment}
-                                        onChange={(e) => setTicketAdjustment(e.target.value)}
-                                        placeholder="Ex: +10 ou -5"
-                                        className="w-32"
-                                      />
-                                      <Button
-                                        size="sm"
-                                        onClick={() => {
-                                          const adj = parseInt(ticketAdjustment);
-                                          if (!isNaN(adj) && adj !== 0) {
-                                            adjustTickets(
-                                              item.user_id,
-                                              adj,
-                                              `Ajuste manual: ${adj > 0 ? "+" : ""}${adj}`
-                                            );
-                                          }
-                                        }}
-                                        disabled={adjusting}
-                                      >
-                                        Aplicar
-                                      </Button>
-                                    </div>
-                                    <div className="flex gap-2">
+                                  ) : (
+                                    <div className="flex gap-2 px-2">
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => {
-                                          setEditingUser(null);
-                                          setTicketAdjustment("");
-                                          setDirectValue({});
+                                          setEditingUser(item.user_id);
+                                          setDirectValue({ [item.user_id]: item.tickets_atual.toString() });
                                         }}
                                       >
-                                        Cancelar
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Editar Tickets
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => removeUser(item.user_id, item.nome)}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Remover Usuário
                                       </Button>
                                     </div>
-                                  </div>
+                                  )}
                                 </TableCell>
                               </TableRow>
                             )}
