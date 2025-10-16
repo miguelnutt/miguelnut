@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const TWITCH_CLIENT_ID = Deno.env.get("TWITCH_CLIENT_ID");
 const TWITCH_CLIENT_SECRET = Deno.env.get("TWITCH_CLIENT_SECRET");
@@ -7,6 +8,15 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation schema
+const usernameSchema = z.object({
+  username: z.string()
+    .trim()
+    .min(1, "Username cannot be empty")
+    .max(25, "Username must be 25 characters or less")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores")
+});
 
 interface TwitchTokenResponse {
   access_token: string;
@@ -48,8 +58,9 @@ async function getTwitchAccessToken(): Promise<string> {
 }
 
 async function checkStreamStatus(username: string, accessToken: string): Promise<boolean> {
+  const encodedUsername = encodeURIComponent(username);
   const response = await fetch(
-    `https://api.twitch.tv/helix/streams?user_login=${username}`,
+    `https://api.twitch.tv/helix/streams?user_login=${encodedUsername}`,
     {
       headers: {
         "Client-ID": TWITCH_CLIENT_ID!,
@@ -72,14 +83,21 @@ serve(async (req) => {
   }
 
   try {
-    const { username } = await req.json();
-
-    if (!username) {
+    const body = await req.json();
+    
+    // Validate input
+    const validationResult = usernameSchema.safeParse(body);
+    if (!validationResult.success) {
       return new Response(
-        JSON.stringify({ error: "Username is required" }),
+        JSON.stringify({ 
+          error: "Invalid username", 
+          details: validationResult.error.errors[0].message 
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const { username } = validationResult.data;
 
     if (!TWITCH_CLIENT_ID || !TWITCH_CLIENT_SECRET) {
       return new Response(
