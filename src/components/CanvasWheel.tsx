@@ -127,16 +127,22 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
       ctx.textBaseline = "middle";
       ctx.fillStyle = contrastTextColor(recompensa.cor);
 
-      // Fonte dinâmica baseada no número de segmentos
-      const baseFontSize = Math.max(32, Math.min(80, 600 / Math.sqrt(n)));
-      const base = Math.max(12, Math.min(80, baseFontSize));
-      ctx.font = `900 ${base}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
-
-      const x = R - 46;
-      const lineHeight = Math.round(base * 1.1);
-      const maxLines = 2;
       const text = `${recompensa.valor} ${recompensa.tipo}`;
-      wrapText(ctx, text, x, 0, lineHeight, maxLines);
+      const x = R - 46;
+      
+      // Calcular tamanho da fonte baseado no comprimento do texto
+      let fontSize = Math.max(16, Math.min(48, 600 / Math.sqrt(n)));
+      ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
+      
+      // Reduzir fonte até o texto caber
+      let textWidth = ctx.measureText(text).width;
+      while (textWidth > x - 20 && fontSize > 12) {
+        fontSize -= 2;
+        ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
+        textWidth = ctx.measureText(text).width;
+      }
+      
+      ctx.fillText(text, x, 0);
       ctx.restore();
 
       start = end;

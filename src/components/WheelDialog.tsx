@@ -27,21 +27,21 @@ interface WheelDialogProps {
 const tiposRecompensa = ["Pontos de Loja", "Tickets", "Rubini Coins"] as const;
 
 const colorThemes = {
-  Red: ["#8B0000", "#DC143C", "#FF6B6B", "#FFA07A"],
-  Orange: ["#CC5500", "#FF8C00", "#FFA500", "#FFB347"],
-  Yellow: ["#9B870C", "#DAA520", "#FFD700", "#F0E68C"],
-  Green: ["#006400", "#228B22", "#32CD32", "#90EE90"],
-  Blue: ["#00008B", "#4169E1", "#6495ED", "#87CEEB"],
-  Purple: ["#4B0082", "#8B008B", "#9370DB", "#BA55D3"],
-  Pink: ["#C71585", "#FF1493", "#FF69B4", "#FFB6C1"],
+  Red: ["#8B0000", "#FFB6C1", "#DC143C", "#FFA07A"],
+  Orange: ["#CC5500", "#FFDAB9", "#FF8C00", "#FFB347"],
+  Yellow: ["#9B870C", "#FFFACD", "#DAA520", "#F0E68C"],
+  Green: ["#006400", "#98FB98", "#228B22", "#90EE90"],
+  Blue: ["#00008B", "#B0E0E6", "#4169E1", "#87CEEB"],
+  Purple: ["#4B0082", "#DDA0DD", "#8B008B", "#BA55D3"],
+  Pink: ["#C71585", "#FFC0CB", "#FF1493", "#FFB6C1"],
 };
 
 export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialogProps) {
   const [nome, setNome] = useState(wheel?.nome || "");
   const [recompensas, setRecompensas] = useState<Recompensa[]>(
     wheel?.recompensas || [
-      { tipo: "Tickets", valor: "1", cor: "#228B22" },
-      { tipo: "Pontos de Loja", valor: "100", cor: "#90EE90" }
+      { tipo: "Tickets", valor: "1", cor: "#006400" },
+      { tipo: "Pontos de Loja", valor: "100", cor: "#98FB98" }
     ]
   );
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof colorThemes>("Green");
@@ -133,8 +133,8 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
       onOpenChange(false);
       setNome("");
       setRecompensas([
-        { tipo: "Tickets", valor: "1", cor: "#228B22" },
-        { tipo: "Pontos de Loja", valor: "100", cor: "#90EE90" }
+        { tipo: "Tickets", valor: "1", cor: "#006400" },
+        { tipo: "Pontos de Loja", valor: "100", cor: "#98FB98" }
       ]);
     } catch (error: any) {
       console.error("Error saving wheel:", error);
