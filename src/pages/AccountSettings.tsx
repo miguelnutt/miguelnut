@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import QRCode from "qrcode";
@@ -24,6 +24,7 @@ export default function AccountSettings() {
   const [verificationCode, setVerificationCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
   const { isAdmin, loading: adminLoading } = useAdmin(user);
 
   useEffect(() => {
@@ -188,7 +189,25 @@ export default function AccountSettings() {
             <CardContent>
               <div className="space-y-2">
                 <Label>Email</Label>
-                <Input value={user?.email || ""} disabled />
+                <div className="flex gap-2">
+                  <Input 
+                    value={showEmail ? (user?.email || "") : "••••••••@••••••.com"} 
+                    disabled 
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowEmail(!showEmail)}
+                    title={showEmail ? "Ocultar email" : "Mostrar email"}
+                  >
+                    {showEmail ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
