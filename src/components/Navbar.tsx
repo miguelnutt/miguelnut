@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
+import profileImage from "@/assets/profile-miguelnut.png";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -46,10 +47,14 @@ export const Navbar = () => {
     <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
+          <Link to="/" className="flex items-center gap-3">
+            <img 
+              src={profileImage} 
+              alt="Miguelnut Tibiano" 
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-primary"
+            />
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Roleta de Recompensas
+              Miguelnut Tibiano
             </span>
           </Link>
 
