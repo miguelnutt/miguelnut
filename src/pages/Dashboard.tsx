@@ -236,8 +236,7 @@ export default function Dashboard() {
             Dashboard
           </h1>
           
-          {isAdmin && (
-            <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
               <span className="text-sm text-muted-foreground">Período:</span>
               <Button
                 variant={period === "all" ? "default" : "outline"}
@@ -314,7 +313,6 @@ export default function Dashboard() {
                 </PopoverContent>
               </Popover>
             </div>
-          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
