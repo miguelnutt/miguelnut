@@ -62,11 +62,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
   }, [open, testMode]);
 
   const spin = async () => {
-    // Validate input
-    const validation = spinInputSchema.safeParse({ nomeUsuario });
-    if (!validation.success) {
-      toast.error(validation.error.errors[0].message);
-      return;
+    // Validate input only if not in test mode
+    if (!isModoTeste) {
+      const validation = spinInputSchema.safeParse({ nomeUsuario });
+      if (!validation.success) {
+        toast.error(validation.error.errors[0].message);
+        return;
+      }
     }
 
     if (!wheel || wheel.recompensas.length === 0) {
@@ -98,12 +100,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
     // Aguardar animação
     setTimeout(async () => {
       setResultado(sorteada);
-      setNomeVencedor(nomeUsuario.trim());
+      const nomeParaExibir = nomeUsuario.trim() || "Visitante";
+      setNomeVencedor(nomeParaExibir);
       setSpinning(false);
 
       // Se for modo teste, apenas mostrar resultado sem salvar
       if (isModoTeste) {
-        toast.success(`🎮 TESTE: ${nomeUsuario || "Usuário"} ganhou ${sorteada.valor} ${sorteada.tipo}!`, {
+        toast.success(`🎮 TESTE: ${nomeParaExibir} ganhou ${sorteada.valor} ${sorteada.tipo}!`, {
           description: "Modo simulação - nada foi salvo"
         });
         return;
@@ -266,7 +269,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
 
           <Button
             onClick={spin}
-            disabled={spinning || (!isModoTeste && !nomeUsuario.trim())}
+            disabled={spinning || (isAdmin && !isModoTeste && !nomeUsuario.trim())}
             className="w-full bg-gradient-primary shadow-glow"
             size="lg"
           >
