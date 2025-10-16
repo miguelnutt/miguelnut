@@ -230,9 +230,9 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent" style={{ WebkitTextStroke: '1px rgba(139, 92, 246, 0.3)' }}>
+      <main className="container mx-auto px-4 py-4 md:py-8">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent" style={{ WebkitTextStroke: '1px rgba(139, 92, 246, 0.3)' }}>
             Dashboard
           </h1>
         </div>
@@ -315,7 +315,7 @@ export default function Dashboard() {
               </Popover>
             </div>
         
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-6 md:mb-8">
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total de Giros</CardTitle>
@@ -367,7 +367,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:gap-6 md:grid-cols-2">
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle>Últimas Recompensas</CardTitle>

@@ -3,9 +3,9 @@ import { Youtube, Instagram } from "lucide-react";
 export const Footer = () => {
   return (
     <footer className="border-t border-border bg-card/50 backdrop-blur-sm mt-auto">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-6">
+      <div className="container mx-auto px-4 py-4 md:py-6">
+        <div className="flex flex-col items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-4 md:gap-6">
             <a
               href="https://www.twitch.tv/miguelnutt"
               target="_blank"
@@ -13,7 +13,7 @@ export const Footer = () => {
               className="text-muted-foreground hover:text-[#9146FF] transition-colors"
               aria-label="Twitch"
             >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
               </svg>
             </a>
@@ -24,7 +24,7 @@ export const Footer = () => {
               className="text-muted-foreground hover:text-[#FF0000] transition-colors"
               aria-label="YouTube"
             >
-              <Youtube className="w-6 h-6" />
+              <Youtube className="w-5 h-5 md:w-6 md:h-6" />
             </a>
             <a
               href="https://tiktok.com/@miguelnutt"
@@ -33,7 +33,7 @@ export const Footer = () => {
               className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="TikTok"
             >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
               </svg>
             </a>
@@ -44,10 +44,10 @@ export const Footer = () => {
               className="text-muted-foreground hover:text-[#E4405F] transition-colors"
               aria-label="Instagram"
             >
-              <Instagram className="w-6 h-6" />
+              <Instagram className="w-5 h-5 md:w-6 md:h-6" />
             </a>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs md:text-sm text-muted-foreground">
             © {new Date().getFullYear()} Miguelnut Tibiano
           </p>
         </div>

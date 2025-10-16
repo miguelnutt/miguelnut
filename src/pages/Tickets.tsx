@@ -354,25 +354,26 @@ export default function Tickets() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent" style={{ WebkitTextStroke: '1px rgba(139, 92, 246, 0.3)' }}>
+      <main className="container mx-auto px-4 py-4 md:py-8">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent" style={{ WebkitTextStroke: '1px rgba(139, 92, 246, 0.3)' }}>
             Tickets
           </h1>
         </div>
 
         {isAdmin && (
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <Button 
                 onClick={() => setAddUserDialogOpen(true)}
                 variant="outline"
+                className="w-full sm:w-auto"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar Usuário
               </Button>
               <Button 
                 onClick={() => setRaffleDialogOpen(true)}
-                className="bg-gradient-primary shadow-glow"
+                className="bg-gradient-primary shadow-glow w-full sm:w-auto"
               >
                 <Trophy className="mr-2 h-4 w-4" />
                 Realizar Sorteio
@@ -380,7 +381,7 @@ export default function Tickets() {
             </div>
           )}
 
-        <div className={`grid gap-6 ${isAdmin ? 'lg:grid-cols-3' : 'lg:grid-cols-1 max-w-2xl mx-auto'}`}>
+        <div className={`grid gap-4 md:gap-6 ${isAdmin ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 max-w-2xl mx-auto'}`}>
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -390,31 +391,31 @@ export default function Tickets() {
             </CardHeader>
             <CardContent>
               {ranking.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
+                <p className="text-sm md:text-base text-muted-foreground text-center py-4">
                   Nenhum ticket distribuído ainda
                 </p>
               ) : (
-                <div className="max-h-[600px] overflow-y-auto">
+                <div className="max-h-[600px] overflow-y-auto -mx-4 md:mx-0 overflow-x-auto">
                   <Table>
                     <TableHeader className="sticky top-0 bg-card z-10">
                       <TableRow>
-                        <TableHead>Posição</TableHead>
-                        <TableHead>Usuário</TableHead>
-                        <TableHead>Tickets</TableHead>
-                        {isAdmin && <TableHead className="text-center">Ações</TableHead>}
+                        <TableHead className="whitespace-nowrap">Posição</TableHead>
+                        <TableHead className="whitespace-nowrap">Usuário</TableHead>
+                        <TableHead className="whitespace-nowrap">Tickets</TableHead>
+                        {isAdmin && <TableHead className="text-center whitespace-nowrap">Ações</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {ranking.map((item, index) => (
                         <TableRow key={item.user_id}>
-                          <TableCell className="font-bold">
+                          <TableCell className="font-bold whitespace-nowrap">
                             {index === 0 && "🥇"}
                             {index === 1 && "🥈"}
                             {index === 2 && "🥉"}
                             {index > 2 && `${index + 1}º`}
                           </TableCell>
-                          <TableCell className="font-medium">{item.nome}</TableCell>
-                          <TableCell>{item.tickets_atual}</TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">{item.nome}</TableCell>
+                          <TableCell className="whitespace-nowrap">{item.tickets_atual}</TableCell>
                           {isAdmin && (
                             <TableCell>
                           {editingUser === item.user_id ? (
@@ -542,25 +543,25 @@ export default function Tickets() {
             </CardHeader>
             <CardContent>
               {ticketHistory.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
+                <p className="text-sm md:text-base text-muted-foreground text-center py-4">
                   Nenhum histórico ainda
                 </p>
               ) : (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto">
                   {ticketHistory.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 bg-gradient-card rounded-lg"
+                      className="p-2 md:p-3 bg-gradient-card rounded-lg"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="font-bold text-sm">{item.nome_usuario}</span>
-                          <span className="text-primary font-bold">
+                      <div className="flex items-start md:items-center justify-between mb-1 gap-2 flex-wrap md:flex-nowrap">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="font-bold text-xs md:text-sm truncate">{item.nome_usuario}</span>
+                          <span className="text-primary font-bold text-xs md:text-sm whitespace-nowrap">
                             {item.valor} {item.tipo === 'spin' ? 'ticket(s)' : ''}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
                             {formatDate(item.created_at)}
                           </span>
                           {isAdmin && (
@@ -601,23 +602,23 @@ export default function Tickets() {
             </CardHeader>
             <CardContent>
               {raffles.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
+                <p className="text-sm md:text-base text-muted-foreground text-center py-4">
                   Nenhum sorteio realizado ainda
                 </p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   {raffles.map((raffle) => (
                     <div
                       key={raffle.id}
-                      className="p-4 bg-gradient-card rounded-lg"
+                      className="p-3 md:p-4 bg-gradient-card rounded-lg"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Trophy className="h-5 w-5 text-primary" />
-                          <span className="font-bold">{raffle.nome_vencedor}</span>
+                      <div className="flex items-start md:items-center justify-between mb-2 gap-2 flex-wrap md:flex-nowrap">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Trophy className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+                          <span className="font-bold text-sm md:text-base truncate">{raffle.nome_vencedor}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
                             {formatDate(raffle.created_at)}
                           </span>
                           {isAdmin && (
@@ -632,7 +633,7 @@ export default function Tickets() {
                           )}
                         </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs md:text-sm text-muted-foreground">
                         {raffle.participantes?.length || 0} participantes
                       </div>
                     </div>

@@ -171,20 +171,20 @@ export default function AccountSettings() {
   return (
     <>
       <Navbar />
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Configurações da Conta</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className="container mx-auto px-4 py-4 md:py-8 max-w-4xl">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold">Configurações da Conta</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-2">
             Gerencie suas preferências de segurança e autenticação
           </p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Account Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Informações da Conta</CardTitle>
-              <CardDescription>Seus dados de login</CardDescription>
+              <CardTitle className="text-lg md:text-xl">Informações da Conta</CardTitle>
+              <CardDescription className="text-sm">Seus dados de login</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -215,15 +215,15 @@ export default function AccountSettings() {
           {/* 2FA Settings */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                 {mfaEnabled ? (
-                  <ShieldCheck className="h-5 w-5 text-green-500" />
+                  <ShieldCheck className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
                 ) : (
-                  <Shield className="h-5 w-5" />
+                  <Shield className="h-4 w-4 md:h-5 md:w-5" />
                 )}
-                Autenticação de Dois Fatores (2FA)
+                <span className="text-base md:text-xl">Autenticação de Dois Fatores (2FA)</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Adicione uma camada extra de segurança à sua conta usando um aplicativo autenticador como Google Authenticator
               </CardDescription>
             </CardHeader>

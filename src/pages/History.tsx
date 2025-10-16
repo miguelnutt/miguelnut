@@ -150,19 +150,19 @@ export default function History() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent" style={{ WebkitTextStroke: '1px rgba(139, 92, 246, 0.3)' }}>
+      <main className="container mx-auto px-4 py-4 md:py-8">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent" style={{ WebkitTextStroke: '1px rgba(139, 92, 246, 0.3)' }}>
             Histórico
           </h1>
         </div>
 
-        <Card className="shadow-card mb-6">
+        <Card className="shadow-card mb-4 md:mb-6">
           <CardHeader>
-            <CardTitle>Filtros</CardTitle>
+            <CardTitle className="text-lg md:text-xl">Filtros</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
               <div>
                 <Label htmlFor="usuario">Usuário</Label>
                 <Input
@@ -202,30 +202,30 @@ export default function History() {
         <Card className="shadow-card">
           <CardContent className="p-0">
             {filteredSpins.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-sm md:text-base text-muted-foreground">
                 {spins.length === 0 ? "Nenhuma recompensa registrada" : "Nenhum resultado encontrado"}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -mx-4 md:mx-0">
                 <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Usuário</TableHead>
-                        <TableHead>Roleta</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Data/Hora</TableHead>
-                        {isAdmin && <TableHead className="text-center">Ações</TableHead>}
+                        <TableHead className="whitespace-nowrap">Usuário</TableHead>
+                        <TableHead className="whitespace-nowrap">Roleta</TableHead>
+                        <TableHead className="whitespace-nowrap">Tipo</TableHead>
+                        <TableHead className="whitespace-nowrap">Valor</TableHead>
+                        <TableHead className="whitespace-nowrap">Data/Hora</TableHead>
+                        {isAdmin && <TableHead className="text-center whitespace-nowrap">Ações</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
-                          <TableCell className="font-medium">{spin.nome_usuario}</TableCell>
-                          <TableCell>{spin.wheels?.nome || "N/A"}</TableCell>
-                          <TableCell>{spin.tipo_recompensa}</TableCell>
-                          <TableCell>{spin.valor}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell className="font-medium whitespace-nowrap">{spin.nome_usuario}</TableCell>
+                          <TableCell className="whitespace-nowrap">{spin.wheels?.nome || "N/A"}</TableCell>
+                          <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
+                          <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>
+                          <TableCell className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
                             {formatDate(spin.created_at)}
                           </TableCell>
                           {isAdmin && (
