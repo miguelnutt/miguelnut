@@ -172,31 +172,34 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
     ctx.restore();
   }, [recompensas, labelFontSize]);
 
+  const uniqueId = `wheel-${Math.random().toString(36).substr(2, 9)}`;
+  
   return (
-    <div ref={containerRef} className="wheel-canvas-container" style={{ '--spin-duration': `${duracaoSpin}s` } as React.CSSProperties}>
+    <div ref={containerRef} className={`wheel-canvas-container ${uniqueId}`} style={{ '--spin-duration': `${duracaoSpin}s` } as React.CSSProperties}>
       <style>{`
-        .wheel-canvas-container {
+        .wheel-canvas-container.${uniqueId} {
           position: relative;
           width: 100%;
           max-width: 600px;
           aspect-ratio: 1;
         }
         
-        .wheel-canvas-wrapper {
+        .wheel-canvas-container.${uniqueId} .wheel-canvas-wrapper {
           width: 100%;
           height: 100%;
-          transition: ${spinning ? 'transform var(--spin-duration, 4s) cubic-bezier(0.25, 0.1, 0.25, 1.0)' : 'none'};
+          transition: ${spinning ? 'transform var(--spin-duration, 4s) cubic-bezier(0.17, 0.67, 0.16, 0.99)' : 'none'};
           transform: rotate(${rotation}deg);
+          will-change: ${spinning ? 'transform' : 'auto'};
         }
 
-        .wheel-canvas {
+        .wheel-canvas-container.${uniqueId} .wheel-canvas {
           width: 100%;
           height: 100%;
           filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.25));
         }
 
 
-        .arrow-indicator {
+        .wheel-canvas-container.${uniqueId} .arrow-indicator {
           position: absolute;
           top: 0;
           left: 50%;
@@ -204,7 +207,7 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
           z-index: 20;
         }
 
-        .arrow-indicator::before {
+        .wheel-canvas-container.${uniqueId} .arrow-indicator::before {
           content: "";
           position: absolute;
           top: 1px;
@@ -217,7 +220,7 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
           filter: blur(4px);
         }
 
-        .arrow-indicator::after {
+        .wheel-canvas-container.${uniqueId} .arrow-indicator::after {
           content: "";
           position: relative;
           display: block;
