@@ -76,7 +76,7 @@ export const Navbar = () => {
               </div>
             </a>
             <Link to="/">
-              <span className="text-lg md:text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent animate-gradient-shift cursor-pointer hover:opacity-80 transition-opacity" style={{ backgroundSize: '200% 200%', filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25))' }}>
+              <span className="text-[27px] md:text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent animate-gradient-shift cursor-pointer hover:opacity-80 transition-opacity" style={{ backgroundSize: '200% 200%', filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25))' }}>
                 Miguelnut
               </span>
             </Link>
