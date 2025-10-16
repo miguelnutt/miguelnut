@@ -50,16 +50,22 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="relative">
+            <div className="flex flex-col items-center gap-1">
               <img 
                 src={profileImage} 
                 alt="Miguelnut Tibiano" 
-                className="h-10 w-10 rounded-full object-cover ring-2 ring-primary"
+                className={`h-10 w-10 rounded-full object-cover ring-2 transition-all ${
+                  !liveLoading && isLive 
+                    ? 'ring-red-500 animate-pulse-glow' 
+                    : 'ring-muted'
+                }`}
               />
               {!liveLoading && (
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card ${
-                  isLive ? 'bg-green-500' : 'bg-red-500'
-                }`} title={isLive ? 'Ao vivo' : 'Offline'} />
+                <span className={`text-[10px] font-semibold uppercase tracking-wide ${
+                  isLive ? 'text-red-500' : 'text-muted-foreground'
+                }`}>
+                  {isLive ? 'Ao vivo' : 'Offline'}
+                </span>
               )}
             </div>
             <span className="text-xl font-bold text-primary">
