@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -127,15 +127,18 @@ export const Navbar = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => navigate("/account")}
                     className="rounded-full"
+                    title="Configurações da Conta"
                   >
-                    <User className="h-5 w-5" />
+                    <Settings className="h-5 w-5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={handleLogout}
                     className="rounded-full"
+                    title="Sair"
                   >
                     <LogOut className="h-5 w-5" />
                   </Button>

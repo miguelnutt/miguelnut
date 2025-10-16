@@ -8,6 +8,7 @@ import Wheels from "./pages/Wheels";
 import History from "./pages/History";
 import Tickets from "./pages/Tickets";
 import Login from "./pages/Login";
+import AccountSettings from "./pages/AccountSettings";
 import NotFound from "./pages/NotFound";
 import { Footer } from "@/components/Footer";
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/history" element={<History />} />
             <Route path="/tickets" element={<Tickets />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/account" element={<AccountSettings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Footer />
