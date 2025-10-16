@@ -358,6 +358,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
                 onClick={() => {
                   setShowResultDialog(false);
                   setResultado(null);
+                  setRotation(0);
+                  setNomeVencedor("");
                 }}
                 className="w-full bg-gradient-primary"
                 size="lg"
