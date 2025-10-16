@@ -206,44 +206,52 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       return;
     }
 
-    setSpinning(true);
+    // Resetar rotação para 0 antes de começar novo spin
+    setRotation(0);
     setResultado(null);
+    
+    // Pequeno delay para garantir que o reset seja aplicado
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    setSpinning(true);
 
     // Sortear uma recompensa aleatória
     const indexSorteado = Math.floor(Math.random() * wheel.recompensas.length);
     const sorteada = wheel.recompensas[indexSorteado];
     
-    // Calcular rotação para que o item sorteado fique sob a seta (no topo)
+    // Calcular rotação com posição aleatória dentro da fatia
     const voltas = 8; // Número de voltas completas
     const grausPorSecao = 360 / wheel.recompensas.length;
     
-    // Ângulo necessário para colocar o item sorteado no topo (onde está a seta)
-    // Precisamos girar para que o centro do segmento sorteado fique no topo
-    const anguloDoSegmento = indexSorteado * grausPorSecao + (grausPorSecao / 2);
+    // Adicionar aleatoriedade dentro da fatia (não sempre no meio)
+    // Varia entre 20% e 80% da fatia para não ficar nas bordas
+    const variacaoAleatoria = (Math.random() * 0.6 + 0.2) * grausPorSecao;
+    const anguloDoSegmento = indexSorteado * grausPorSecao + variacaoAleatoria;
     
     // Rotação total: voltas completas + ajuste para o segmento sorteado
-    // Subtraímos o ângulo do segmento porque a roleta gira no sentido horário
     const novaRotacao = (voltas * 360) + (360 - anguloDoSegmento);
     
     setRotation(novaRotacao);
 
-    // Aguardar animação
+    // Aguardar animação (4.5s para dar tempo do suspense)
     setTimeout(async () => {
       const nomeParaExibir = nomeUsuario.trim() || "Visitante";
       setNomeVencedor(nomeParaExibir);
       setResultado(sorteada);
       setSpinning(false);
-      setShowResultDialog(true);
       
-      // Lançar confete
-      launchConfetti();
+      // Pequeno delay antes de mostrar o resultado para criar suspense
+      setTimeout(() => {
+        setShowResultDialog(true);
+        launchConfetti();
+      }, 500);
 
       // Se for modo teste, não precisa salvar nada
       if (isModoTeste) {
         // Apenas mostra o resultado, sem ações de salvar
         return;
       }
-    }, 4000);
+    }, 4500);
   };
 
   return (
