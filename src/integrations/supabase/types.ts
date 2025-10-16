@@ -14,16 +14,213 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      raffles: {
+        Row: {
+          created_at: string
+          id: string
+          nome_vencedor: string
+          observacoes: string | null
+          participantes: Json
+          vencedor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_vencedor: string
+          observacoes?: string | null
+          participantes?: Json
+          vencedor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_vencedor?: string
+          observacoes?: string | null
+          participantes?: Json
+          vencedor_id?: string | null
+        }
+        Relationships: []
+      }
+      spins: {
+        Row: {
+          created_at: string
+          id: string
+          nome_usuario: string
+          tipo_recompensa: string
+          user_id: string | null
+          valor: string
+          wheel_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_usuario: string
+          tipo_recompensa: string
+          user_id?: string | null
+          valor: string
+          wheel_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_usuario?: string
+          tipo_recompensa?: string
+          user_id?: string | null
+          valor?: string
+          wheel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spins_wheel_id_fkey"
+            columns: ["wheel_id"]
+            isOneToOne: false
+            referencedRelation: "wheels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_ledger: {
+        Row: {
+          created_at: string
+          id: string
+          motivo: string
+          user_id: string
+          variacao: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivo: string
+          user_id: string
+          variacao: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivo?: string
+          user_id?: string
+          variacao?: number
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          tickets_atual: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          tickets_atual?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          tickets_atual?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wheels: {
+        Row: {
+          ativa: boolean
+          created_at: string
+          id: string
+          nome: string
+          recompensas: Json
+          updated_at: string
+        }
+        Insert: {
+          ativa?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          recompensas?: Json
+          updated_at?: string
+        }
+        Update: {
+          ativa?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          recompensas?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_or_create_profile_by_name: {
+        Args: { p_nome: string }
+        Returns: string
+      }
+      has_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +347,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const

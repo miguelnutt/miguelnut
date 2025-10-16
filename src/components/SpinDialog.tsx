@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { CanvasWheel } from "./CanvasWheel";
+import { z } from "zod";
 
 interface Recompensa {
   tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
@@ -24,6 +25,10 @@ interface SpinDialogProps {
 }
 
 
+const spinInputSchema = z.object({
+  nomeUsuario: z.string().trim().min(1, "Nome do usuário é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)")
+});
+
 export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
   const [nomeUsuario, setNomeUsuario] = useState("");
   const [spinning, setSpinning] = useState(false);
@@ -41,8 +46,10 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
   }, [open]);
 
   const spin = async () => {
-    if (!nomeUsuario.trim()) {
-      toast.error("Digite o nome do usuário");
+    // Validate input
+    const validation = spinInputSchema.safeParse({ nomeUsuario });
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
       return;
     }
 

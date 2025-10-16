@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { Trophy } from "lucide-react";
+import { z } from "zod";
 
 interface Participante {
   user_id: string;
@@ -17,11 +18,16 @@ interface RaffleDialogProps {
   onSuccess: () => void;
 }
 
+const raffleSchema = z.object({
+  observacoes: z.string().trim().max(1000, "Observações muito longas (máximo 1000 caracteres)").optional()
+});
+
 export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProps) {
   const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [loading, setLoading] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [vencedor, setVencedor] = useState<Participante | null>(null);
+  const [observacoes, setObservacoes] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -63,6 +69,13 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
   const realizarSorteio = async () => {
     if (participantes.length === 0) {
       toast.error("Não há participantes com tickets");
+      return;
+    }
+
+    // Validate observacoes if needed
+    const validation = raffleSchema.safeParse({ observacoes: observacoes || undefined });
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
       return;
     }
 

@@ -13,12 +13,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
+import { z } from "zod";
 
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
+
+const addUserSchema = z.object({
+  nome: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)"),
+  ticketsIniciais: z.number().int("Tickets deve ser um número inteiro").min(0, "Tickets não pode ser negativo").max(100000, "Valor muito alto"),
+  motivo: z.string().trim().max(500, "Motivo muito longo (máximo 500 caracteres)").optional()
+});
 
 export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogProps) {
   const [nome, setNome] = useState("");
@@ -29,14 +36,17 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!nome.trim()) {
-      toast.error("Por favor, insira o nome do usuário");
-      return;
-    }
-
     const ticketsValue = parseInt(ticketsIniciais) || 0;
-    if (ticketsValue < 0) {
-      toast.error("Quantidade de tickets não pode ser negativa");
+    
+    // Validate input with zod
+    const validation = addUserSchema.safeParse({ 
+      nome, 
+      ticketsIniciais: ticketsValue,
+      motivo: motivo || undefined
+    });
+    
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
       return;
     }
 
