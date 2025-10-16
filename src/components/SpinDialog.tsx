@@ -10,6 +10,7 @@ import { CanvasWheel } from "./CanvasWheel";
 import { z } from "zod";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
+import confetti from "canvas-confetti";
 
 interface Recompensa {
   tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
@@ -42,6 +43,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
   const [rotation, setRotation] = useState(0);
   const [nomeVencedor, setNomeVencedor] = useState("");
   const [isModoTeste, setIsModoTeste] = useState(testMode);
+  const [showResultDialog, setShowResultDialog] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -56,10 +59,137 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       setRotation(0);
       setNomeVencedor("");
       setIsModoTeste(testMode);
+      setShowResultDialog(false);
+      setAwaitingConfirmation(false);
     } else {
       setIsModoTeste(testMode);
     }
   }, [open, testMode]);
+
+  const launchConfetti = () => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval = window.setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+      });
+    }, 250);
+  };
+
+  const handleConfirmPrize = async () => {
+    if (!resultado || !wheel) return;
+
+    setAwaitingConfirmation(true);
+
+    try {
+      const nomeParaUsar = nomeVencedor || "Visitante";
+      
+      // Usar a função que busca ou cria o perfil automaticamente
+      const { data: userId, error: profileError } = await supabase
+        .rpc("get_or_create_profile_by_name", { p_nome: nomeParaUsar });
+
+      if (profileError) {
+        console.error("Error getting/creating profile:", profileError);
+        toast.error("Erro ao processar usuário");
+        setAwaitingConfirmation(false);
+        return;
+      }
+
+      // Salvar o spin
+      const { error: spinError } = await supabase
+        .from("spins")
+        .insert({
+          wheel_id: wheel.id,
+          user_id: userId,
+          nome_usuario: nomeParaUsar,
+          tipo_recompensa: resultado.tipo,
+          valor: resultado.valor
+        });
+
+      if (spinError) throw spinError;
+
+      // Se ganhou ticket, atualizar
+      if (resultado.tipo === "Tickets" && userId) {
+        const ticketsGanhos = parseInt(resultado.valor) || 1;
+
+        const { data: ticketsData } = await supabase
+          .from("tickets")
+          .select("tickets_atual")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        const ticketsAtuais = ticketsData?.tickets_atual || 0;
+
+        const { error: ticketsError } = await supabase
+          .from("tickets")
+          .upsert({
+            user_id: userId,
+            tickets_atual: ticketsAtuais + ticketsGanhos
+          });
+
+        if (ticketsError) throw ticketsError;
+
+        await supabase
+          .from("ticket_ledger")
+          .insert({
+            user_id: userId,
+            variacao: ticketsGanhos,
+            motivo: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
+          });
+      }
+
+      // Se ganhou Pontos de Loja, sincronizar com StreamElements
+      if (resultado.tipo === "Pontos de Loja") {
+        const pontosGanhos = parseInt(resultado.valor) || 0;
+        if (pontosGanhos > 0) {
+          try {
+            await supabase.functions.invoke('sync-streamelements-points', {
+              body: {
+                username: nomeParaUsar,
+                points: pontosGanhos
+              }
+            });
+            console.log(`StreamElements sync: ${nomeParaUsar} ganhou ${pontosGanhos} pontos de loja`);
+          } catch (seError: any) {
+            console.error("StreamElements sync error:", seError);
+          }
+        }
+      }
+
+      toast.success(`Prêmio entregue: ${resultado.valor} ${resultado.tipo} para ${nomeParaUsar}!`);
+      setShowResultDialog(false);
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Error confirming prize:", error);
+      toast.error("Erro ao confirmar prêmio: " + error.message);
+    } finally {
+      setAwaitingConfirmation(false);
+    }
+  };
+
+  const handleCancelPrize = () => {
+    toast.info("Premiação cancelada");
+    setShowResultDialog(false);
+    setResultado(null);
+  };
 
   const spin = async () => {
     // Validate input only if not in test mode
@@ -99,184 +229,154 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
 
     // Aguardar animação
     setTimeout(async () => {
-      setResultado(sorteada);
       const nomeParaExibir = nomeUsuario.trim() || "Visitante";
       setNomeVencedor(nomeParaExibir);
+      setResultado(sorteada);
       setSpinning(false);
+      setShowResultDialog(true);
+      
+      // Lançar confete
+      launchConfetti();
 
-      // Se for modo teste, apenas mostrar resultado sem salvar
+      // Se for modo teste, não precisa salvar nada
       if (isModoTeste) {
-        toast.success(`🎮 TESTE: ${nomeParaExibir} ganhou ${sorteada.valor} ${sorteada.tipo}!`, {
-          description: "Modo simulação - nada foi salvo"
-        });
+        // Apenas mostra o resultado, sem ações de salvar
         return;
-      }
-
-      try {
-        // Usar a função que busca ou cria o perfil automaticamente
-        const { data: userId, error: profileError } = await supabase
-          .rpc("get_or_create_profile_by_name", { p_nome: nomeUsuario.trim() });
-
-        if (profileError) {
-          console.error("Error getting/creating profile:", profileError);
-          toast.error("Erro ao processar usuário");
-          return;
-        }
-
-        // Salvar o spin
-        const { error: spinError } = await supabase
-          .from("spins")
-          .insert({
-            wheel_id: wheel.id,
-            user_id: userId,
-            nome_usuario: nomeUsuario.trim(),
-            tipo_recompensa: sorteada.tipo,
-            valor: sorteada.valor
-          });
-
-        if (spinError) throw spinError;
-
-        // Se ganhou ticket, atualizar (NÃO sincroniza com StreamElements)
-        if (sorteada.tipo === "Tickets" && userId) {
-          const ticketsGanhos = parseInt(sorteada.valor) || 1;
-
-          // Buscar tickets atuais
-          const { data: ticketsData } = await supabase
-            .from("tickets")
-            .select("tickets_atual")
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          const ticketsAtuais = ticketsData?.tickets_atual || 0;
-
-          // Upsert tickets
-          const { error: ticketsError } = await supabase
-            .from("tickets")
-            .upsert({
-              user_id: userId,
-              tickets_atual: ticketsAtuais + ticketsGanhos
-            });
-
-          if (ticketsError) throw ticketsError;
-
-          // Salvar no ledger
-          await supabase
-            .from("ticket_ledger")
-            .insert({
-              user_id: userId,
-              variacao: ticketsGanhos,
-              motivo: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
-            });
-        }
-
-        // Se ganhou Pontos de Loja, sincronizar com StreamElements
-        if (sorteada.tipo === "Pontos de Loja") {
-          const pontosGanhos = parseInt(sorteada.valor) || 0;
-          if (pontosGanhos > 0) {
-            try {
-              await supabase.functions.invoke('sync-streamelements-points', {
-                body: {
-                  username: nomeUsuario.trim(),
-                  points: pontosGanhos
-                }
-              });
-              console.log(`StreamElements sync: ${nomeUsuario.trim()} ganhou ${pontosGanhos} pontos de loja`);
-            } catch (seError: any) {
-              console.error("StreamElements sync error:", seError);
-              // Não bloquear a operação se StreamElements falhar
-            }
-          }
-        }
-
-        // Se ganhou Rubini Coins, não faz nada (pago fora do site)
-
-        toast.success(`${nomeUsuario} ganhou: ${sorteada.valor} ${sorteada.tipo}!`);
-      } catch (error: any) {
-        console.error("Error saving spin:", error);
-        toast.error("Erro ao salvar resultado: " + error.message);
       }
     }, 4000);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {isModoTeste ? "🎮 Teste: " : "Girar: "}{wheel?.nome}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {isModoTeste ? "🎮 Teste: " : "Girar: "}{wheel?.nome}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {!testMode && isAdmin && (
-            <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
-              <Checkbox
-                id="modoTeste"
-                checked={isModoTeste}
-                onCheckedChange={(checked) => setIsModoTeste(checked as boolean)}
-                disabled={spinning}
-              />
-              <Label
-                htmlFor="modoTeste"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-              >
-                Modo Teste (não salva no histórico nem distribui prêmios)
-              </Label>
-            </div>
-          )}
+          <div className="space-y-6">
+            {!testMode && isAdmin && (
+              <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+                <Checkbox
+                  id="modoTeste"
+                  checked={isModoTeste}
+                  onCheckedChange={(checked) => setIsModoTeste(checked as boolean)}
+                  disabled={spinning}
+                />
+                <Label
+                  htmlFor="modoTeste"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Modo Teste (não salva no histórico nem distribui prêmios)
+                </Label>
+              </div>
+            )}
 
-          {isModoTeste && (
-            <div className="p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
-              <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">
-                🎮 Modo Simulação Ativo - Nenhum dado será salvo
-              </p>
-            </div>
-          )}
+            {isModoTeste && (
+              <div className="p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">
+                  🎮 Modo Simulação Ativo - Nenhum dado será salvo
+                </p>
+              </div>
+            )}
 
-          <div>
-            <Label htmlFor="usuario">Nome do Usuário {isModoTeste && "(Opcional)"}</Label>
-            <Input
-              id="usuario"
-              value={nomeUsuario}
-              onChange={(e) => setNomeUsuario(e.target.value)}
-              placeholder={isModoTeste ? "Nome para exibir (opcional)" : "Digite o nome do usuário"}
-              disabled={spinning}
-            />
+            {!isModoTeste && (
+              <div>
+                <Label htmlFor="usuario">Nome do Usuário</Label>
+                <Input
+                  id="usuario"
+                  value={nomeUsuario}
+                  onChange={(e) => setNomeUsuario(e.target.value)}
+                  placeholder="Digite o nome do usuário"
+                  disabled={spinning}
+                />
+              </div>
+            )}
+
+            {wheel && (
+              <div className="flex justify-center py-4">
+                <CanvasWheel
+                  recompensas={wheel.recompensas}
+                  rotation={rotation}
+                  spinning={spinning}
+                  labelFontSize={28}
+                />
+              </div>
+            )}
+
+            <Button
+              onClick={spin}
+              disabled={spinning || (isAdmin && !isModoTeste && !nomeUsuario.trim())}
+              className="w-full bg-gradient-primary shadow-glow"
+              size="lg"
+            >
+              {spinning ? "Girando..." : isModoTeste ? "🎮 Testar Roleta" : "Girar Roleta"}
+            </Button>
           </div>
+        </DialogContent>
+      </Dialog>
 
-          {wheel && (
-            <div className="flex justify-center py-4">
-              <CanvasWheel
-                recompensas={wheel.recompensas}
-                rotation={rotation}
-                spinning={spinning}
-                labelFontSize={28}
-              />
-            </div>
-          )}
-
-          {resultado && (
-            <div className="text-center p-4 bg-gradient-card rounded-lg shadow-card animate-pulse-glow">
-              <h3 className="text-2xl font-bold mb-2">🎉 Resultado! 🎉</h3>
-              <p className="text-xl">
-                <span className="font-bold">{nomeVencedor}</span> ganhou:
-              </p>
-              <p className="text-3xl font-bold mt-2" style={{ color: resultado.cor }}>
-                {resultado.valor} {resultado.tipo}
+      {/* Dialog de Resultado */}
+      <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+        <DialogContent className="max-w-md">
+          <div className="text-center space-y-6 py-6">
+            <div className="text-6xl animate-bounce">🎉</div>
+            
+            <div className="space-y-2">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
+                {isModoTeste ? "🎮 Teste!" : "Parabéns!"}
+              </h2>
+              <p className="text-xl font-semibold text-foreground">
+                {nomeVencedor}
               </p>
             </div>
-          )}
 
-          <Button
-            onClick={spin}
-            disabled={spinning || (isAdmin && !isModoTeste && !nomeUsuario.trim())}
-            className="w-full bg-gradient-primary shadow-glow"
-            size="lg"
-          >
-            {spinning ? "Girando..." : isModoTeste ? "🎮 Testar Roleta" : "Girar Roleta"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+            {resultado && (
+              <div className="p-6 bg-gradient-card rounded-lg shadow-glow">
+                <p className="text-lg text-muted-foreground mb-2">Ganhou:</p>
+                <p className="text-4xl font-bold" style={{ color: resultado.cor }}>
+                  {resultado.valor} {resultado.tipo}
+                </p>
+              </div>
+            )}
+
+            {isModoTeste ? (
+              <Button
+                onClick={() => {
+                  setShowResultDialog(false);
+                  setResultado(null);
+                }}
+                className="w-full bg-gradient-primary"
+                size="lg"
+              >
+                OK
+              </Button>
+            ) : (
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleCancelPrize}
+                  variant="outline"
+                  disabled={awaitingConfirmation}
+                  className="flex-1"
+                  size="lg"
+                >
+                  Cancelar Prêmio
+                </Button>
+                <Button
+                  onClick={handleConfirmPrize}
+                  disabled={awaitingConfirmation}
+                  className="flex-1 bg-gradient-primary"
+                  size="lg"
+                >
+                  {awaitingConfirmation ? "Processando..." : "Dar Prêmio"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
