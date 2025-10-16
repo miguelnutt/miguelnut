@@ -395,139 +395,251 @@ export default function Tickets() {
                   Nenhum ticket distribuído ainda
                 </p>
               ) : (
-                <div className="max-h-[600px] overflow-y-auto -mx-4 md:mx-0 overflow-x-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-card z-10">
-                      <TableRow>
-                        <TableHead className="whitespace-nowrap">Posição</TableHead>
-                        <TableHead className="whitespace-nowrap">Usuário</TableHead>
-                        <TableHead className="whitespace-nowrap">Tickets</TableHead>
-                        {isAdmin && <TableHead className="text-center whitespace-nowrap">Ações</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ranking.map((item, index) => (
-                        <TableRow key={item.user_id}>
-                          <TableCell className="font-bold whitespace-nowrap">
-                            {index === 0 && "🥇"}
-                            {index === 1 && "🥈"}
-                            {index === 2 && "🥉"}
-                            {index > 2 && `${index + 1}º`}
-                          </TableCell>
-                          <TableCell className="font-medium whitespace-nowrap">{item.nome}</TableCell>
-                          <TableCell className="whitespace-nowrap">{item.tickets_atual}</TableCell>
-                          {isAdmin && (
-                            <TableCell>
-                          {editingUser === item.user_id ? (
-                                <div className="flex gap-2 items-center flex-wrap">
-                                  <div className="flex gap-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      value={directValue[item.user_id] ?? item.tickets_atual}
-                                      onChange={(e) => setDirectValue({
-                                        ...directValue,
-                                        [item.user_id]: e.target.value
-                                      })}
-                                      className="w-20"
-                                      placeholder="Total"
-                                    />
-                                    <Button
-                                      size="sm"
-                                      onClick={() => {
-                                        const newVal = parseInt(directValue[item.user_id] ?? item.tickets_atual.toString());
-                                        if (!isNaN(newVal) && newVal >= 0) {
-                                          setDirectTickets(item.user_id, newVal);
-                                        }
-                                      }}
-                                    >
-                                      Definir
-                                    </Button>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <Input
-                                      type="number"
-                                      value={ticketAdjustment}
-                                      onChange={(e) => setTicketAdjustment(e.target.value)}
-                                      placeholder="±"
-                                      className="w-20"
-                                    />
-                                    <Button
-                                      size="sm"
-                                      onClick={() => {
-                                        const adj = parseInt(ticketAdjustment);
-                                        if (!isNaN(adj) && adj !== 0) {
-                                          adjustTickets(
-                                            item.user_id,
-                                            adj,
-                                            `Ajuste manual: ${adj > 0 ? "+" : ""}${adj}`
-                                          );
-                                        }
-                                      }}
-                                    >
-                                      ±
-                                    </Button>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setEditingUser(null);
-                                      setTicketAdjustment("");
-                                      setDirectValue({});
-                                    }}
-                                  >
-                                    X
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div className="flex gap-1 flex-wrap">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                     onClick={() => {
-                                       adjustTickets(item.user_id, 1, "Adicionado +1 manualmente");
-                                     }}
-                                     disabled={adjusting}
-                                   >
-                                     <Plus className="h-4 w-4" />
-                                   </Button>
-                                   <Button
-                                     size="icon"
-                                     variant="ghost"
-                                     onClick={() => {
-                                       adjustTickets(item.user_id, -1, "Removido -1 manualmente");
-                                     }}
-                                     disabled={item.tickets_atual === 0 || adjusting}
-                                   >
-                                     <Minus className="h-4 w-4" />
-                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditingUser(item.user_id);
-                                      setDirectValue({ [item.user_id]: item.tickets_atual.toString() });
-                                    }}
-                                  >
-                                    Editar
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => removeUser(item.user_id, item.nome)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          )}
+                <div className="max-h-[600px] overflow-y-auto">
+                  {/* Layout Mobile - Cards */}
+                  <div className="md:hidden space-y-3">
+                    {ranking.map((item, index) => (
+                      <div key={item.user_id} className="border border-border rounded-lg p-4 bg-card/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl font-bold">
+                              {index === 0 && "🥇"}
+                              {index === 1 && "🥈"}
+                              {index === 2 && "🥉"}
+                              {index > 2 && `${index + 1}º`}
+                            </span>
+                            <div>
+                              <div className="font-medium text-base">{item.nome}</div>
+                              <div className="text-sm text-muted-foreground">{item.tickets_atual} tickets</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {isAdmin && editingUser === item.user_id && (
+                          <div className="mt-3 pt-3 border-t border-border space-y-2">
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={directValue[item.user_id] ?? item.tickets_atual}
+                                onChange={(e) => setDirectValue({
+                                  ...directValue,
+                                  [item.user_id]: e.target.value
+                                })}
+                                className="flex-1"
+                                placeholder="Valor total"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const newVal = parseInt(directValue[item.user_id] ?? item.tickets_atual.toString());
+                                  if (!isNaN(newVal) && newVal >= 0) {
+                                    setDirectTickets(item.user_id, newVal);
+                                  }
+                                }}
+                                disabled={adjusting}
+                              >
+                                Definir
+                              </Button>
+                            </div>
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                value={ticketAdjustment}
+                                onChange={(e) => setTicketAdjustment(e.target.value)}
+                                placeholder="Adicionar/Remover (±)"
+                                className="flex-1"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const adj = parseInt(ticketAdjustment);
+                                  if (!isNaN(adj) && adj !== 0) {
+                                    adjustTickets(
+                                      item.user_id,
+                                      adj,
+                                      `Ajuste manual: ${adj > 0 ? "+" : ""}${adj}`
+                                    );
+                                  }
+                                }}
+                                disabled={adjusting}
+                              >
+                                Ajustar
+                              </Button>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingUser(null);
+                                setTicketAdjustment("");
+                                setDirectValue({});
+                              }}
+                              className="w-full"
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {isAdmin && editingUser !== item.user_id && (
+                          <div className="mt-3 pt-3 border-t border-border flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingUser(item.user_id);
+                                setDirectValue({ [item.user_id]: item.tickets_atual.toString() });
+                              }}
+                              className="flex-1"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => removeUser(item.user_id, item.nome)}
+                              className="flex-1"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Remover
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Layout Desktop - Table */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-card z-10">
+                        <TableRow>
+                          <TableHead className="w-20">Pos.</TableHead>
+                          <TableHead>Usuário</TableHead>
+                          <TableHead className="w-24 text-right">Tickets</TableHead>
+                          {isAdmin && <TableHead className="w-32 text-center">Ações</TableHead>}
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {ranking.map((item, index) => (
+                          <>
+                            <TableRow key={item.user_id}>
+                              <TableCell className="font-bold">
+                                {index === 0 && "🥇"}
+                                {index === 1 && "🥈"}
+                                {index === 2 && "🥉"}
+                                {index > 2 && `${index + 1}º`}
+                              </TableCell>
+                              <TableCell className="font-medium">{item.nome}</TableCell>
+                              <TableCell className="text-right">{item.tickets_atual}</TableCell>
+                              {isAdmin && (
+                                <TableCell>
+                                  {editingUser !== item.user_id && (
+                                    <div className="flex gap-1 justify-center">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingUser(item.user_id);
+                                          setDirectValue({ [item.user_id]: item.tickets_atual.toString() });
+                                        }}
+                                        title="Editar tickets"
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => removeUser(item.user_id, item.nome)}
+                                        title="Remover usuário"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </TableCell>
+                              )}
+                            </TableRow>
+                            {isAdmin && editingUser === item.user_id && (
+                              <TableRow key={`${item.user_id}-edit`}>
+                                <TableCell colSpan={4} className="bg-muted/30">
+                                  <div className="py-2 space-y-3">
+                                    <div className="flex gap-2 items-center">
+                                      <Label className="w-32 text-sm">Definir valor:</Label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={directValue[item.user_id] ?? item.tickets_atual}
+                                        onChange={(e) => setDirectValue({
+                                          ...directValue,
+                                          [item.user_id]: e.target.value
+                                        })}
+                                        className="w-32"
+                                        placeholder="Total"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        onClick={() => {
+                                          const newVal = parseInt(directValue[item.user_id] ?? item.tickets_atual.toString());
+                                          if (!isNaN(newVal) && newVal >= 0) {
+                                            setDirectTickets(item.user_id, newVal);
+                                          }
+                                        }}
+                                        disabled={adjusting}
+                                      >
+                                        Definir
+                                      </Button>
+                                    </div>
+                                    <div className="flex gap-2 items-center">
+                                      <Label className="w-32 text-sm">Ajustar (±):</Label>
+                                      <Input
+                                        type="number"
+                                        value={ticketAdjustment}
+                                        onChange={(e) => setTicketAdjustment(e.target.value)}
+                                        placeholder="Ex: +10 ou -5"
+                                        className="w-32"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        onClick={() => {
+                                          const adj = parseInt(ticketAdjustment);
+                                          if (!isNaN(adj) && adj !== 0) {
+                                            adjustTickets(
+                                              item.user_id,
+                                              adj,
+                                              `Ajuste manual: ${adj > 0 ? "+" : ""}${adj}`
+                                            );
+                                          }
+                                        }}
+                                        disabled={adjusting}
+                                      >
+                                        Aplicar
+                                      </Button>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setEditingUser(null);
+                                          setTicketAdjustment("");
+                                          setDirectValue({});
+                                        }}
+                                      >
+                                        Cancelar
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               )}
             </CardContent>
