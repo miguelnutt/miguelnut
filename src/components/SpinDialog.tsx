@@ -109,7 +109,7 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
 
         if (spinError) throw spinError;
 
-        // Se ganhou ticket, atualizar
+        // Se ganhou ticket, atualizar (NÃO sincroniza com StreamElements)
         if (sorteada.tipo === "Tickets" && userId) {
           const ticketsGanhos = parseInt(sorteada.valor) || 1;
 
@@ -140,20 +140,6 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
               variacao: ticketsGanhos,
               motivo: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
             });
-
-          // Sincronizar com StreamElements
-          try {
-            await supabase.functions.invoke('sync-streamelements-points', {
-              body: {
-                username: nomeUsuario.trim(),
-                points: ticketsGanhos
-              }
-            });
-            console.log(`StreamElements sync initiated for ${nomeUsuario.trim()} with ${ticketsGanhos} points`);
-          } catch (seError: any) {
-            console.error("StreamElements sync error:", seError);
-            // Não bloquear a operação se StreamElements falhar
-          }
         }
 
         // Se ganhou Pontos de Loja, sincronizar com StreamElements
@@ -167,13 +153,15 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
                   points: pontosGanhos
                 }
               });
-              console.log(`StreamElements sync initiated for ${nomeUsuario.trim()} with ${pontosGanhos} store points`);
+              console.log(`StreamElements sync: ${nomeUsuario.trim()} ganhou ${pontosGanhos} pontos de loja`);
             } catch (seError: any) {
               console.error("StreamElements sync error:", seError);
               // Não bloquear a operação se StreamElements falhar
             }
           }
         }
+
+        // Se ganhou Rubini Coins, não faz nada (pago fora do site)
 
         toast.success(`${nomeUsuario} ganhou: ${sorteada.valor} ${sorteada.tipo}!`);
       } catch (error: any) {
