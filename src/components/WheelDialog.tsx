@@ -27,21 +27,21 @@ interface WheelDialogProps {
 const tiposRecompensa = ["Pontos de Loja", "Tickets", "Rubini Coins"] as const;
 
 const colorThemes = {
-  Red: ["#8B0000", "#FFB6C1", "#DC143C", "#FFA07A"],
-  Orange: ["#CC5500", "#FFDAB9", "#FF8C00", "#FFB347"],
-  Yellow: ["#9B870C", "#FFFACD", "#DAA520", "#F0E68C"],
-  Green: ["#006400", "#98FB98", "#228B22", "#90EE90"],
-  Blue: ["#00008B", "#B0E0E6", "#4169E1", "#87CEEB"],
-  Purple: ["#4B0082", "#DDA0DD", "#8B008B", "#BA55D3"],
-  Pink: ["#C71585", "#FFC0CB", "#FF1493", "#FFB6C1"],
+  Red: ["#CD5C5C", "#F08080", "#FA8072", "#E9967A"],
+  Orange: ["#FFA07A", "#FFB347", "#FFDAB9", "#FFCC99"],
+  Yellow: ["#F0E68C", "#FFFACD", "#FAFAD2", "#EEE8AA"],
+  Green: ["#2D5016", "#8FBC8F", "#C1E1C1", "#8FBC8F"],
+  Blue: ["#6495ED", "#87CEEB", "#B0E0E6", "#ADD8E6"],
+  Purple: ["#9370DB", "#BA55D3", "#DDA0DD", "#E6E6FA"],
+  Pink: ["#FFB6C1", "#FFC0CB", "#FFE4E1", "#FFD1DC"],
 };
 
 export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialogProps) {
   const [nome, setNome] = useState(wheel?.nome || "");
   const [recompensas, setRecompensas] = useState<Recompensa[]>(
     wheel?.recompensas || [
-      { tipo: "Tickets", valor: "1", cor: "#006400" },
-      { tipo: "Pontos de Loja", valor: "100", cor: "#98FB98" }
+      { tipo: "Tickets", valor: "1", cor: "#2D5016" },
+      { tipo: "Pontos de Loja", valor: "100", cor: "#C1E1C1" }
     ]
   );
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof colorThemes>("Green");

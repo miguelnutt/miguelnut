@@ -143,13 +143,13 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
       if (textLength > 20) baseFontSize = Math.min(baseFontSize, 40);
       
       let fontSize = baseFontSize;
-      ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
+      ctx.font = `400 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
       
       // Reduzir fonte até o texto caber no espaço disponível
       let textWidth = ctx.measureText(text).width;
       while (textWidth > maxWidth && fontSize > 12) {
         fontSize -= 1;
-        ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
+        ctx.font = `400 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
         textWidth = ctx.measureText(text).width;
       }
       
