@@ -17,6 +17,7 @@ interface Stats {
   activeTickets: number;
   totalPoints: number;
   totalRaffles: number;
+  totalRC: number;
 }
 
 interface RecentSpin {
@@ -42,7 +43,8 @@ export default function Dashboard() {
     totalSpins: 0,
     activeTickets: 0,
     totalPoints: 0,
-    totalRaffles: 0
+    totalRaffles: 0,
+    totalRC: 0
   });
   const [recentSpins, setRecentSpins] = useState<RecentSpin[]>([]);
   const [recentRaffles, setRecentRaffles] = useState<RecentRaffle[]>([]);
@@ -143,11 +145,23 @@ export default function Dashboard() {
       }
       const { count: rafflesCount } = await rafflesQuery;
 
+      // Total de RC's pagos
+      let rcQuery = supabase
+        .from("spins")
+        .select("valor, tipo_recompensa")
+        .eq("tipo_recompensa", "RC");
+      if (startDate && endDate) {
+        rcQuery = rcQuery.gte("created_at", startDate).lte("created_at", endDate);
+      }
+      const { data: rcData } = await rcQuery;
+      const totalRC = rcData?.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0) || 0;
+
       setStats({
         totalSpins: spinsCount || 0,
         activeTickets,
         totalPoints,
-        totalRaffles: rafflesCount || 0
+        totalRaffles: rafflesCount || 0,
+        totalRC
       });
 
       // Últimas recompensas
@@ -303,7 +317,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total de Giros</CardTitle>
@@ -331,6 +345,16 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalPoints}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">RC's Pagos</CardTitle>
+              <Coins className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalRC}</div>
             </CardContent>
           </Card>
 
