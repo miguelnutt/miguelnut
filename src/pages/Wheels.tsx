@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Copy } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { WheelDialog } from "@/components/WheelDialog";
@@ -107,6 +107,24 @@ export default function Wheels() {
     setWheelDialogOpen(true);
   };
 
+  const handleDuplicate = async (wheel: Wheel) => {
+    try {
+      const { error } = await supabase
+        .from("wheels")
+        .insert({
+          nome: `${wheel.nome} (Cópia)`,
+          recompensas: wheel.recompensas,
+          ativa: true
+        });
+
+      if (error) throw error;
+      toast.success("Roleta duplicada com sucesso!");
+    } catch (error: any) {
+      console.error("Error duplicating wheel:", error);
+      toast.error("Erro ao duplicar roleta");
+    }
+  };
+
   const handleSpin = (wheel: Wheel) => {
     setSelectedWheel(wheel);
     setSpinDialogOpen(true);
@@ -176,6 +194,13 @@ export default function Wheels() {
                           onClick={() => handleEdit(wheel)}
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDuplicate(wheel)}
+                        >
+                          <Copy className="h-4 w-4" />
                         </Button>
                         <Button
                           size="icon"
