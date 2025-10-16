@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,20 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof colorThemes>("Green");
   const [loading, setLoading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // Atualizar estados quando a prop wheel mudar
+  useEffect(() => {
+    if (wheel) {
+      setNome(wheel.nome);
+      setRecompensas(wheel.recompensas);
+    } else {
+      setNome("");
+      setRecompensas([
+        { tipo: "Tickets", valor: "1", cor: "#2D5016" },
+        { tipo: "Pontos de Loja", valor: "100", cor: "#C1E1C1" }
+      ]);
+    }
+  }, [wheel, open]);
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
