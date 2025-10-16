@@ -68,7 +68,7 @@ export const Navbar = () => {
                 </span>
               )}
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent animate-gradient-shift" style={{ backgroundSize: '200% 200%', filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5))' }}>
+            <span className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent animate-gradient-shift" style={{ backgroundSize: '200% 200%', filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25))' }}>
               Miguelnut Tibiano
             </span>
           </Link>
