@@ -130,13 +130,18 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
       const text = `${recompensa.valor} ${recompensa.tipo}`;
       const maxWidth = R - 66;
       
-      // Começar com tamanho máximo possível e reduzir se necessário
-      let fontSize = 80;
+      // Ajustar tamanho base de acordo com número de segmentos
+      let baseFontSize = 80;
+      if (n > 8) baseFontSize = 60;
+      if (n > 12) baseFontSize = 48;
+      if (n > 16) baseFontSize = 36;
+      
+      let fontSize = baseFontSize;
       ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
       
       // Reduzir fonte até o texto caber no espaço disponível
       let textWidth = ctx.measureText(text).width;
-      while (textWidth > maxWidth && fontSize > 14) {
+      while (textWidth > maxWidth && fontSize > 12) {
         fontSize -= 1;
         ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
         textWidth = ctx.measureText(text).width;
