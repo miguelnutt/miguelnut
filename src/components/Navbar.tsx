@@ -5,11 +5,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
 import profileImage from "@/assets/profile-miguelnut.png";
+import { useTwitchStatus } from "@/hooks/useTwitchStatus";
 
 export const Navbar = () => {
   const navigate = useNavigate();
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [session, setSession] = useState<Session | null>(null);
+  const { isLive, loading: liveLoading } = useTwitchStatus();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
@@ -48,11 +50,18 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <img 
-              src={profileImage} 
-              alt="Miguelnut Tibiano" 
-              className="h-10 w-10 rounded-full object-cover ring-2 ring-primary"
-            />
+            <div className="relative">
+              <img 
+                src={profileImage} 
+                alt="Miguelnut Tibiano" 
+                className="h-10 w-10 rounded-full object-cover ring-2 ring-primary"
+              />
+              {!liveLoading && (
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card ${
+                  isLive ? 'bg-green-500' : 'bg-red-500'
+                }`} title={isLive ? 'Ao vivo' : 'Offline'} />
+              )}
+            </div>
             <span className="text-xl font-bold text-primary">
               Miguelnut Tibiano
             </span>

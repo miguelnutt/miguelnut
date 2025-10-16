@@ -9,6 +9,7 @@ import History from "./pages/History";
 import Tickets from "./pages/Tickets";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { Footer } from "@/components/Footer";
 
 const queryClient = new QueryClient();
 
@@ -18,14 +19,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/wheels" element={<Wheels />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/tickets" element={<Tickets />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <div className="flex flex-col min-h-screen">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/wheels" element={<Wheels />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/tickets" element={<Tickets />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Footer />
+        </div>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
