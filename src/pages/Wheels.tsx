@@ -119,6 +119,7 @@ export default function Wheels() {
 
       if (error) throw error;
       toast.success("Roleta duplicada com sucesso!");
+      fetchWheels();
     } catch (error: any) {
       console.error("Error duplicating wheel:", error);
       toast.error("Erro ao duplicar roleta");
