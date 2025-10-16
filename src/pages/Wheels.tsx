@@ -96,6 +96,7 @@ export default function Wheels() {
 
       if (error) throw error;
       toast.success("Roleta excluída com sucesso!");
+      fetchWheels();
     } catch (error: any) {
       console.error("Error deleting wheel:", error);
       toast.error("Erro ao excluir roleta");
