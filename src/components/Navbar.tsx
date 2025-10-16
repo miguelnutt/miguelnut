@@ -50,18 +50,18 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex flex-col items-center gap-1.5">
               <img 
                 src={profileImage} 
                 alt="Miguelnut Tibiano" 
-                className={`h-10 w-10 rounded-full object-cover ring-2 transition-all ${
+                className={`h-16 w-16 rounded-full object-cover ring-4 transition-all ${
                   !liveLoading && isLive 
                     ? 'ring-red-500 animate-pulse-glow' 
-                    : 'ring-muted'
+                    : 'ring-gray-400'
                 }`}
               />
               {!liveLoading && (
-                <span className={`text-[10px] font-semibold uppercase tracking-wide ${
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${
                   isLive ? 'text-red-500' : 'text-muted-foreground'
                 }`}>
                   {isLive ? 'Ao vivo' : 'Offline'}
@@ -72,6 +72,7 @@ export const Navbar = () => {
               Miguelnut Tibiano
             </span>
           </Link>
+
 
           <div className="flex items-center gap-6">
             <Link
