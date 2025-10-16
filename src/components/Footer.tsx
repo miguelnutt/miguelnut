@@ -18,7 +18,7 @@ export const Footer = () => {
               </svg>
             </a>
             <a
-              href="https://www.youtube.com/@MiguelnutTibiano"
+              href="https://youtube.com/@MiguelnutTibiano"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-[#FF0000] transition-colors"
@@ -27,7 +27,7 @@ export const Footer = () => {
               <Youtube className="w-6 h-6" />
             </a>
             <a
-              href="https://www.tiktok.com/@miguelnutt"
+              href="https://tiktok.com/@miguelnutt"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -38,7 +38,7 @@ export const Footer = () => {
               </svg>
             </a>
             <a
-              href="https://www.instagram.com/miguelnuttibiano/"
+              href="https://instagram.com/miguelnuttibiano"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-[#E4405F] transition-colors"

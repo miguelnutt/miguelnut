@@ -189,22 +189,40 @@ export default function Wheels() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-square rounded-lg bg-gradient-card flex items-center justify-center mb-4 relative overflow-hidden">
-                    <div 
-                      className="h-48 w-48 rounded-full border-8 border-primary/20 flex items-center justify-center"
-                      style={{
-                        background: `conic-gradient(${wheel.recompensas
-                          .map((r, i) => {
+                  <div className="aspect-square rounded-lg bg-card flex items-center justify-center mb-4 relative overflow-hidden p-4">
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="relative w-full h-full max-w-[240px] max-h-[240px]">
+                        <svg viewBox="0 0 200 200" className="w-full h-full">
+                          {wheel.recompensas.map((r, i) => {
                             const total = wheel.recompensas.length;
-                            const start = (i / total) * 360;
-                            const end = ((i + 1) / total) * 360;
-                            return `${r.cor} ${start}deg ${end}deg`;
-                          })
-                          .join(", ")})`
-                      }}
-                    >
-                      <div className="bg-background rounded-full w-20 h-20 flex items-center justify-center">
-                        <span className="text-4xl">🎯</span>
+                            const angle = 360 / total;
+                            const startAngle = i * angle - 90;
+                            const endAngle = (i + 1) * angle - 90;
+                            
+                            const startRad = (startAngle * Math.PI) / 180;
+                            const endRad = (endAngle * Math.PI) / 180;
+                            
+                            const x1 = 100 + 80 * Math.cos(startRad);
+                            const y1 = 100 + 80 * Math.sin(startRad);
+                            const x2 = 100 + 80 * Math.cos(endRad);
+                            const y2 = 100 + 80 * Math.sin(endRad);
+                            
+                            const largeArcFlag = angle > 180 ? 1 : 0;
+                            
+                            return (
+                              <g key={i}>
+                                <path
+                                  d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                                  fill={r.cor}
+                                  stroke="white"
+                                  strokeWidth="1"
+                                />
+                              </g>
+                            );
+                          })}
+                          <circle cx="100" cy="100" r="20" fill="white" stroke="hsl(var(--primary))" strokeWidth="3" />
+                          <text x="100" y="108" textAnchor="middle" fontSize="20">🎯</text>
+                        </svg>
                       </div>
                     </div>
                   </div>
