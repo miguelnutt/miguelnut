@@ -381,7 +381,7 @@ export default function Tickets() {
             </div>
           )}
 
-        <div className={`grid gap-4 md:gap-6 ${isAdmin ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 max-w-2xl mx-auto'}`}>
+        <div className={`grid gap-4 md:gap-6 ${isAdmin ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-2xl mx-auto'}`}>
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -699,9 +699,11 @@ export default function Tickets() {
             </CardContent>
           </Card>
           )}
+        </div>
 
-          {isAdmin && (
-            <Card className="shadow-card">
+        {/* Seção de Últimos Sorteios - Largura Total */}
+        {isAdmin && (
+          <Card className="shadow-card mt-4 md:mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="h-5 w-5" />
@@ -714,34 +716,32 @@ export default function Tickets() {
                   Nenhum sorteio realizado ainda
                 </p>
               ) : (
-                <div className="space-y-2 md:space-y-3">
+                <div className="grid gap-2 md:gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {raffles.map((raffle) => (
                     <div
                       key={raffle.id}
                       className="p-3 md:p-4 bg-gradient-card rounded-lg"
                     >
-                      <div className="flex items-start md:items-center justify-between mb-2 gap-2 flex-wrap md:flex-nowrap">
+                      <div className="flex items-start justify-between mb-2 gap-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <Trophy className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
-                          <span className="font-bold text-sm md:text-base truncate">{raffle.nome_vencedor}</span>
+                          <Trophy className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="font-bold text-sm truncate">{raffle.nome_vencedor}</span>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
-                            {formatDate(raffle.created_at)}
-                          </span>
-                          {isAdmin && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6 text-destructive hover:text-destructive"
-                              onClick={() => deleteRaffle(raffle.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
+                        {isAdmin && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 text-destructive hover:text-destructive flex-shrink-0"
+                            onClick={() => deleteRaffle(raffle.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
-                      <div className="text-xs md:text-sm text-muted-foreground">
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(raffle.created_at)}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
                         {raffle.participantes?.length || 0} participantes
                       </div>
                     </div>
@@ -750,8 +750,7 @@ export default function Tickets() {
               )}
             </CardContent>
           </Card>
-          )}
-        </div>
+        )}
       </main>
 
       <RaffleDialog
