@@ -231,12 +231,13 @@ export default function Dashboard() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
             Dashboard
           </h1>
-          
-          <div className="flex flex-wrap gap-2 items-center">
+        </div>
+        
+        <div className="flex flex-wrap gap-2 items-center mb-8">
               <span className="text-sm text-muted-foreground">Período:</span>
               <Button
                 variant={period === "all" ? "default" : "outline"}
@@ -313,8 +314,7 @@ export default function Dashboard() {
                 </PopoverContent>
               </Popover>
             </div>
-        </div>
-
+        
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">

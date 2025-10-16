@@ -355,11 +355,13 @@ export default function Tickets() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Sistema de Tickets
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
+            Tickets
           </h1>
-          {isAdmin && (
+        </div>
+
+        {isAdmin && (
             <div className="flex gap-2">
               <Button 
                 onClick={() => setAddUserDialogOpen(true)}
@@ -377,7 +379,6 @@ export default function Tickets() {
               </Button>
             </div>
           )}
-        </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="shadow-card">

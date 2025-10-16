@@ -191,16 +191,13 @@ export default function Wheels() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-              Roletas
-            </h1>
-            <p className="text-muted-foreground">
-              {isAdmin ? "Gerencie e rode suas roletas de recompensas" : "Visualize as roletas disponíveis"}
-            </p>
-          </div>
-          {isAdmin && (
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
+            Roletas
+          </h1>
+        </div>
+
+        {isAdmin && (
             <Button 
               onClick={() => {
                 setEditingWheel(null);
@@ -212,7 +209,6 @@ export default function Wheels() {
               Nova Roleta
             </Button>
           )}
-        </div>
 
         {wheels.length === 0 ? (
           <div className="text-center py-12">

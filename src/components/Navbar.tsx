@@ -49,8 +49,13 @@ export const Navbar = () => {
     <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
       <div className="container mx-auto px-4">
         <div className="flex h-24 items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="flex flex-col items-center gap-1.5">
+          <a 
+            href="https://www.twitch.tv/miguelnutt" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-3"
+          >
+            <div className="flex flex-col items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity">
               <img 
                 src={profileImage} 
                 alt="Miguelnut Tibiano" 
@@ -68,7 +73,9 @@ export const Navbar = () => {
                 </span>
               )}
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent animate-gradient-shift" style={{ backgroundSize: '200% 200%', filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25))' }}>
+          </a>
+          <Link to="/">
+            <span className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent animate-gradient-shift cursor-pointer hover:opacity-80 transition-opacity" style={{ backgroundSize: '200% 200%', filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25))' }}>
               Miguelnut Tibiano
             </span>
           </Link>

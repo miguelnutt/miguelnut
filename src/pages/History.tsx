@@ -151,9 +151,11 @@ export default function History() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-8">
-          Histórico de Recompensas
-        </h1>
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
+            Histórico
+          </h1>
+        </div>
 
         <Card className="shadow-card mb-6">
           <CardHeader>
