@@ -48,7 +48,7 @@ export const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-24 items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="flex flex-col items-center gap-1.5">
               <img 
@@ -68,7 +68,7 @@ export const Navbar = () => {
                 </span>
               )}
             </div>
-            <span className="text-xl font-bold text-primary">
+            <span className="text-xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
               Miguelnut Tibiano
             </span>
           </Link>
