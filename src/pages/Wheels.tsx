@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, Copy } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, GripVertical } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { WheelDialog } from "@/components/WheelDialog";
@@ -22,6 +22,7 @@ interface Wheel {
   nome: string;
   recompensas: Recompensa[];
   ativa: boolean;
+  ordem: number;
 }
 
 export default function Wheels() {
@@ -33,6 +34,7 @@ export default function Wheels() {
   const [spinDialogOpen, setSpinDialogOpen] = useState(false);
   const [selectedWheel, setSelectedWheel] = useState<Wheel | null>(null);
   const [editingWheel, setEditingWheel] = useState<Wheel | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -73,6 +75,7 @@ export default function Wheels() {
         .from("wheels")
         .select("*")
         .eq("ativa", true)
+        .order("ordem", { ascending: true })
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -132,6 +135,46 @@ export default function Wheels() {
     setSpinDialogOpen(true);
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = async (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newWheels = [...wheels];
+    const draggedWheel = newWheels[draggedIndex];
+    newWheels.splice(draggedIndex, 1);
+    newWheels.splice(index, 0, draggedWheel);
+    
+    setWheels(newWheels);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = async () => {
+    if (draggedIndex === null) return;
+
+    try {
+      // Update ordem for all wheels
+      const updates = wheels.map((wheel, index) => 
+        supabase
+          .from("wheels")
+          .update({ ordem: index })
+          .eq("id", wheel.id)
+      );
+
+      await Promise.all(updates);
+      toast.success("Ordem atualizada!");
+    } catch (error: any) {
+      console.error("Error updating order:", error);
+      toast.error("Erro ao atualizar ordem");
+      fetchWheels(); // Reload on error
+    } finally {
+      setDraggedIndex(null);
+    }
+  };
+
   if (loading || adminLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -183,11 +226,25 @@ export default function Wheels() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {wheels.map((wheel) => (
-              <Card key={wheel.id} className="shadow-card hover:shadow-glow transition-all duration-300">
+            {wheels.map((wheel, index) => (
+              <Card 
+                key={wheel.id} 
+                className={`shadow-card hover:shadow-glow transition-all duration-300 ${
+                  isAdmin ? 'cursor-move' : ''
+                } ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
+                draggable={isAdmin}
+                onDragStart={() => isAdmin && handleDragStart(index)}
+                onDragOver={(e) => isAdmin && handleDragOver(e, index)}
+                onDragEnd={() => isAdmin && handleDragEnd()}
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>{wheel.nome}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      {isAdmin && (
+                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                      )}
+                      <CardTitle>{wheel.nome}</CardTitle>
+                    </div>
                     {isAdmin && (
                       <div className="flex gap-2">
                         <Button

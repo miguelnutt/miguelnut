@@ -177,6 +177,7 @@ export type Database = {
           created_at: string
           id: string
           nome: string
+          ordem: number | null
           recompensas: Json
           updated_at: string
         }
@@ -185,6 +186,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome: string
+          ordem?: number | null
           recompensas?: Json
           updated_at?: string
         }
@@ -193,6 +195,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome?: string
+          ordem?: number | null
           recompensas?: Json
           updated_at?: string
         }
