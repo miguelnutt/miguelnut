@@ -140,6 +140,39 @@ export function SpinDialog({ open, onOpenChange, wheel }: SpinDialogProps) {
               variacao: ticketsGanhos,
               motivo: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
             });
+
+          // Sincronizar com StreamElements
+          try {
+            await supabase.functions.invoke('sync-streamelements-points', {
+              body: {
+                username: nomeUsuario.trim(),
+                points: ticketsGanhos
+              }
+            });
+            console.log(`StreamElements sync initiated for ${nomeUsuario.trim()} with ${ticketsGanhos} points`);
+          } catch (seError: any) {
+            console.error("StreamElements sync error:", seError);
+            // Não bloquear a operação se StreamElements falhar
+          }
+        }
+
+        // Se ganhou Pontos de Loja, sincronizar com StreamElements
+        if (sorteada.tipo === "Pontos de Loja") {
+          const pontosGanhos = parseInt(sorteada.valor) || 0;
+          if (pontosGanhos > 0) {
+            try {
+              await supabase.functions.invoke('sync-streamelements-points', {
+                body: {
+                  username: nomeUsuario.trim(),
+                  points: pontosGanhos
+                }
+              });
+              console.log(`StreamElements sync initiated for ${nomeUsuario.trim()} with ${pontosGanhos} store points`);
+            } catch (seError: any) {
+              console.error("StreamElements sync error:", seError);
+              // Não bloquear a operação se StreamElements falhar
+            }
+          }
         }
 
         toast.success(`${nomeUsuario} ganhou: ${sorteada.valor} ${sorteada.tipo}!`);

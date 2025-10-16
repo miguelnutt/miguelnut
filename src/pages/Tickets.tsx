@@ -232,6 +232,25 @@ export default function Tickets() {
           motivo
         });
 
+      // Sincronizar com StreamElements se for adição de pontos
+      if (adjustment > 0) {
+        const userRanking = ranking.find(r => r.user_id === userId);
+        const userName = userRanking?.nome || "unknown";
+        
+        try {
+          await supabase.functions.invoke('sync-streamelements-points', {
+            body: {
+              username: userName,
+              points: adjustment
+            }
+          });
+          console.log(`StreamElements sync initiated for ${userName} with ${adjustment} points`);
+        } catch (seError: any) {
+          console.error("StreamElements sync error:", seError);
+          // Não bloquear a operação se StreamElements falhar
+        }
+      }
+
       toast.success("Tickets ajustados com sucesso!");
       setEditingUser(null);
       setTicketAdjustment("");
