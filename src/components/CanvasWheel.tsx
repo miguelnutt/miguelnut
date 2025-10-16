@@ -29,7 +29,7 @@ function anyToRGB(color: string): { r: number; g: number; b: number } {
 function contrastTextColor(color: string): string {
   const { r, g, b } = anyToRGB(color);
   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 155 ? "#0b0f14" : "#fff";
+  return yiq >= 128 ? "#000000" : "#ffffff";
 }
 
 // Quebra texto em múltiplas linhas
@@ -81,7 +81,7 @@ function indexAtPin(angle: number, totalSegments: number): number {
   return 0;
 }
 
-export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 28 }: CanvasWheelProps) {
+export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 52 }: CanvasWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -127,11 +127,13 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 2
       ctx.textBaseline = "middle";
       ctx.fillStyle = contrastTextColor(recompensa.cor);
 
-      const base = Math.max(12, Math.min(64, labelFontSize));
-      ctx.font = `bold ${base}px 'Montserrat', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
+      // Fonte dinâmica baseada no número de segmentos
+      const baseFontSize = Math.max(32, Math.min(80, 600 / Math.sqrt(n)));
+      const base = Math.max(12, Math.min(80, baseFontSize));
+      ctx.font = `900 ${base}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
 
       const x = R - 46;
-      const lineHeight = Math.round(base * 0.93);
+      const lineHeight = Math.round(base * 1.1);
       const maxLines = 2;
       const text = `${recompensa.valor} ${recompensa.tipo}`;
       wrapText(ctx, text, x, 0, lineHeight, maxLines);
@@ -203,10 +205,10 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 2
           display: block;
           width: 0;
           height: 0;
-          border-left: 25px solid transparent;
-          border-right: 25px solid transparent;
-          border-top: 45px solid #dc2626;
-          filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+          border-left: 28px solid transparent;
+          border-right: 28px solid transparent;
+          border-top: 50px solid hsl(223 100% 55%);
+          filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
         }
       `}</style>
 

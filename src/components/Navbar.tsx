@@ -53,7 +53,7 @@ export const Navbar = () => {
               alt="Miguelnut Tibiano" 
               className="h-10 w-10 rounded-full object-cover ring-2 ring-primary"
             />
-            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-primary">
               Miguelnut Tibiano
             </span>
           </Link>
