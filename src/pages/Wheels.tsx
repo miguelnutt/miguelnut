@@ -196,6 +196,7 @@ export default function Wheels() {
                         recompensas={wheel.recompensas}
                         rotation={0}
                         spinning={false}
+                        showArrow={false}
                       />
                     </div>
                   </div>

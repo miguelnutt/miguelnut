@@ -11,6 +11,7 @@ interface CanvasWheelProps {
   rotation: number;
   spinning: boolean;
   labelFontSize?: number;
+  showArrow?: boolean;
 }
 
 // Converte qualquer cor CSS para RGB
@@ -81,7 +82,7 @@ function indexAtPin(angle: number, totalSegments: number): number {
   return 0;
 }
 
-export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 52 }: CanvasWheelProps) {
+export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 52, showArrow = true }: CanvasWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -238,7 +239,7 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
         />
       </div>
       
-      <div className="arrow-indicator" />
+      {showArrow && <div className="arrow-indicator" />}
     </div>
   );
 }
