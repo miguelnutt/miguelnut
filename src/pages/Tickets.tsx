@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trophy, Ticket as TicketIcon, Plus, Minus } from "lucide-react";
+import { Trophy, Ticket as TicketIcon, Plus, Minus, Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -263,6 +263,27 @@ export default function Tickets() {
     }
   };
 
+  const removeUser = async (userId: string, userName: string) => {
+    if (!confirm(`Tem certeza que deseja remover ${userName} da lista de tickets?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("tickets")
+        .delete()
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      toast.success(`${userName} removido da lista de tickets`);
+      await fetchData();
+    } catch (error: any) {
+      console.error("Error removing user:", error);
+      toast.error("Erro ao remover usuário: " + error.message);
+    }
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString("pt-BR");
   };
@@ -328,7 +349,7 @@ export default function Tickets() {
                         <TableHead>Posição</TableHead>
                         <TableHead>Usuário</TableHead>
                         <TableHead>Tickets</TableHead>
-                        {isAdmin && <TableHead>Ações</TableHead>}
+                        {isAdmin && <TableHead className="text-center">Ações</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -407,7 +428,7 @@ export default function Tickets() {
                                   </Button>
                                 </div>
                               ) : (
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 flex-wrap">
                                   <Button
                                     size="icon"
                                     variant="ghost"
@@ -437,6 +458,14 @@ export default function Tickets() {
                                     }}
                                   >
                                     Editar
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => removeUser(item.user_id, item.nome)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
                               )}

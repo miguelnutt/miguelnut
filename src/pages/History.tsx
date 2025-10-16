@@ -3,6 +3,8 @@ import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -12,7 +14,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/lib/supabase-helper";
+import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
+import { User } from "@supabase/supabase-js";
 
 interface Spin {
   id: string;
@@ -24,6 +28,8 @@ interface Spin {
 }
 
 export default function History() {
+  const [user, setUser] = useState<User | null>(null);
+  const { isAdmin } = useAdmin(user);
   const [spins, setSpins] = useState<Spin[]>([]);
   const [filteredSpins, setFilteredSpins] = useState<Spin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +38,18 @@ export default function History() {
     tipo: "",
     roleta: ""
   });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     fetchSpins();
@@ -90,6 +108,27 @@ export default function History() {
     }
 
     setFilteredSpins(filtered);
+  };
+
+  const deleteHistory = async (id: string) => {
+    if (!confirm("Tem certeza que deseja apagar este histórico?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("spins")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Histórico apagado com sucesso!");
+      await fetchSpins();
+    } catch (error: any) {
+      console.error("Error deleting history:", error);
+      toast.error("Erro ao apagar histórico: " + error.message);
+    }
   };
 
   const formatDate = (date: string) => {
@@ -167,27 +206,40 @@ export default function History() {
             ) : (
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Usuário</TableHead>
-                      <TableHead>Roleta</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Data/Hora</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSpins.map((spin) => (
-                      <TableRow key={spin.id}>
-                        <TableCell className="font-medium">{spin.nome_usuario}</TableCell>
-                        <TableCell>{spin.wheels?.nome || "N/A"}</TableCell>
-                        <TableCell>{spin.tipo_recompensa}</TableCell>
-                        <TableCell>{spin.valor}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(spin.created_at)}
-                        </TableCell>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Roleta</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Data/Hora</TableHead>
+                        {isAdmin && <TableHead className="text-center">Ações</TableHead>}
                       </TableRow>
-                    ))}
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSpins.map((spin) => (
+                        <TableRow key={spin.id}>
+                          <TableCell className="font-medium">{spin.nome_usuario}</TableCell>
+                          <TableCell>{spin.wheels?.nome || "N/A"}</TableCell>
+                          <TableCell>{spin.tipo_recompensa}</TableCell>
+                          <TableCell>{spin.valor}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDate(spin.created_at)}
+                          </TableCell>
+                          {isAdmin && (
+                            <TableCell className="text-center">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => deleteHistory(spin.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </div>

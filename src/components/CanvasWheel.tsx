@@ -128,15 +128,15 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
       ctx.fillStyle = contrastTextColor(recompensa.cor);
 
       const text = `${recompensa.valor} ${recompensa.tipo}`;
-      const maxWidth = R - 66; // espaço disponível para o texto
+      const maxWidth = R - 66;
       
-      // Começar com tamanho de fonte base
-      let fontSize = 48;
+      // Começar com tamanho máximo possível e reduzir se necessário
+      let fontSize = 80;
       ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
       
       // Reduzir fonte até o texto caber no espaço disponível
       let textWidth = ctx.measureText(text).width;
-      while (textWidth > maxWidth && fontSize > 12) {
+      while (textWidth > maxWidth && fontSize > 14) {
         fontSize -= 1;
         ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
         textWidth = ctx.measureText(text).width;
