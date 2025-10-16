@@ -380,7 +380,7 @@ export default function Tickets() {
             </div>
           )}
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className={`grid gap-6 ${isAdmin ? 'lg:grid-cols-3' : 'lg:grid-cols-1 max-w-2xl mx-auto'}`}>
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -532,7 +532,8 @@ export default function Tickets() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-card">
+          {isAdmin && (
+            <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TicketIcon className="h-5 w-5" />
@@ -588,8 +589,10 @@ export default function Tickets() {
               )}
             </CardContent>
           </Card>
+          )}
 
-          <Card className="shadow-card">
+          {isAdmin && (
+            <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="h-5 w-5" />
@@ -638,6 +641,7 @@ export default function Tickets() {
               )}
             </CardContent>
           </Card>
+          )}
         </div>
       </main>
 
