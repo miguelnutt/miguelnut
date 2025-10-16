@@ -136,6 +136,11 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
       if (n > 12) baseFontSize = 48;
       if (n > 16) baseFontSize = 36;
       
+      // Reduzir ainda mais para textos longos
+      const textLength = text.length;
+      if (textLength > 15) baseFontSize = Math.min(baseFontSize, 48);
+      if (textLength > 20) baseFontSize = Math.min(baseFontSize, 40);
+      
       let fontSize = baseFontSize;
       ctx.font = `900 ${fontSize}px 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu`;
       

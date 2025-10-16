@@ -284,6 +284,36 @@ export default function Tickets() {
     }
   };
 
+  const deleteTicketHistory = async (historyItem: TicketHistory) => {
+    if (!confirm("Tem certeza que deseja apagar este registro do histórico?")) {
+      return;
+    }
+
+    try {
+      if (historyItem.tipo === 'spin') {
+        const { error } = await supabase
+          .from("spins")
+          .delete()
+          .eq("id", historyItem.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("ticket_ledger")
+          .delete()
+          .eq("id", historyItem.id);
+        
+        if (error) throw error;
+      }
+
+      toast.success("Registro apagado com sucesso!");
+      await fetchData();
+    } catch (error: any) {
+      console.error("Error deleting history:", error);
+      toast.error("Erro ao apagar registro: " + error.message);
+    }
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString("pt-BR");
   };
@@ -500,15 +530,27 @@ export default function Tickets() {
                       className="p-3 bg-gradient-card rounded-lg"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1">
                           <span className="font-bold text-sm">{item.nome_usuario}</span>
                           <span className="text-primary font-bold">
                             {item.valor} {item.tipo === 'spin' ? 'ticket(s)' : ''}
                           </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(item.created_at)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(item.created_at)}
+                          </span>
+                          {isAdmin && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              onClick={() => deleteTicketHistory(item)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       {item.motivo && (
                         <div className="text-xs text-muted-foreground">
