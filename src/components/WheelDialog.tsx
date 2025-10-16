@@ -21,6 +21,7 @@ interface WheelDialogProps {
     id: string;
     nome: string;
     recompensas: Recompensa[];
+    duracao_spin: number;
   } | null;
 }
 
@@ -40,6 +41,7 @@ const colorThemes = {
 
 export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialogProps) {
   const [nome, setNome] = useState(wheel?.nome || "");
+  const [duracaoSpin, setDuracaoSpin] = useState(wheel?.duracao_spin || 4);
   const [recompensas, setRecompensas] = useState<Recompensa[]>(
     wheel?.recompensas || [
       { tipo: "Tickets", valor: "1", cor: "#2D5016" },
@@ -54,9 +56,11 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
   useEffect(() => {
     if (wheel) {
       setNome(wheel.nome);
+      setDuracaoSpin(wheel.duracao_spin || 4);
       setRecompensas(wheel.recompensas);
     } else {
       setNome("");
+      setDuracaoSpin(4);
       setRecompensas([
         { tipo: "Tickets", valor: "1", cor: "#2D5016" },
         { tipo: "Pontos de Loja", valor: "100", cor: "#C1E1C1" }
@@ -131,7 +135,7 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
       if (wheel?.id) {
         const { error } = await supabase
           .from("wheels")
-          .update({ nome, recompensas: recompensas as any })
+          .update({ nome, duracao_spin: duracaoSpin, recompensas: recompensas as any })
           .eq("id", wheel.id);
 
         if (error) throw error;
@@ -139,7 +143,7 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
       } else {
         const { error } = await supabase
           .from("wheels")
-          .insert({ nome, recompensas: recompensas as any });
+          .insert({ nome, duracao_spin: duracaoSpin, recompensas: recompensas as any });
 
         if (error) throw error;
         toast.success("Roleta criada com sucesso!");
@@ -148,6 +152,7 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
       onSuccess();
       onOpenChange(false);
       setNome("");
+      setDuracaoSpin(4);
       setRecompensas([
         { tipo: "Tickets", valor: "1", cor: "#006400" },
         { tipo: "Pontos de Loja", valor: "100", cor: "#98FB98" }
@@ -175,6 +180,19 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               placeholder="Ex: Roleta Principal"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="duracao">Duração do Giro (segundos)</Label>
+            <Input
+              id="duracao"
+              type="number"
+              min="1"
+              max="30"
+              value={duracaoSpin}
+              onChange={(e) => setDuracaoSpin(Math.max(1, Math.min(30, parseInt(e.target.value) || 4)))}
+              placeholder="Ex: 4"
             />
           </div>
 

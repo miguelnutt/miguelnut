@@ -12,6 +12,7 @@ interface CanvasWheelProps {
   spinning: boolean;
   labelFontSize?: number;
   showArrow?: boolean;
+  duracaoSpin?: number;
 }
 
 // Converte qualquer cor CSS para RGB
@@ -82,7 +83,7 @@ function indexAtPin(angle: number, totalSegments: number): number {
   return 0;
 }
 
-export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 52, showArrow = true }: CanvasWheelProps) {
+export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 52, showArrow = true, duracaoSpin = 4 }: CanvasWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -172,7 +173,7 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
   }, [recompensas, labelFontSize]);
 
   return (
-    <div ref={containerRef} className="wheel-canvas-container">
+    <div ref={containerRef} className="wheel-canvas-container" style={{ '--spin-duration': `${duracaoSpin}s` } as React.CSSProperties}>
       <style>{`
         .wheel-canvas-container {
           position: relative;
@@ -184,7 +185,7 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
         .wheel-canvas-wrapper {
           width: 100%;
           height: 100%;
-          transition: ${spinning ? 'transform 4s cubic-bezier(0.440, -0.205, 0.000, 1.130)' : 'none'};
+          transition: ${spinning ? 'transform var(--spin-duration, 4s) cubic-bezier(0.25, 0.1, 0.25, 1.0)' : 'none'};
           transform: rotate(${rotation}deg);
         }
 

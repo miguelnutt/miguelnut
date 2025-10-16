@@ -175,6 +175,7 @@ export type Database = {
         Row: {
           ativa: boolean
           created_at: string
+          duracao_spin: number
           id: string
           nome: string
           ordem: number | null
@@ -184,6 +185,7 @@ export type Database = {
         Insert: {
           ativa?: boolean
           created_at?: string
+          duracao_spin?: number
           id?: string
           nome: string
           ordem?: number | null
@@ -193,6 +195,7 @@ export type Database = {
         Update: {
           ativa?: boolean
           created_at?: string
+          duracao_spin?: number
           id?: string
           nome?: string
           ordem?: number | null

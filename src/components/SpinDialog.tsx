@@ -25,6 +25,7 @@ interface SpinDialogProps {
     id: string;
     nome: string;
     recompensas: Recompensa[];
+    duracao_spin: number;
   } | null;
   testMode?: boolean;
 }
@@ -233,7 +234,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
     
     setRotation(novaRotacao);
 
-    // Aguardar animação (4.5s para dar tempo do suspense)
+    // Aguardar animação (duração configurada + 0.5s de suspense)
+    const duracaoMs = (wheel?.duracao_spin || 4) * 1000;
     setTimeout(async () => {
       const nomeParaExibir = nomeUsuario.trim() || "Visitante";
       setNomeVencedor(nomeParaExibir);
@@ -251,7 +253,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         // Apenas mostra o resultado, sem ações de salvar
         return;
       }
-    }, 4500);
+    }, duracaoMs + 500);
   };
 
   return (
@@ -310,6 +312,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
                   rotation={rotation}
                   spinning={spinning}
                   labelFontSize={28}
+                  duracaoSpin={wheel.duracao_spin || 4}
                 />
               </div>
             )}

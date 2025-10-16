@@ -23,6 +23,7 @@ interface Wheel {
   recompensas: Recompensa[];
   ativa: boolean;
   ordem: number;
+  duracao_spin: number;
 }
 
 export default function Wheels() {
