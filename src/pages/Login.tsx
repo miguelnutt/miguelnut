@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Shield } from "lucide-react";
+import { FaTwitch } from "react-icons/fa";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -135,6 +136,23 @@ export default function Login() {
     } catch (error) {
       toast.error("Erro inesperado ao criar conta");
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTwitchLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'twitch',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast.error("Erro ao fazer login com Twitch: " + error.message);
       setLoading(false);
     }
   };
@@ -279,10 +297,10 @@ export default function Login() {
                 <TabsTrigger value="login">Login</TabsTrigger>
               </TabsList>
 
-            <TabsContent value="login">
+            <TabsContent value="login" className="space-y-4">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email (Admin)</Label>
                   <Input
                     id="email"
                     type="email"
@@ -307,9 +325,31 @@ export default function Login() {
                   className="w-full bg-gradient-primary"
                   disabled={loading}
                 >
-                  {loading ? "Entrando..." : "Entrar"}
+                  {loading ? "Entrando..." : "Entrar como Admin"}
                 </Button>
               </form>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Ou
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleTwitchLogin}
+                disabled={loading}
+              >
+                <FaTwitch className="mr-2 h-5 w-5" style={{ color: '#9146FF' }} />
+                Entrar com Twitch
+              </Button>
             </TabsContent>
             </Tabs>
           )}

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import QRCode from "qrcode";
@@ -26,6 +26,11 @@ export default function AccountSettings() {
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
   const { isAdmin, loading: adminLoading } = useAdmin(user);
+  const [nomePersonagem, setNomePersonagem] = useState("");
+  const [savingPersonagem, setSavingPersonagem] = useState(false);
+  const [pontosStreamElements, setPontosStreamElements] = useState<number | null>(null);
+  const [loadingPontos, setLoadingPontos] = useState(false);
+  const [twitchUsername, setTwitchUsername] = useState<string | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -42,11 +47,77 @@ export default function AccountSettings() {
 
       setUser(user);
       await checkMfaStatus();
+      await loadUserProfile(user.id);
     } catch (error) {
       console.error("Error checking user:", error);
       navigate("/login");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nome_personagem, twitch_username')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profile) {
+        setNomePersonagem(profile.nome_personagem || "");
+        setTwitchUsername(profile.twitch_username);
+        
+        // Se tem username da Twitch, buscar pontos do StreamElements
+        if (profile.twitch_username) {
+          await fetchStreamElementsPoints(profile.twitch_username);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error);
+    }
+  };
+
+  const fetchStreamElementsPoints = async (username: string) => {
+    setLoadingPontos(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-streamelements-points', {
+        body: { username }
+      });
+
+      if (error) throw error;
+      setPontosStreamElements(data?.points || 0);
+    } catch (error) {
+      console.error("Error fetching points:", error);
+      setPontosStreamElements(null);
+    } finally {
+      setLoadingPontos(false);
+    }
+  };
+
+  const handleSavePersonagem = async () => {
+    if (!user) return;
+    
+    if (!nomePersonagem.trim()) {
+      toast.error("Por favor, digite o nome do personagem");
+      return;
+    }
+
+    setSavingPersonagem(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ nome_personagem: nomePersonagem.trim() })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      
+      toast.success("Nome do personagem salvo com sucesso!");
+    } catch (error: any) {
+      console.error("Error saving character name:", error);
+      toast.error("Erro ao salvar nome do personagem");
+    } finally {
+      setSavingPersonagem(false);
     }
   };
 
@@ -150,23 +221,6 @@ export default function AccountSettings() {
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <>
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Acesso Negado</CardTitle>
-              <CardDescription>
-                Você precisa ser administrador para acessar esta página.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
@@ -180,39 +234,120 @@ export default function AccountSettings() {
         </div>
 
         <div className="space-y-4 md:space-y-6">
-          {/* Account Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg md:text-xl">Informações da Conta</CardTitle>
-              <CardDescription className="text-sm">Seus dados de login</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    value={showEmail ? (user?.email || "") : "••••••••@••••••.com"} 
-                    disabled 
-                    className="flex-1"
-                  />
+          {/* Pontos StreamElements - Apenas para usuários Twitch */}
+          {twitchUsername && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                  <Coins className="h-5 w-5 text-yellow-500" />
+                  Pontos do Canal
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Seus pontos do StreamElements
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between p-4 bg-gradient-card rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Saldo Atual</p>
+                    <p className="text-3xl font-bold text-yellow-500">
+                      {loadingPontos ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        pontosStreamElements?.toLocaleString() || "0"
+                      )}
+                    </p>
+                  </div>
                   <Button
                     variant="outline"
-                    size="icon"
-                    onClick={() => setShowEmail(!showEmail)}
-                    title={showEmail ? "Ocultar email" : "Mostrar email"}
+                    onClick={() => twitchUsername && fetchStreamElementsPoints(twitchUsername)}
+                    disabled={loadingPontos}
                   >
-                    {showEmail ? (
-                      <EyeOff className="h-4 w-4" />
+                    {loadingPontos ? "Atualizando..." : "Atualizar"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Nome do Personagem - Apenas para usuários Twitch */}
+          {twitchUsername && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                  <UserIcon className="h-5 w-5" />
+                  Nome do Personagem
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Cadastre o nome do seu personagem no jogo para receber Rubini Coins mais rápido
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome-personagem">Nome do Personagem</Label>
+                    <Input
+                      id="nome-personagem"
+                      value={nomePersonagem}
+                      onChange={(e) => setNomePersonagem(e.target.value)}
+                      placeholder="Digite o nome do seu personagem"
+                      maxLength={50}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSavePersonagem}
+                    disabled={savingPersonagem || !nomePersonagem.trim()}
+                  >
+                    {savingPersonagem ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      "Salvar Nome"
                     )}
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* 2FA Settings */}
+          {/* Account Info - Apenas para admin */}
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg md:text-xl">Informações da Conta</CardTitle>
+                <CardDescription className="text-sm">Seus dados de login</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={showEmail ? (user?.email || "") : "••••••••@••••••.com"} 
+                      disabled 
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowEmail(!showEmail)}
+                      title={showEmail ? "Ocultar email" : "Mostrar email"}
+                    >
+                      {showEmail ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 2FA Settings - Apenas para admin */}
+          {isAdmin && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
@@ -334,6 +469,7 @@ export default function AccountSettings() {
               )}
             </CardContent>
           </Card>
+          )}
         </div>
       </div>
     </>

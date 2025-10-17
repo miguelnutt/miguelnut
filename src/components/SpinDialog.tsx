@@ -48,6 +48,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const rewardAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [nomePersonagem, setNomePersonagem] = useState<string | null>(null);
 
   // Inicializar áudio de recompensa
   useEffect(() => {
@@ -365,11 +366,21 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
             </div>
 
             {resultado && (
-              <div className="p-6 bg-gradient-card rounded-lg shadow-glow">
-                <p className="text-lg text-muted-foreground mb-2">Ganhou:</p>
-                <p className="text-4xl font-bold text-foreground">
-                  {resultado.valor} {resultado.tipo}
-                </p>
+              <div className="p-6 bg-gradient-card rounded-lg shadow-glow space-y-4">
+                <div>
+                  <p className="text-lg text-muted-foreground mb-2">Ganhou:</p>
+                  <p className="text-4xl font-bold text-foreground">
+                    {resultado.valor} {resultado.tipo}
+                  </p>
+                </div>
+                {resultado.tipo === "Rubini Coins" && nomePersonagem && (
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">Personagem:</p>
+                    <p className="text-xl font-semibold text-primary">
+                      {nomePersonagem}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
