@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User, Settings, Menu, X } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
 import profileImage from "@/assets/profile-miguelnut.png";
 import { useTwitchStatus } from "@/hooks/useTwitchStatus";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export const Navbar = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
+  const { isAdmin } = useAdmin(session?.user ?? null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
@@ -82,10 +84,15 @@ export const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <Link
               to="/"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Início
+            </Link>
+            <Link
+              to="/dashboard"
               className="text-sm font-medium transition-colors hover:text-primary"
             >
               Dashboard
@@ -132,8 +139,19 @@ export const Navbar = () => {
                     className="rounded-full"
                     title="Configurações da Conta"
                   >
-                    <Settings className="h-5 w-5" />
+                    <SettingsIcon className="h-5 w-5" />
                   </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => navigate("/settings")}
+                      className="rounded-full"
+                      title="Configurações do Site"
+                    >
+                      <SettingsIcon className="h-5 w-5 text-primary" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -177,12 +195,18 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-4">
               <Link
                 to="/"
+                className="text-sm font-medium transition-colors hover:text-primary px-2 py-1"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Início
+              </Link>
+              <Link
+                to="/dashboard"
                 className="text-sm font-medium transition-colors hover:text-primary px-2 py-1"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -221,9 +245,22 @@ export const Navbar = () => {
                       }}
                       className="w-full justify-start"
                     >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Configurações
+                      <SettingsIcon className="mr-2 h-4 w-4" />
+                      Configurações da Conta
                     </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          navigate("/settings");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full justify-start"
+                      >
+                        <SettingsIcon className="mr-2 h-4 w-4 text-primary" />
+                        Configurações do Site
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       onClick={() => {
