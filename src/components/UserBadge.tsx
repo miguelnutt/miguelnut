@@ -22,13 +22,19 @@ export function UserBadge({ user, onLogout }: UserBadgeProps) {
     setError(null);
     
     try {
-      const { data, error: fetchError } = await supabase.functions.invoke('loyalty-balance', {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/loyalty-balance`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
 
-      if (fetchError) throw fetchError;
+      const data = await response.json();
 
       if (data.success) {
         setBalance(data.balance);

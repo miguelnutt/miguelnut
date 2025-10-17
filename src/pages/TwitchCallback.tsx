@@ -43,15 +43,24 @@ export default function TwitchCallback() {
       const redirectUri = `${window.location.origin}/auth/twitch/callback`;
 
       // Trocar código por token via edge function
-      const { data, error: exchangeError } = await supabase.functions.invoke('twitch-auth-exchange', {
-        body: {
-          code,
-          code_verifier: codeVerifier,
-          redirect_uri: redirectUri,
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-auth-exchange`,
+        {
+          method: 'POST',
+          credentials: 'include', // IMPORTANTE: Permite receber cookies
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            code,
+            code_verifier: codeVerifier,
+            redirect_uri: redirectUri,
+          }),
+        }
+      );
 
-      if (exchangeError) throw exchangeError;
+      const data = await response.json();
 
       if (!data.success) {
         throw new Error(data.error || 'Authentication failed');

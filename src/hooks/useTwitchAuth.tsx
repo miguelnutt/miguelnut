@@ -19,13 +19,19 @@ export function useTwitchAuth() {
 
   const checkAuth = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('twitch-auth-me', {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-auth-me`,
+        {
+          method: 'POST',
+          credentials: 'include', // IMPORTANTE: Envia cookies
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
 
-      if (error) throw error;
+      const data = await response.json();
 
       if (data.success && data.user) {
         setUser(data.user);
@@ -42,7 +48,17 @@ export function useTwitchAuth() {
 
   const logout = async () => {
     try {
-      await supabase.functions.invoke('twitch-auth-logout');
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-auth-logout`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
