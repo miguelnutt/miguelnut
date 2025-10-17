@@ -114,14 +114,15 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         return;
       }
 
-      // Salvar o spin
+      // Salvar o spin com tipo correto para RC
+      const tipoParaSalvar = resultado.tipo === "Rubini Coins" ? "RC" : resultado.tipo;
       const { error: spinError } = await supabase
         .from("spins")
         .insert({
           wheel_id: wheel.id,
           user_id: userId,
           nome_usuario: nomeParaUsar,
-          tipo_recompensa: resultado.tipo,
+          tipo_recompensa: tipoParaSalvar,
           valor: resultado.valor
         });
 

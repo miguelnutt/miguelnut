@@ -31,6 +31,8 @@ interface Raffle {
   nome_vencedor: string;
   created_at: string;
   participantes: any;
+  tipo_premio: string;
+  valor_premio: number;
 }
 
 interface TicketHistory {
@@ -740,6 +742,9 @@ export default function Tickets() {
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {formatDate(raffle.created_at)}
+                      </div>
+                      <div className="text-xs text-primary font-semibold mt-1">
+                        Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {raffle.participantes?.length || 0} participantes

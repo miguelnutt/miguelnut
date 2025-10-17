@@ -115,7 +115,21 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
 
   const updateRecompensa = (index: number, field: keyof Recompensa, value: string) => {
     const updated = [...recompensas];
-    updated[index] = { ...updated[index], [field]: value };
+    
+    // Se for Rubini Coins e estiver mudando o valor, garantir múltiplo de 25
+    if (field === "valor" && updated[index].tipo === "Rubini Coins") {
+      const numValue = parseInt(value) || 0;
+      const roundedValue = Math.round(numValue / 25) * 25;
+      updated[index] = { ...updated[index], [field]: roundedValue.toString() };
+    } else if (field === "tipo" && value === "Rubini Coins") {
+      // Se mudou para Rubini Coins, ajustar valor para múltiplo de 25
+      const currentValue = parseInt(updated[index].valor) || 25;
+      const roundedValue = Math.round(currentValue / 25) * 25 || 25;
+      updated[index] = { ...updated[index], tipo: value as any, valor: roundedValue.toString() };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    
     setRecompensas(updated);
   };
 

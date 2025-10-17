@@ -32,6 +32,8 @@ interface RecentRaffle {
   id: string;
   nome_vencedor: string;
   created_at: string;
+  tipo_premio: string;
+  valor_premio: number;
 }
 
 type PeriodType = "today" | "week" | "month" | "custom" | "all";
@@ -145,7 +147,7 @@ export default function Dashboard() {
       }
       const { count: rafflesCount } = await rafflesQuery;
 
-      // Total de RC's pagos
+      // Total de RC's pagos (da roleta + dos sorteios)
       let rcQuery = supabase
         .from("spins")
         .select("valor, tipo_recompensa")
@@ -154,7 +156,20 @@ export default function Dashboard() {
         rcQuery = rcQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
       const { data: rcData } = await rcQuery;
-      const totalRC = rcData?.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0) || 0;
+      const totalRCSpins = rcData?.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0) || 0;
+
+      // Somar RC dos sorteios
+      let rcRafflesQuery = supabase
+        .from("raffles")
+        .select("valor_premio, tipo_premio")
+        .eq("tipo_premio", "Rubini Coins");
+      if (startDate && endDate) {
+        rcRafflesQuery = rcRafflesQuery.gte("created_at", startDate).lte("created_at", endDate);
+      }
+      const { data: rcRafflesData } = await rcRafflesQuery;
+      const totalRCRaffles = rcRafflesData?.reduce((sum, r) => sum + (r.valor_premio || 0), 0) || 0;
+
+      const totalRC = totalRCSpins + totalRCRaffles;
 
       setStats({
         totalSpins: spinsCount || 0,
@@ -405,13 +420,18 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-3">
                   {recentRaffles.map((raffle) => (
-                    <div key={raffle.id} className="flex justify-between items-center p-3 bg-gradient-card rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-primary" />
-                        <p className="font-medium">{raffle.nome_vencedor}</p>
+                    <div key={raffle.id} className="p-3 bg-gradient-card rounded-lg">
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center gap-2">
+                          <Trophy className="h-5 w-5 text-primary" />
+                          <p className="font-medium">{raffle.nome_vencedor}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(raffle.created_at)}
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(raffle.created_at)}
+                      <p className="text-sm text-muted-foreground ml-7">
+                        Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
                       </p>
                     </div>
                   ))}

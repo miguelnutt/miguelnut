@@ -42,6 +42,8 @@ export type Database = {
           nome_vencedor: string
           observacoes: string | null
           participantes: Json
+          tipo_premio: string | null
+          valor_premio: number | null
           vencedor_id: string | null
         }
         Insert: {
@@ -50,6 +52,8 @@ export type Database = {
           nome_vencedor: string
           observacoes?: string | null
           participantes?: Json
+          tipo_premio?: string | null
+          valor_premio?: number | null
           vencedor_id?: string | null
         }
         Update: {
@@ -58,6 +62,8 @@ export type Database = {
           nome_vencedor?: string
           observacoes?: string | null
           participantes?: Json
+          tipo_premio?: string | null
+          valor_premio?: number | null
           vencedor_id?: string | null
         }
         Relationships: []

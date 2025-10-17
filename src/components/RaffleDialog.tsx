@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { Trophy } from "lucide-react";
@@ -20,6 +21,8 @@ interface RaffleDialogProps {
   onSuccess: () => void;
 }
 
+type TipoPremio = "Pontos de Loja" | "Rubini Coins";
+
 const raffleSchema = z.object({
   observacoes: z.string().trim().max(1000, "Observações muito longas (máximo 1000 caracteres)").optional()
 });
@@ -31,12 +34,16 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
   const [vencedor, setVencedor] = useState<Participante | null>(null);
   const [observacoes, setObservacoes] = useState("");
   const [isModoTeste, setIsModoTeste] = useState(false);
+  const [tipoPremio, setTipoPremio] = useState<TipoPremio>("Rubini Coins");
+  const [valorPremio, setValorPremio] = useState<number>(25);
 
   useEffect(() => {
     if (open) {
       fetchParticipantes();
       setVencedor(null);
       setIsModoTeste(false);
+      setTipoPremio("Rubini Coins");
+      setValorPremio(25);
     }
   }, [open]);
 
@@ -119,12 +126,14 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       }
 
       try {
-        // Salvar sorteio
+        // Salvar sorteio com prêmio
         const { error: raffleError } = await supabase
           .from("raffles")
           .insert({
             vencedor_id: vencedorSorteado.user_id,
             nome_vencedor: vencedorSorteado.nome,
+            tipo_premio: tipoPremio,
+            valor_premio: valorPremio,
             participantes: participantes.map(p => ({
               user_id: p.user_id,
               nome: p.nome,
@@ -192,6 +201,61 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
               </p>
             </div>
           )}
+
+          {/* Seleção de Prêmio */}
+          <div className="space-y-3 p-4 bg-gradient-card rounded-lg">
+            <h3 className="font-semibold text-sm">Prêmio do Sorteio</h3>
+            <div className="grid gap-3">
+              <div>
+                <Label htmlFor="tipoPremio" className="text-sm">Tipo de Prêmio</Label>
+                <select
+                  id="tipoPremio"
+                  value={tipoPremio}
+                  onChange={(e) => {
+                    const newTipo = e.target.value as TipoPremio;
+                    setTipoPremio(newTipo);
+                    // Se mudou para Rubini Coins, ajustar para múltiplo de 25
+                    if (newTipo === "Rubini Coins") {
+                      const rounded = Math.round(valorPremio / 25) * 25 || 25;
+                      setValorPremio(rounded);
+                    }
+                  }}
+                  disabled={drawing}
+                  className="w-full px-3 py-2 border rounded-md bg-background"
+                >
+                  <option value="Pontos de Loja">Pontos de Loja</option>
+                  <option value="Rubini Coins">Rubini Coins</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="valorPremio" className="text-sm">
+                  Valor {tipoPremio === "Rubini Coins" && "(múltiplos de 25)"}
+                </Label>
+                <Input
+                  id="valorPremio"
+                  type="number"
+                  min={tipoPremio === "Rubini Coins" ? 25 : 1}
+                  step={tipoPremio === "Rubini Coins" ? 25 : 1}
+                  value={valorPremio}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 0;
+                    if (tipoPremio === "Rubini Coins") {
+                      const rounded = Math.round(value / 25) * 25 || 25;
+                      setValorPremio(rounded);
+                    } else {
+                      setValorPremio(value);
+                    }
+                  }}
+                  disabled={drawing}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {tipoPremio === "Rubini Coins" 
+                    ? "Somente múltiplos de 25 são permitidos" 
+                    : "Digite a quantidade de pontos"}
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div>
             <h3 className="font-semibold mb-2">
