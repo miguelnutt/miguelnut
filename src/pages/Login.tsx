@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Shield } from "lucide-react";
+import { AlertCircle, Loader2, Shield, ArrowLeft } from "lucide-react";
+import profileImage from "@/assets/profile-miguelnut.png";
 
 
 export default function Login() {
@@ -226,11 +227,28 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-glow">
-        <CardHeader className="text-center">
-          <div className="mx-auto h-12 w-12 rounded-lg bg-gradient-primary mb-4" />
-          <CardTitle className="text-2xl bg-gradient-primary bg-clip-text text-transparent">
-            {hasAdmin ? "Acesso Administrativo" : "Primeiro Acesso - Criar Admin"}
-          </CardTitle>
+        <CardHeader className="text-center space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="absolute top-4 left-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar ao site
+          </Button>
+          
+          <img 
+            src={profileImage} 
+            alt="Profile" 
+            className="mx-auto h-20 w-20 rounded-full object-cover"
+          />
+          
+          {!hasAdmin && (
+            <CardTitle className="text-2xl">
+              Primeiro Acesso - Criar Conta
+            </CardTitle>
+          )}
         </CardHeader>
         <CardContent>
           {!hasAdmin ? (
@@ -238,17 +256,16 @@ export default function Login() {
               <Alert className="mb-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Este é o primeiro acesso ao sistema. A conta que você criar agora será o administrador único. 
-                  Após este cadastro, não será mais possível criar novas contas.
+                  Este é o primeiro acesso ao sistema. Após criar esta conta, não será mais possível criar novas contas.
                 </AlertDescription>
               </Alert>
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email do Administrador</Label>
+                  <Label htmlFor="signup-email">Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="admin@exemplo.com"
+                    placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -270,7 +287,7 @@ export default function Login() {
                   className="w-full bg-gradient-primary"
                   disabled={loading}
                 >
-                  {loading ? "Criando conta..." : "Criar Conta de Administrador"}
+                  {loading ? "Criando conta..." : "Criar Conta"}
                 </Button>
               </form>
             </>
@@ -283,11 +300,11 @@ export default function Login() {
             <TabsContent value="login" className="space-y-4">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email (Admin)</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@exemplo.com"
+                    placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -308,7 +325,7 @@ export default function Login() {
                   className="w-full bg-gradient-primary"
                   disabled={loading}
                 >
-                  {loading ? "Entrando..." : "Entrar como Admin"}
+                  {loading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
 
