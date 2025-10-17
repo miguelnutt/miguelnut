@@ -51,12 +51,17 @@ export function TwitchLoginButton() {
       console.log('✅ Salvou no sessionStorage');
 
       const TWITCH_CLIENT_ID = "gvbk9smrzjp6wrdq5hzhyf9xhk1k43";
-      const redirectUri = `${window.location.origin}/auth/twitch/callback`;
+      
+      // CRITICAL: Twitch requires HTTPS redirect URIs
+      // Always use HTTPS, even if current page is HTTP
+      const origin = window.location.origin.replace('http://', 'https://');
+      const redirectUri = `${origin}/auth/twitch/callback`;
 
       console.log('🔐 Iniciando login Twitch...');
       console.log('📍 Redirect URI:', redirectUri);
       console.log('🔑 Client ID:', TWITCH_CLIENT_ID);
-      console.log('🌐 Origin:', window.location.origin);
+      console.log('🌐 Origin original:', window.location.origin);
+      console.log('🔒 Origin com HTTPS:', origin);
 
       // Redirecionar para Twitch OAuth
       const authUrl = new URL('https://id.twitch.tv/oauth2/authorize');
