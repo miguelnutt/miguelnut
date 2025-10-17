@@ -67,13 +67,18 @@ export default function TwitchCallback() {
         throw new Error(data.error || 'Authentication failed');
       }
 
+      // Salvar token no localStorage
+      if (data.token) {
+        localStorage.setItem('twitch_token', data.token);
+      }
+
       // Limpar localStorage
       localStorage.removeItem('twitch_code_verifier');
       localStorage.removeItem('twitch_state');
 
       toast.success(`Bem-vindo, ${data.user.display_name}!`);
       
-      // Forçar reload para atualizar o estado do auth
+      // Redirecionar para home
       window.location.href = '/';
     } catch (error: any) {
       console.error('Callback error:', error);

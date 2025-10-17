@@ -19,32 +19,37 @@ export function useTwitchAuth() {
 
   const checkAuth = async () => {
     try {
-      console.log('🔍 Checking Twitch auth...');
+      const token = localStorage.getItem('twitch_token');
       
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-auth-me`,
         {
           method: 'POST',
-          credentials: 'include', // IMPORTANTE: Envia cookies
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
         }
       );
 
       const data = await response.json();
-      console.log('📦 Auth response:', data);
 
       if (data.success && data.user) {
-        console.log('✅ User authenticated:', data.user.display_name);
         setUser(data.user);
       } else {
-        console.log('❌ Not authenticated');
+        localStorage.removeItem('twitch_token');
         setUser(null);
       }
     } catch (error) {
       console.error('Auth check error:', error);
+      localStorage.removeItem('twitch_token');
       setUser(null);
     } finally {
       setLoading(false);
@@ -53,18 +58,18 @@ export function useTwitchAuth() {
 
   const logout = async () => {
     try {
+      localStorage.removeItem('twitch_token');
+      setUser(null);
       await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-auth-logout`,
         {
           method: 'POST',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
         }
       );
-      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
     }

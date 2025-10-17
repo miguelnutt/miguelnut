@@ -32,15 +32,11 @@ serve(async (req) => {
   }
 
   try {
-    // Log para debug
-    const cookies = req.headers.get('cookie') || '';
-    console.log('📨 Received cookies:', cookies ? 'YES' : 'NO');
-    console.log('🍪 Cookie header:', cookies);
+    // Pegar token do header Authorization
+    const authHeader = req.headers.get('authorization') || '';
+    const tokenMatch = authHeader.match(/Bearer (.+)/);
     
-    const sessionMatch = cookies.match(/twitch_session=([^;]+)/);
-    
-    if (!sessionMatch) {
-      console.log('❌ No twitch_session cookie found');
+    if (!tokenMatch) {
       return new Response(
         JSON.stringify({ success: false, error: 'Not authenticated' }),
         { 
@@ -50,8 +46,7 @@ serve(async (req) => {
       );
     }
 
-    const sessionToken = sessionMatch[1];
-    console.log('✅ Session token found, verifying...');
+    const sessionToken = tokenMatch[1];
     const payload = await verifyJWT(sessionToken);
 
     return new Response(

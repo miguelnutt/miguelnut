@@ -141,30 +141,14 @@ serve(async (req) => {
 
     const sessionToken = await generateJWT(sessionPayload);
 
-    // 5. Criar cookie HttpOnly (sem Secure para funcionar em HTTP também)
+    // 5. Retornar token no response (não usar cookie cross-domain)
     const headers = new Headers(corsHeaders);
     headers.set('Content-Type', 'application/json');
-    
-    const cookieOptions = [
-      `twitch_session=${sessionToken}`,
-      'HttpOnly',
-      'SameSite=Lax',
-      'Path=/',
-      `Max-Age=${7 * 24 * 60 * 60}`
-    ];
-    
-    // Adicionar Secure apenas se for HTTPS
-    if (origin?.includes('https://')) {
-      cookieOptions.push('Secure');
-    }
-    
-    headers.append('Set-Cookie', cookieOptions.join('; '));
-    
-    console.log('🍪 Cookie set for:', twitchUser.login);
 
     return new Response(
       JSON.stringify({
         success: true,
+        token: sessionToken, // Enviar token no response
         user: {
           twitch_user_id: twitchUser.id,
           login: twitchUser.login,

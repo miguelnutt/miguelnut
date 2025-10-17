@@ -98,13 +98,13 @@ serve(async (req) => {
   }
 
   try {
-    // Extrair cookie da requisição
-    const cookies = req.headers.get('cookie') || '';
-    const sessionMatch = cookies.match(/twitch_session=([^;]+)/);
+    // Verificar autenticação via token no header
+    const authHeader = req.headers.get('authorization') || '';
+    const tokenMatch = authHeader.match(/Bearer (.+)/);
     
-    if (!sessionMatch) {
+    if (!tokenMatch) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Not authenticated' }),
+        JSON.stringify({ error: 'Not authenticated' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401 
@@ -112,8 +112,8 @@ serve(async (req) => {
       );
     }
 
-    const sessionToken = sessionMatch[1];
-    const payload = await verifyJWT(sessionToken);
+    const token = tokenMatch[1];
+    const payload = await verifyJWT(token);
 
     // Obter twitch_login do JWT ou query parameter
     const url = new URL(req.url);

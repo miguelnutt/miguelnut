@@ -22,13 +22,18 @@ export function UserBadge({ user, onLogout }: UserBadgeProps) {
     setError(null);
     
     try {
+      const token = localStorage.getItem('twitch_token');
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/loyalty-balance`,
         {
           method: 'POST',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
         }
