@@ -123,29 +123,41 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
     try {
       const nomeParaUsar = nomeVencedor || "Visitante";
       
-      // Buscar perfil por nome OU twitch_username (case-insensitive)
+      // SEMPRE buscar por twitch_username primeiro (case-insensitive)
       console.log("Buscando perfil para:", nomeParaUsar);
-      const { data: existingProfiles, error: searchError } = await supabase
+      
+      // Tentar buscar por twitch_username primeiro
+      const { data: profileByTwitch } = await supabase
         .from('profiles')
         .select('id, nome, twitch_username, nome_personagem')
-        .or(`nome.ilike.${nomeParaUsar},twitch_username.ilike.${nomeParaUsar}`)
-        .limit(1);
-
-      console.log("Perfis encontrados:", existingProfiles);
+        .ilike('twitch_username', nomeParaUsar)
+        .maybeSingle();
+      
+      // Se não encontrou por twitch_username, buscar por nome
+      const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
+        .from('profiles')
+        .select('id, nome, twitch_username, nome_personagem')
+        .ilike('nome', nomeParaUsar)
+        .maybeSingle();
+      
+      const profileData = profileByTwitch || profileByName;
+      console.log("Perfil encontrado:", profileData);
 
       let userId: string;
-      let profileData = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0] : null;
 
       if (profileData) {
         // Perfil encontrado
         userId = profileData.id;
         console.log("Usando perfil existente:", userId);
       } else {
-        // Criar novo perfil se não existir
+        // Criar novo perfil
         console.log("Criando novo perfil para:", nomeParaUsar);
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
-          .insert({ nome: nomeParaUsar })
+          .insert({ 
+            nome: nomeParaUsar,
+            twitch_username: nomeParaUsar // Assumir que é username da Twitch
+          })
           .select('id')
           .single();
 
