@@ -296,7 +296,7 @@ export default function AccountSettings() {
     );
   }
 
-  if (!twitchUser) {
+  if (!twitchUser && !isAdmin) {
     return (
       <>
         <Navbar />
@@ -305,7 +305,7 @@ export default function AccountSettings() {
             <CardHeader>
               <CardTitle>Acesso Negado</CardTitle>
               <CardDescription>
-                Você precisa estar logado com a Twitch para acessar as configurações da conta
+                Você precisa estar logado com a Twitch ou ser administrador para acessar as configurações da conta
               </CardDescription>
             </CardHeader>
           </Card>
@@ -326,7 +326,8 @@ export default function AccountSettings() {
         </div>
 
         <div className="space-y-4 md:space-y-6">
-          {/* Pontos StreamElements */}
+          {/* Pontos StreamElements - Só para usuários Twitch */}
+          {twitchUser && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
@@ -371,8 +372,10 @@ export default function AccountSettings() {
               </div>
             </CardContent>
           </Card>
+          )}
 
-          {/* Nome do Personagem */}
+          {/* Nome do Personagem - Só para usuários Twitch */}
+          {twitchUser && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
@@ -445,7 +448,7 @@ export default function AccountSettings() {
               </div>
             </CardContent>
           </Card>
-
+          )}
           {/* Account Info - Apenas para admin */}
           {isAdmin && (
             <Card>

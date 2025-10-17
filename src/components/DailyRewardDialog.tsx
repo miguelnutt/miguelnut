@@ -174,15 +174,22 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
                       relative p-3 rounded-lg border-2 text-center transition-all
                       ${isCurrent ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border'}
                       ${isCompleted ? 'bg-green-500/10 border-green-500/50' : ''}
+                      ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-90' : ''}
                     `}
                   >
                     {(isCompleted || (jaResgatouHoje && isCurrent)) && (
-                      <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
-                        <Check className="h-3 w-3 text-white" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-green-500 rounded-full p-2">
+                          <Check className="h-6 w-6 text-white" strokeWidth={3} />
+                        </div>
                       </div>
                     )}
-                    <div className="text-xs text-muted-foreground mb-1">Dia {reward.dia}</div>
-                    <div className="font-semibold text-sm">{reward.pontos} pts</div>
+                    <div className={`text-xs text-muted-foreground mb-1 ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-30' : ''}`}>
+                      Dia {reward.dia}
+                    </div>
+                    <div className={`font-semibold text-sm ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-30' : ''}`}>
+                      {reward.pontos} pts
+                    </div>
                   </div>
                 );
               })}
