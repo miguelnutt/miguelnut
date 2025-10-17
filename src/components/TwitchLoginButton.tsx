@@ -27,7 +27,8 @@ export function TwitchLoginButton() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    console.log('🎯 Botão clicado!');
+    console.log('🎯 NOVO BOTÃO - Botão clicado!');
+    console.log('📦 Versão: 2.0');
     
     try {
       setLoading(true);
@@ -49,8 +50,6 @@ export function TwitchLoginButton() {
       sessionStorage.setItem('twitch_state', state);
       console.log('✅ Salvou no sessionStorage');
 
-      // ⚠️ IMPORTANTE: Pegue este Client ID do seu app "lovableproject.auth" no console da Twitch
-      // Vá em https://dev.twitch.tv/console/apps e copie o Client ID do app correto
       const TWITCH_CLIENT_ID = "gvbk9smrzjp6wrdq5hzhyf9xhk1k43";
       const redirectUri = `${window.location.origin}/auth/twitch/callback`;
 
@@ -90,10 +89,10 @@ export function TwitchLoginButton() {
       onClick={handleLogin}
       disabled={loading}
       variant="outline"
-      className="w-full"
+      className="w-full gap-2"
     >
-      <FaTwitch className="mr-2 h-5 w-5" style={{ color: '#9146FF' }} />
-      {loading ? 'Conectando...' : 'Entrar com Twitch'}
+      <FaTwitch className="h-5 w-5" style={{ color: '#9146FF' }} />
+      {loading ? '🔄 Conectando...' : '🎮 Login com Twitch (v2)'}
     </Button>
   );
 }
