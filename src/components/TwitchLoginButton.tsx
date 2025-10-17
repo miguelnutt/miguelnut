@@ -27,19 +27,27 @@ export function TwitchLoginButton() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    console.log('🎯 Botão clicado!');
+    
     try {
       setLoading(true);
+      console.log('⏳ Loading ativado');
 
       // PKCE
       const codeVerifier = generateCodeVerifier();
+      console.log('✅ Code verifier gerado:', codeVerifier.substring(0, 20) + '...');
+      
       const codeChallenge = await generateCodeChallenge(codeVerifier);
+      console.log('✅ Code challenge gerado:', codeChallenge.substring(0, 20) + '...');
       
       // State para CSRF
       const state = Math.random().toString(36).substring(7);
+      console.log('✅ State gerado:', state);
       
       // Salvar no sessionStorage
       sessionStorage.setItem('twitch_code_verifier', codeVerifier);
       sessionStorage.setItem('twitch_state', state);
+      console.log('✅ Salvou no sessionStorage');
 
       // ⚠️ IMPORTANTE: Pegue este Client ID do seu app "lovableproject.auth" no console da Twitch
       // Vá em https://dev.twitch.tv/console/apps e copie o Client ID do app correto
@@ -49,6 +57,7 @@ export function TwitchLoginButton() {
       console.log('🔐 Iniciando login Twitch...');
       console.log('📍 Redirect URI:', redirectUri);
       console.log('🔑 Client ID:', TWITCH_CLIENT_ID);
+      console.log('🌐 Origin:', window.location.origin);
 
       // Redirecionar para Twitch OAuth
       const authUrl = new URL('https://id.twitch.tv/oauth2/authorize');
@@ -60,9 +69,15 @@ export function TwitchLoginButton() {
       authUrl.searchParams.set('code_challenge', codeChallenge);
       authUrl.searchParams.set('code_challenge_method', 'S256');
 
-      console.log('🌐 URL de autenticação:', authUrl.toString());
+      const finalUrl = authUrl.toString();
+      console.log('🌐 URL COMPLETA:', finalUrl);
+      console.log('🚀 Redirecionando em 2 segundos...');
 
-      window.location.href = authUrl.toString();
+      // Aguardar um pouco para ver os logs
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('🚀 REDIRECIONANDO AGORA!');
+      window.location.href = finalUrl;
     } catch (error) {
       console.error('❌ Erro no login:', error);
       toast.error('Erro ao iniciar login com Twitch');
