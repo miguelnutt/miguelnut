@@ -150,6 +150,10 @@ export default function SiteSettings() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="text-sm p-3 bg-primary/10 text-primary rounded-lg mb-4">
+              💡 <strong>Vídeo Padrão Atual:</strong> Já existe um vídeo configurado. Você pode trocar abaixo se quiser mostrar outra live.
+            </div>
+            
             <div>
               <Label htmlFor="youtube">URL ou ID da Última Live do YouTube</Label>
               <Input

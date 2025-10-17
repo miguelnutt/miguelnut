@@ -5,9 +5,12 @@ import { supabase } from "@/lib/supabase-helper";
 import { useTwitchStatus } from "@/hooks/useTwitchStatus";
 import { Loader2, Radio, Youtube } from "lucide-react";
 
+// Vídeo padrão - última live do canal
+const DEFAULT_VIDEO_ID = "EeF3UTkCoxY"; // Você pode trocar isso depois
+
 export default function Index() {
   const { isLive, loading: twitchLoading } = useTwitchStatus();
-  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string>(DEFAULT_VIDEO_ID);
   const [settingsLoading, setSettingsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,11 +37,16 @@ export default function Index() {
 
       if (error) throw error;
       
-      if (data) {
+      // Se o admin configurou um vídeo, usa ele. Senão usa o padrão
+      if (data && data.youtube_video_id) {
         setYoutubeVideoId(data.youtube_video_id);
+      } else {
+        setYoutubeVideoId(DEFAULT_VIDEO_ID);
       }
     } catch (error: any) {
       console.error("Error fetching settings:", error);
+      // Em caso de erro, usa o vídeo padrão
+      setYoutubeVideoId(DEFAULT_VIDEO_ID);
     } finally {
       setSettingsLoading(false);
     }
@@ -82,7 +90,7 @@ export default function Index() {
                     />
                   </div>
                 </div>
-              ) : youtubeVideoId ? (
+              ) : (
                 <div className="space-y-4 p-4 md:p-6">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Youtube className="h-5 w-5" />
@@ -109,11 +117,6 @@ export default function Index() {
                       Visite o canal completo no YouTube →
                     </a>
                   </div>
-                </div>
-              ) : (
-                <div className="p-8 md:p-12 text-center text-muted-foreground">
-                  <p className="text-lg">Nenhum conteúdo disponível no momento</p>
-                  <p className="text-sm mt-2">O admin ainda não configurou a última live do YouTube</p>
                 </div>
               )}
             </CardContent>
