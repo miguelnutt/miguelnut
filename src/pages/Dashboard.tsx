@@ -244,7 +244,7 @@ export default function Dashboard() {
       if (error) throw error;
 
       toast.success(currentPago ? "Marcado como não pago" : "Marcado como pago!");
-      await fetchData();
+      fetchData();
     } catch (error: any) {
       console.error("Error updating payment status:", error);
       toast.error("Erro ao atualizar status: " + error.message);
