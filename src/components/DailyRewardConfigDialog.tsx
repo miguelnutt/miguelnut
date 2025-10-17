@@ -61,22 +61,30 @@ export function DailyRewardConfigDialog({ open, onOpenChange }: DailyRewardConfi
   const handleSave = async () => {
     setSaving(true);
     try {
+      console.log("Salvando recompensas diárias:", rewards);
+      
       const updates = rewards.map(reward => ({
         dia: reward.dia,
         pontos: reward.pontos,
       }));
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('daily_reward_config')
-        .upsert(updates);
+        .upsert(updates, { 
+          onConflict: 'dia',
+          ignoreDuplicates: false 
+        })
+        .select();
+
+      console.log("Resultado do upsert:", { data, error });
 
       if (error) throw error;
 
       toast.success("Configurações salvas com sucesso!");
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Erro ao salvar:", error);
-      toast.error("Erro ao salvar configurações");
+      console.error("Erro ao salvar recompensas:", error);
+      toast.error("Erro ao salvar: " + (error.message || "Erro desconhecido"));
     } finally {
       setSaving(false);
     }
