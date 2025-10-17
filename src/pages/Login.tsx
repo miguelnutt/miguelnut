@@ -185,24 +185,6 @@ export default function Login() {
   const handleTwitchLogin = async () => {
     try {
       setLoading(true);
-      
-      // Primeiro, habilitar o provider Twitch
-      console.log("Habilitando provider Twitch...");
-      const { data: enableData, error: enableError } = await supabase.functions.invoke(
-        'enable-twitch-provider'
-      );
-
-      if (enableError) {
-        console.error("Erro ao habilitar provider:", enableError);
-        toast.error("Erro de configuração: " + enableError.message);
-        return;
-      }
-
-      console.log("Provider habilitado:", enableData);
-
-      // Aguardar um pouco para a configuração propagar
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
       const redirectUrl = `${window.location.origin}/login`;
       
       console.log("Iniciando login Twitch com redirect:", redirectUrl);
