@@ -24,6 +24,11 @@ serve(async (req) => {
     }
 
     // 1. Trocar o código por access token
+    const redirectUri = `${new URL(req.url).origin}/login`;
+    
+    console.log('Usando redirect_uri:', redirectUri);
+    console.log('Client ID:', TWITCH_CLIENT_ID);
+    
     const tokenResponse = await fetch('https://id.twitch.tv/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -32,14 +37,15 @@ serve(async (req) => {
         client_secret: TWITCH_CLIENT_SECRET,
         code: code,
         grant_type: 'authorization_code',
-        redirect_uri: `${new URL(req.url).origin}/login`,
+        redirect_uri: redirectUri,
       }),
     });
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('Twitch token error:', errorText);
-      throw new Error('Failed to get Twitch access token');
+      console.error('Redirect URI usado:', redirectUri);
+      throw new Error(`Failed to get Twitch access token: ${errorText}`);
     }
 
     const { access_token } = await tokenResponse.json();
