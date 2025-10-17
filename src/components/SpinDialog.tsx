@@ -123,34 +123,50 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
     try {
       const nomeParaUsar = nomeVencedor || "Visitante";
       
-      // Usar a função que busca ou cria o perfil automaticamente
-      const { data: userId, error: profileError } = await supabase
-        .rpc("get_or_create_profile_by_name", { p_nome: nomeParaUsar });
+      // Buscar perfil por nome OU twitch_username (case-insensitive)
+      console.log("Buscando perfil para:", nomeParaUsar);
+      const { data: existingProfiles, error: searchError } = await supabase
+        .from('profiles')
+        .select('id, nome, twitch_username, nome_personagem')
+        .or(`nome.ilike.${nomeParaUsar},twitch_username.ilike.${nomeParaUsar}`)
+        .limit(1);
 
-      if (profileError) {
-        console.error("Error getting/creating profile:", profileError);
-        toast.error("Erro ao processar usuário");
-        setAwaitingConfirmation(false);
-        return;
+      console.log("Perfis encontrados:", existingProfiles);
+
+      let userId: string;
+      let profileData = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0] : null;
+
+      if (profileData) {
+        // Perfil encontrado
+        userId = profileData.id;
+        console.log("Usando perfil existente:", userId);
+      } else {
+        // Criar novo perfil se não existir
+        console.log("Criando novo perfil para:", nomeParaUsar);
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({ nome: nomeParaUsar })
+          .select('id')
+          .single();
+
+        if (createError) {
+          console.error("Erro ao criar perfil:", createError);
+          toast.error("Erro ao processar usuário");
+          setAwaitingConfirmation(false);
+          return;
+        }
+
+        userId = newProfile.id;
       }
 
-      // Se for Rubini Coins, buscar nome do personagem ANTES de salvar o spin
+      // Se for Rubini Coins, usar o nome_personagem do perfil encontrado
       let personagemInfo = null;
-      if (resultado.tipo === "Rubini Coins" && userId) {
-        console.log("Buscando personagem para user_id:", userId);
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('nome_personagem, nome, twitch_username')
-          .eq('id', userId)
-          .maybeSingle();
-        
-        console.log("Perfil encontrado:", profile);
-        console.log("Erro ao buscar perfil:", profileError);
-        
-        if (profile?.nome_personagem) {
-          setNomePersonagem(profile.nome_personagem);
-          personagemInfo = profile.nome_personagem;
-          console.log("Nome do personagem definido:", profile.nome_personagem);
+      if (resultado.tipo === "Rubini Coins") {
+        console.log("Verificando personagem para Rubini Coins");
+        if (profileData?.nome_personagem) {
+          setNomePersonagem(profileData.nome_personagem);
+          personagemInfo = profileData.nome_personagem;
+          console.log("Nome do personagem:", profileData.nome_personagem);
         } else {
           setNomePersonagem("NÃO CADASTRADO");
           console.log("Personagem não cadastrado");

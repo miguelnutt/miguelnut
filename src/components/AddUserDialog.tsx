@@ -53,12 +53,16 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
     setLoading(true);
 
     try {
-      // Verificar se já existe um usuário com esse nome
-      const { data: existingProfile } = await supabase
+      // Verificar se já existe um usuário com esse nome OU twitch_username (case-insensitive)
+      console.log("Buscando perfil para:", nome.trim());
+      const { data: existingProfiles } = await supabase
         .from("profiles")
-        .select("id")
-        .ilike("nome", nome.trim())
-        .maybeSingle();
+        .select("id, nome, twitch_username, nome_personagem")
+        .or(`nome.ilike.${nome.trim()},twitch_username.ilike.${nome.trim()}`)
+        .limit(1);
+
+      console.log("Perfis encontrados:", existingProfiles);
+      const existingProfile = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0] : null;
 
       let userId: string;
 
