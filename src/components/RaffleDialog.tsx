@@ -37,6 +37,8 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
   const [isModoTeste, setIsModoTeste] = useState(false);
   const [tipoPremio, setTipoPremio] = useState<TipoPremio>("Rubini Coins");
   const [valorPremio, setValorPremio] = useState<number>(25);
+  const [pontosAtuaisVencedor, setPontosAtuaisVencedor] = useState<number | null>(null);
+  const [carregandoPontos, setCarregandoPontos] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -118,6 +120,27 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
     setTimeout(async () => {
       setVencedor(vencedorSorteado);
       setDrawing(false);
+
+      // Se for Pontos de Loja, buscar pontos atuais do vencedor
+      if (tipoPremio === "Pontos de Loja" && !isModoTeste) {
+        setCarregandoPontos(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('get-streamelements-points', {
+            body: { username: vencedorSorteado.nome }
+          });
+          
+          if (!error && data?.points !== undefined) {
+            setPontosAtuaisVencedor(data.points);
+          } else {
+            setPontosAtuaisVencedor(null);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar pontos:", error);
+          setPontosAtuaisVencedor(null);
+        } finally {
+          setCarregandoPontos(false);
+        }
+      }
 
       // Se for modo teste, apenas mostrar resultado sem salvar
       if (isModoTeste) {
@@ -322,6 +345,35 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                 <p className="text-2xl font-bold text-primary-foreground">
                   {valorPremio} {tipoPremio}
                 </p>
+                
+                {/* Mostrar pontos atuais e futuros para Pontos de Loja */}
+                {tipoPremio === "Pontos de Loja" && !isModoTeste && (
+                  <div className="mt-3 space-y-2 pt-3 border-t border-primary-foreground/10">
+                    {carregandoPontos ? (
+                      <p className="text-xs text-primary-foreground/70">Carregando pontos...</p>
+                    ) : pontosAtuaisVencedor !== null ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs text-primary-foreground/70">Pontos Atuais:</p>
+                          <p className="text-sm font-semibold text-primary-foreground">
+                            {pontosAtuaisVencedor.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs text-primary-foreground/70">Após Prêmio:</p>
+                          <p className="text-lg font-bold text-primary-foreground">
+                            {(pontosAtuaisVencedor + valorPremio).toLocaleString()}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-xs text-yellow-300">
+                        Não foi possível carregar os pontos do usuário
+                      </p>
+                    )}
+                  </div>
+                )}
+                
                 {tipoPremio === "Rubini Coins" && (
                   <div className="mt-3">
                     <p className="text-xs text-primary-foreground/70">Personagem:</p>

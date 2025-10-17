@@ -49,6 +49,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const rewardAudioRef = useRef<HTMLAudioElement | null>(null);
   const [nomePersonagem, setNomePersonagem] = useState<string | null>(null);
+  const [pontosAtuais, setPontosAtuais] = useState<number | null>(null);
+  const [carregandoPontos, setCarregandoPontos] = useState(false);
 
   // Inicializar áudio de recompensa
   useEffect(() => {
@@ -78,6 +80,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       setShowResultDialog(false);
       setAwaitingConfirmation(false);
       setNomePersonagem(null);
+      setPontosAtuais(null);
+      setCarregandoPontos(false);
     } else {
       setIsModoTeste(testMode);
     }
@@ -276,6 +280,27 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       setResultado(sorteada);
       setSpinning(false);
       
+      // Se for Pontos de Loja, buscar pontos atuais do usuário
+      if (sorteada.tipo === "Pontos de Loja" && !isModoTeste) {
+        setCarregandoPontos(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('get-streamelements-points', {
+            body: { username: nomeParaExibir }
+          });
+          
+          if (!error && data?.points !== undefined) {
+            setPontosAtuais(data.points);
+          } else {
+            setPontosAtuais(null);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar pontos:", error);
+          setPontosAtuais(null);
+        } finally {
+          setCarregandoPontos(false);
+        }
+      }
+      
       // Pequeno delay antes de mostrar o resultado para criar suspense
       setTimeout(() => {
         setShowResultDialog(true);
@@ -391,6 +416,33 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
                     {resultado.valor} {resultado.tipo}
                   </p>
                 </div>
+                
+                {/* Mostrar pontos atuais e futuros para Pontos de Loja */}
+                {resultado.tipo === "Pontos de Loja" && !isModoTeste && (
+                  <div className="pt-4 border-t border-border space-y-2">
+                    {carregandoPontos ? (
+                      <p className="text-sm text-muted-foreground">Carregando pontos...</p>
+                    ) : pontosAtuais !== null ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-muted-foreground">Pontos Atuais:</p>
+                          <p className="text-lg font-semibold">{pontosAtuais.toLocaleString()}</p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-muted-foreground">Após Prêmio:</p>
+                          <p className="text-lg font-bold text-primary">
+                            {(pontosAtuais + parseInt(resultado.valor)).toLocaleString()}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                        Não foi possível carregar os pontos do usuário
+                      </p>
+                    )}
+                  </div>
+                )}
+                
                 {resultado.tipo === "Rubini Coins" && (
                   <div className="pt-4 border-t border-border">
                     <p className="text-sm text-muted-foreground">Personagem:</p>
