@@ -147,11 +147,11 @@ export default function Dashboard() {
       }
       const { count: rafflesCount } = await rafflesQuery;
 
-      // Total de RC's pagos (da roleta + dos sorteios)
+      // Total de RC's pagos (da roleta + dos sorteios) - incluir histórico antigo
       let rcQuery = supabase
         .from("spins")
         .select("valor, tipo_recompensa")
-        .eq("tipo_recompensa", "RC");
+        .or("tipo_recompensa.eq.RC,tipo_recompensa.eq.Rubini Coins");
       if (startDate && endDate) {
         rcQuery = rcQuery.gte("created_at", startDate).lte("created_at", endDate);
       }

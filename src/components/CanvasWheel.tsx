@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import tickSound from "@/assets/tick-sound.mp3";
 
 interface Recompensa {
   tipo: string;
@@ -86,6 +87,74 @@ function indexAtPin(angle: number, totalSegments: number): number {
 export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 52, showArrow = true, duracaoSpin = 4 }: CanvasWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [currentSegment, setCurrentSegment] = useState<number>(0);
+  const animationFrameRef = useRef<number>();
+  
+  // Inicializar áudio
+  useEffect(() => {
+    audioRef.current = new Audio(tickSound);
+    audioRef.current.volume = 0.3;
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Monitorar rotação e tocar som quando segmento mudar
+  useEffect(() => {
+    if (!spinning || !containerRef.current || recompensas.length === 0) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      return;
+    }
+
+    const startTime = Date.now();
+    const duration = duracaoSpin * 1000;
+
+    const checkSegment = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= duration) {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        return;
+      }
+
+      // Calcular rotação atual usando a mesma curva de animação
+      const progress = elapsed / duration;
+      const eased = 1 - Math.pow(1 - progress, 3); // cubic-bezier approximation
+      const currentRotation = rotation * eased;
+      
+      // Converter para radianos
+      const angleInRadians = (currentRotation * Math.PI) / 180;
+      
+      // Detectar qual segmento está sob a seta
+      const segment = indexAtPin(angleInRadians, recompensas.length);
+      
+      if (segment !== currentSegment) {
+        setCurrentSegment(segment);
+        // Tocar som
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(() => {});
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(checkSegment);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(checkSegment);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [spinning, rotation, recompensas.length, duracaoSpin, currentSegment]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
