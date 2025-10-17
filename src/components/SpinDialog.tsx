@@ -130,7 +130,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         return;
       }
 
-      // Se for Rubini Coins, buscar nome do personagem
+      // Se for Rubini Coins, buscar nome do personagem ANTES de salvar o spin
+      let personagemInfo = null;
       if (resultado.tipo === "Rubini Coins" && userId) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -140,6 +141,9 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         
         if (profile?.nome_personagem) {
           setNomePersonagem(profile.nome_personagem);
+          personagemInfo = profile.nome_personagem;
+        } else {
+          setNomePersonagem("NÃO CADASTRADO");
         }
       }
 
@@ -387,12 +391,23 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
                     {resultado.valor} {resultado.tipo}
                   </p>
                 </div>
-                {resultado.tipo === "Rubini Coins" && nomePersonagem && (
+                {resultado.tipo === "Rubini Coins" && (
                   <div className="pt-4 border-t border-border">
                     <p className="text-sm text-muted-foreground">Personagem:</p>
-                    <p className="text-xl font-semibold text-primary">
-                      {nomePersonagem}
-                    </p>
+                    {nomePersonagem && nomePersonagem !== "NÃO CADASTRADO" ? (
+                      <p className="text-xl font-semibold text-primary">
+                        {nomePersonagem}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+                          ⚠️ Usuário ainda não cadastrou o nome do personagem
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Peça para o usuário acessar as Configurações da Conta e cadastrar
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

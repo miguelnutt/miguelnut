@@ -322,12 +322,23 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                 <p className="text-2xl font-bold text-primary-foreground">
                   {valorPremio} {tipoPremio}
                 </p>
-                {tipoPremio === "Rubini Coins" && vencedor.nome_personagem && (
+                {tipoPremio === "Rubini Coins" && (
                   <div className="mt-3">
                     <p className="text-xs text-primary-foreground/70">Personagem:</p>
-                    <p className="text-lg font-semibold text-primary-foreground">
-                      {vencedor.nome_personagem}
-                    </p>
+                    {vencedor.nome_personagem ? (
+                      <p className="text-lg font-semibold text-primary-foreground">
+                        {vencedor.nome_personagem}
+                      </p>
+                    ) : (
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-yellow-300">
+                          ⚠️ Usuário ainda não cadastrou o nome do personagem
+                        </p>
+                        <p className="text-xs text-primary-foreground/60">
+                          Peça para acessar Configurações da Conta
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

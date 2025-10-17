@@ -275,12 +275,54 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
                     </div>
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <Label className="text-xs">Valor</Label>
-                        <Input
-                          value={recompensa.valor}
-                          onChange={(e) => updateRecompensa(index, "valor", e.target.value)}
-                          placeholder="Ex: 100"
-                        />
+                        <Label className="text-xs">
+                          Valor {recompensa.tipo === "Rubini Coins" && "(múltiplos de 25)"}
+                        </Label>
+                        {recompensa.tipo === "Rubini Coins" ? (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const currentValue = parseInt(recompensa.valor) || 25;
+                                const newValue = Math.max(25, currentValue - 25);
+                                updateRecompensa(index, "valor", newValue.toString());
+                              }}
+                              className="h-10 px-3"
+                            >
+                              -25
+                            </Button>
+                            <Input
+                              value={recompensa.valor}
+                              onChange={(e) => updateRecompensa(index, "valor", e.target.value)}
+                              placeholder="25"
+                              className="text-center"
+                              type="number"
+                              min="25"
+                              step="25"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const currentValue = parseInt(recompensa.valor) || 0;
+                                const newValue = currentValue + 25;
+                                updateRecompensa(index, "valor", newValue.toString());
+                              }}
+                              className="h-10 px-3"
+                            >
+                              +25
+                            </Button>
+                          </div>
+                        ) : (
+                          <Input
+                            value={recompensa.valor}
+                            onChange={(e) => updateRecompensa(index, "valor", e.target.value)}
+                            placeholder="Ex: 100"
+                          />
+                        )}
                       </div>
                       <div>
                         <Label className="text-xs">Cor</Label>
