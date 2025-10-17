@@ -32,11 +32,15 @@ serve(async (req) => {
   }
 
   try {
-    // Extrair cookie da requisição
+    // Log para debug
     const cookies = req.headers.get('cookie') || '';
+    console.log('📨 Received cookies:', cookies ? 'YES' : 'NO');
+    console.log('🍪 Cookie header:', cookies);
+    
     const sessionMatch = cookies.match(/twitch_session=([^;]+)/);
     
     if (!sessionMatch) {
+      console.log('❌ No twitch_session cookie found');
       return new Response(
         JSON.stringify({ success: false, error: 'Not authenticated' }),
         { 
@@ -47,6 +51,7 @@ serve(async (req) => {
     }
 
     const sessionToken = sessionMatch[1];
+    console.log('✅ Session token found, verifying...');
     const payload = await verifyJWT(sessionToken);
 
     return new Response(
