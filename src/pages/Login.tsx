@@ -142,7 +142,24 @@ export default function Login() {
 
   const handleTwitchLogin = async () => {
     setLoading(true);
+    
     try {
+      // Primeiro, tentar habilitar o provider Twitch (caso não esteja configurado)
+      toast.info("Configurando login com Twitch...");
+      
+      const { data: setupData, error: setupError } = await supabase.functions.invoke('enable-twitch-auth');
+      
+      if (setupError) {
+        console.warn("Setup error (pode já estar configurado):", setupError);
+      } else if (setupData?.success) {
+        toast.success("Twitch configurado com sucesso!");
+      }
+      
+      // Aguardar um momento para garantir que a configuração foi aplicada
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Agora fazer o login com Twitch
+      toast.info("Redirecionando para Twitch...");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'twitch',
         options: {
@@ -151,7 +168,9 @@ export default function Login() {
       });
 
       if (error) throw error;
+      
     } catch (error: any) {
+      console.error("Twitch login error:", error);
       toast.error("Erro ao fazer login com Twitch: " + error.message);
       setLoading(false);
     }
