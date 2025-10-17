@@ -150,7 +150,12 @@ export const Navbar = () => {
                   </Button>
                 </>
               ) : (
-                <TwitchLoginButton />
+                <Button 
+                  onClick={() => navigate("/login")}
+                  className="bg-gradient-primary"
+                >
+                  Login
+                </Button>
               )}
 
               {session && (
@@ -250,7 +255,15 @@ export const Navbar = () => {
                     </Button>
                   </div>
                 ) : (
-                  <TwitchLoginButton />
+                  <Button 
+                    onClick={() => {
+                      navigate("/login");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-gradient-primary"
+                  >
+                    Login
+                  </Button>
                 )}
 
                 {session && (
