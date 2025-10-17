@@ -29,13 +29,13 @@ export default function TwitchCallback() {
       }
 
       // Validar state (CSRF protection)
-      const savedState = sessionStorage.getItem('twitch_state');
+      const savedState = localStorage.getItem('twitch_state');
       if (state !== savedState) {
         throw new Error('Invalid state parameter');
       }
 
       // Recuperar code_verifier
-      const codeVerifier = sessionStorage.getItem('twitch_code_verifier');
+      const codeVerifier = localStorage.getItem('twitch_code_verifier');
       if (!codeVerifier) {
         throw new Error('Missing code verifier');
       }
@@ -66,9 +66,9 @@ export default function TwitchCallback() {
         throw new Error(data.error || 'Authentication failed');
       }
 
-      // Limpar sessionStorage
-      sessionStorage.removeItem('twitch_code_verifier');
-      sessionStorage.removeItem('twitch_state');
+      // Limpar localStorage
+      localStorage.removeItem('twitch_code_verifier');
+      localStorage.removeItem('twitch_state');
 
       toast.success(`Bem-vindo, ${data.user.display_name}!`);
       navigate('/');

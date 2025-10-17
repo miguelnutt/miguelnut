@@ -53,9 +53,9 @@ export function TwitchLoginButton() {
       // State para CSRF
       const state = Math.random().toString(36).substring(7);
       
-      // Salvar no sessionStorage
-      sessionStorage.setItem('twitch_code_verifier', codeVerifier);
-      sessionStorage.setItem('twitch_state', state);
+      // Salvar no localStorage (compartilhado entre abas)
+      localStorage.setItem('twitch_code_verifier', codeVerifier);
+      localStorage.setItem('twitch_state', state);
 
       const origin = window.location.origin;
       const redirectUri = `${origin}/auth/twitch/callback`;
