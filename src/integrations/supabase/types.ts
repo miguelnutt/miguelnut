@@ -77,27 +77,6 @@ export type Database = {
         }
         Relationships: []
       }
-      site_settings: {
-        Row: {
-          created_at: string | null
-          id: string
-          updated_at: string | null
-          youtube_video_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          youtube_video_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          youtube_video_id?: string | null
-        }
-        Relationships: []
-      }
       spins: {
         Row: {
           created_at: string
