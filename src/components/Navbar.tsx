@@ -160,6 +160,16 @@ export const Navbar = () => {
                     <User className="h-5 w-5" />
                   </Button>
                 </>
+              ) : session ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/account")}
+                  className="rounded-full"
+                  title="Configurações da Conta"
+                >
+                  <SettingsIcon className="h-5 w-5" />
+                </Button>
               ) : (
                 <Button 
                   onClick={() => navigate("/login")}
@@ -276,6 +286,18 @@ export const Navbar = () => {
                       Configurações da Conta
                     </Button>
                   </div>
+                ) : session ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigate("/account");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full justify-start"
+                  >
+                    <SettingsIcon className="mr-2 h-4 w-4" />
+                    Configurações da Conta
+                  </Button>
                 ) : (
                   <Button 
                     onClick={() => {

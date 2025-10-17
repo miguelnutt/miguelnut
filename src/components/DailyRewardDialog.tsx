@@ -161,23 +161,24 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
           <div className="space-y-4">
             <div className="grid grid-cols-5 gap-2">
               {rewards.map((reward) => {
-                const isCurrent = getDiaAtual() === reward.dia;
-                const isCompleted = userLogin && userLogin.dia_atual > reward.dia;
+                const diaAtual = getDiaAtual();
+                const isCurrent = diaAtual === reward.dia;
+                const isCompleted = userLogin && reward.dia < diaAtual;
                 const hoje = new Date().toISOString().split('T')[0];
-                const jaResgatouHoje = userLogin && userLogin.ultimo_login === hoje && isCurrent;
+                const jaResgatouHoje = userLogin && userLogin.ultimo_login === hoje;
 
                 return (
                   <div
                     key={reward.dia}
                     className={`
                       relative p-3 rounded-lg border-2 text-center transition-all
-                      ${isCurrent ? 'border-primary bg-primary/10' : 'border-border'}
-                      ${isCompleted ? 'bg-muted' : ''}
+                      ${isCurrent ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border'}
+                      ${isCompleted ? 'bg-green-500/10 border-green-500/50' : ''}
                     `}
                   >
-                    {(isCompleted || jaResgatouHoje) && (
-                      <div className="absolute top-1 right-1">
-                        <Check className="h-4 w-4 text-green-500" />
+                    {(isCompleted || (jaResgatouHoje && isCurrent)) && (
+                      <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
+                        <Check className="h-3 w-3 text-white" />
                       </div>
                     )}
                     <div className="text-xs text-muted-foreground mb-1">Dia {reward.dia}</div>

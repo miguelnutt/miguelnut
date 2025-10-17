@@ -154,26 +154,32 @@ export default function AccountSettings() {
     setSavingPersonagem(true);
     try {
       // Buscar perfil
-      const { data: profiles } = await supabase
+      const { data: profiles, error: fetchError } = await supabase
         .from('profiles')
         .select('id')
         .eq('twitch_username', twitchUser.login);
 
+      if (fetchError) throw fetchError;
+
       if (!profiles || profiles.length === 0) {
         // Criar perfil
-        await supabase
+        const { error: insertError } = await supabase
           .from('profiles')
           .insert({
             nome: twitchUser.display_name,
             twitch_username: twitchUser.login,
             nome_personagem: nomePersonagem.trim()
           });
+        
+        if (insertError) throw insertError;
       } else {
         // Atualizar perfil
-        await supabase
+        const { error: updateError } = await supabase
           .from('profiles')
           .update({ nome_personagem: nomePersonagem.trim() })
           .eq('id', profiles[0].id);
+        
+        if (updateError) throw updateError;
       }
       
       setPersonagemSalvo(nomePersonagem.trim());
