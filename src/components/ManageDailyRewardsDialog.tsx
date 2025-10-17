@@ -1,0 +1,194 @@
+import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Trash2, Search } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase-helper";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface UserLogin {
+  id: string;
+  user_id: string;
+  dia_atual: number;
+  ultimo_login: string;
+  profiles: {
+    nome: string;
+    twitch_username: string;
+  };
+}
+
+interface ManageDailyRewardsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewardsDialogProps) {
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<UserLogin[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [resetting, setResetting] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      loadUsers();
+    }
+  }, [open]);
+
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_daily_logins')
+        .select(`
+          id,
+          user_id,
+          dia_atual,
+          ultimo_login,
+          profiles (
+            nome,
+            twitch_username
+          )
+        `)
+        .order('dia_atual', { ascending: false });
+
+      if (error) throw error;
+      setUsers((data as any) || []);
+    } catch (error: any) {
+      console.error("Erro ao carregar usuários:", error);
+      toast.error("Erro ao carregar dados");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async (userId: string, userName: string) => {
+    if (!confirm(`Tem certeza que deseja resetar o progresso de ${userName}?`)) return;
+
+    setResetting(userId);
+    try {
+      const { error } = await supabase
+        .from('user_daily_logins')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast.success(`Progresso de ${userName} resetado!`);
+      loadUsers();
+    } catch (error: any) {
+      console.error("Erro ao resetar:", error);
+      toast.error("Erro ao resetar progresso");
+    } finally {
+      setResetting(null);
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      user.profiles?.nome?.toLowerCase().includes(searchLower) ||
+      user.profiles?.twitch_username?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Gerenciar Recompensas Diárias</DialogTitle>
+          <DialogDescription>
+            Visualize e resete o progresso de recompensas diárias dos usuários
+          </DialogDescription>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou username..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {searchTerm ? "Nenhum usuário encontrado" : "Nenhum usuário com progresso de recompensa"}
+              </div>
+            ) : (
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Usuário</TableHead>
+                      <TableHead>Username Twitch</TableHead>
+                      <TableHead>Dia Atual</TableHead>
+                      <TableHead>Último Login</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          {user.profiles?.nome || "Sem nome"}
+                        </TableCell>
+                        <TableCell>
+                          {user.profiles?.twitch_username || "N/A"}
+                        </TableCell>
+                        <TableCell>Dia {user.dia_atual}</TableCell>
+                        <TableCell>
+                          {new Date(user.ultimo_login).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleReset(user.user_id, user.profiles?.nome || "usuário")}
+                            disabled={resetting === user.user_id}
+                          >
+                            {resetting === user.user_id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Resetar
+                              </>
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

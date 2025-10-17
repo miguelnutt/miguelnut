@@ -14,6 +14,7 @@ import QRCode from "qrcode";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { DailyRewardConfigDialog } from "@/components/DailyRewardConfigDialog";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
+import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ export default function AccountSettings() {
   const [personagemSalvo, setPersonagemSalvo] = useState<string | null>(null);
   const [dailyRewardConfigOpen, setDailyRewardConfigOpen] = useState(false);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
+  const [manageRewardsOpen, setManageRewardsOpen] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -68,11 +70,36 @@ export default function AccountSettings() {
     if (!twitchUser) return;
     
     try {
-      const { data: profile } = await supabase
+      console.log("Carregando perfil para:", twitchUser.login);
+      
+      let { data: profile, error: fetchError } = await supabase
         .from('profiles')
-        .select('nome_personagem')
+        .select('id, nome_personagem')
         .eq('twitch_username', twitchUser.login)
         .maybeSingle();
+
+      console.log("Perfil buscado:", profile, "Erro:", fetchError);
+
+      // Se não encontrou perfil, criar um
+      if (!profile) {
+        console.log("Criando perfil automaticamente...");
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            nome: twitchUser.display_name,
+            twitch_username: twitchUser.login,
+          })
+          .select('id, nome_personagem')
+          .single();
+
+        console.log("Perfil criado:", newProfile, "Erro:", insertError);
+        
+        if (insertError) {
+          console.error("Erro ao criar perfil:", insertError);
+        } else {
+          profile = newProfile;
+        }
+      }
 
       if (profile && profile.nome_personagem) {
         setNomePersonagem(profile.nome_personagem);
@@ -134,40 +161,55 @@ export default function AccountSettings() {
 
     setSavingPersonagem(true);
     try {
+      console.log("Salvando personagem para:", twitchUser.login);
+      
       // Primeiro buscar o perfil
-      const { data: profile } = await supabase
+      const { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('id')
         .eq('twitch_username', twitchUser.login)
         .maybeSingle();
 
+      console.log("Perfil encontrado:", profile, "Erro:", fetchError);
+
       if (!profile) {
         // Criar perfil se não existir
-        const { error: insertError } = await supabase
+        console.log("Criando novo perfil...");
+        const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
             nome: twitchUser.display_name,
             twitch_username: twitchUser.login,
             nome_personagem: nomePersonagem.trim()
-          });
+          })
+          .select()
+          .single();
 
+        console.log("Perfil criado:", newProfile, "Erro:", insertError);
         if (insertError) throw insertError;
       } else {
         // Atualizar perfil existente
-        const { error: updateError } = await supabase
+        console.log("Atualizando perfil existente...");
+        const { data: updatedProfile, error: updateError } = await supabase
           .from('profiles')
           .update({ nome_personagem: nomePersonagem.trim() })
-          .eq('id', profile.id);
+          .eq('id', profile.id)
+          .select()
+          .single();
 
+        console.log("Perfil atualizado:", updatedProfile, "Erro:", updateError);
         if (updateError) throw updateError;
       }
       
       setPersonagemSalvo(nomePersonagem.trim());
       setEditandoPersonagem(false);
       toast.success("Nome do personagem salvo com sucesso!");
+      
+      // Recarregar para confirmar
+      await loadTwitchUserProfile();
     } catch (error: any) {
       console.error("Error saving character name:", error);
-      toast.error("Erro ao salvar nome do personagem");
+      toast.error("Erro ao salvar nome do personagem: " + error.message);
     } finally {
       setSavingPersonagem(false);
     }
@@ -334,6 +376,16 @@ export default function AccountSettings() {
                   title="Atualizar saldo"
                 >
                   <RefreshCw className={`h-4 w-4 ${loadingPontos ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+              <div className="mt-4">
+                <Button 
+                  onClick={() => setDailyRewardOpen(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  Ver Recompensa Diária
                 </Button>
               </div>
             </CardContent>
@@ -585,9 +637,14 @@ export default function AccountSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => setDailyRewardConfigOpen(true)}>
-                  Configurar Recompensas
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={() => setDailyRewardConfigOpen(true)}>
+                    Configurar Recompensas
+                  </Button>
+                  <Button variant="outline" onClick={() => setManageRewardsOpen(true)}>
+                    Gerenciar Usuários
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -596,6 +653,7 @@ export default function AccountSettings() {
 
       <DailyRewardConfigDialog open={dailyRewardConfigOpen} onOpenChange={setDailyRewardConfigOpen} />
       <DailyRewardDialog open={dailyRewardOpen} onOpenChange={setDailyRewardOpen} />
+      <ManageDailyRewardsDialog open={manageRewardsOpen} onOpenChange={setManageRewardsOpen} />
     </>
   );
 }
