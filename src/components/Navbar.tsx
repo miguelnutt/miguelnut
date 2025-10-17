@@ -132,15 +132,6 @@ export const Navbar = () => {
 
               {session ? (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => navigate("/account")}
-                    className="rounded-full"
-                    title="Configurações da Conta"
-                  >
-                    <SettingsIcon className="h-5 w-5" />
-                  </Button>
                   {isAdmin && (
                     <Button
                       variant="ghost"
@@ -152,6 +143,15 @@ export const Navbar = () => {
                       <SettingsIcon className="h-5 w-5 text-primary" />
                     </Button>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate("/account")}
+                    className="rounded-full"
+                    title="Configurações da Conta"
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -237,17 +237,6 @@ export const Navbar = () => {
               <div className="border-t border-border pt-4 flex flex-col gap-2">
                 {session ? (
                   <>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        navigate("/account");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full justify-start"
-                    >
-                      <SettingsIcon className="mr-2 h-4 w-4" />
-                      Configurações da Conta
-                    </Button>
                     {isAdmin && (
                       <Button
                         variant="outline"
@@ -261,6 +250,17 @@ export const Navbar = () => {
                         Configurações do Site
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        navigate("/account");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full justify-start"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Configurações da Conta
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => {
