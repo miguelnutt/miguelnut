@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trophy, Ticket as TicketIcon, Plus, Minus, Trash2 } from "lucide-react";
+import { Trophy, Ticket as TicketIcon, Plus, Minus, Trash2, X, Check } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -33,6 +33,7 @@ interface Raffle {
   participantes: any;
   tipo_premio: string;
   valor_premio: number;
+  pago: boolean;
 }
 
 interface TicketHistory {
@@ -334,6 +335,23 @@ export default function Tickets() {
     } catch (error: any) {
       console.error("Error deleting raffle:", error);
       toast.error("Erro ao excluir sorteio: " + error.message);
+    }
+  };
+
+  const toggleRafflePago = async (id: string, currentPago: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("raffles")
+        .update({ pago: !currentPago })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success(currentPago ? "Marcado como não pago" : "Marcado como pago!");
+      fetchData();
+    } catch (error: any) {
+      console.error("Error updating payment status:", error);
+      toast.error("Erro ao atualizar status: " + error.message);
     }
   };
 
@@ -703,59 +721,81 @@ export default function Tickets() {
           )}
         </div>
 
-        {/* Seção de Últimos Sorteios - Largura Total */}
-        {isAdmin && (
-          <Card className="shadow-card mt-4 md:mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                Últimos Sorteios
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {raffles.length === 0 ? (
-                <p className="text-sm md:text-base text-muted-foreground text-center py-4">
-                  Nenhum sorteio realizado ainda
-                </p>
-              ) : (
-                <div className="grid gap-2 md:gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {raffles.map((raffle) => (
-                    <div
-                      key={raffle.id}
-                      className="p-3 md:p-4 bg-gradient-card rounded-lg"
-                    >
-                      <div className="flex items-start justify-between mb-2 gap-2">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <Trophy className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span className="font-bold text-sm truncate">{raffle.nome_vencedor}</span>
-                        </div>
-                        {isAdmin && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-destructive hover:text-destructive flex-shrink-0"
-                            onClick={() => deleteRaffle(raffle.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
+        {/* Seção de Últimos Sorteios - Largura Total - Visível para todos */}
+        <Card className="shadow-card mt-4 md:mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              Últimos Sorteios
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {raffles.length === 0 ? (
+              <p className="text-sm md:text-base text-muted-foreground text-center py-4">
+                Nenhum sorteio realizado ainda
+              </p>
+            ) : (
+              <div className="grid gap-2 md:gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {raffles.map((raffle) => (
+                  <div
+                    key={raffle.id}
+                    className="p-3 md:p-4 bg-gradient-card rounded-lg"
+                  >
+                    <div className="flex items-start justify-between mb-2 gap-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Trophy className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="font-bold text-sm truncate">{raffle.nome_vencedor}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatDate(raffle.created_at)}
-                      </div>
-                      <div className="text-xs text-primary font-semibold mt-1">
+                      {isAdmin && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-destructive hover:text-destructive flex-shrink-0"
+                          onClick={() => deleteRaffle(raffle.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatDate(raffle.created_at)}
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="text-xs text-primary font-semibold">
                         Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {raffle.participantes?.length || 0} participantes
-                      </div>
+                      {raffle.tipo_premio === "Rubini Coins" && (
+                        <div className="flex items-center">
+                          {isAdmin ? (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => toggleRafflePago(raffle.id, raffle.pago)}
+                              className={`h-6 w-6 ${raffle.pago ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}`}
+                            >
+                              {raffle.pago ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                            </Button>
+                          ) : (
+                            <div className="flex justify-center">
+                              {raffle.pago ? (
+                                <Check className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <X className="h-4 w-4 text-red-500" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {raffle.participantes?.length || 0} participantes
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       <RaffleDialog
