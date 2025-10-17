@@ -24,7 +24,49 @@ export default function Login() {
 
   useEffect(() => {
     checkIfAdminExists();
+    handleTwitchCallback();
   }, []);
+
+  const handleTwitchCallback = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const savedState = localStorage.getItem('twitch_oauth_state');
+
+    if (code && state && state === savedState) {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('twitch-oauth-callback', {
+          body: { code }
+        });
+
+        if (error) throw error;
+
+        if (data.success && data.access_token) {
+          // Fazer login com o token recebido
+          const { error: signInError } = await supabase.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+          });
+
+          if (signInError) throw signInError;
+
+          toast.success(`Bem-vindo, ${data.user.display_name}!`);
+          localStorage.removeItem('twitch_oauth_state');
+          navigate('/');
+        } else {
+          throw new Error(data.error || 'Erro no login com Twitch');
+        }
+      } catch (error: any) {
+        console.error('Twitch callback error:', error);
+        toast.error('Erro ao fazer login com Twitch: ' + error.message);
+        // Limpar URL
+        window.history.replaceState({}, document.title, '/login');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   const checkIfAdminExists = async () => {
     try {
@@ -142,19 +184,23 @@ export default function Login() {
 
   const handleTwitchLogin = async () => {
     setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'twitch',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        }
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      toast.error("Erro ao fazer login com Twitch: " + error.message);
-      setLoading(false);
-    }
+    
+    const TWITCH_CLIENT_ID = "gvbk9smrzjp6wrdq5hzhyf9xhk1k43"; // Substitua pelo seu Client ID
+    const redirectUri = `${window.location.origin}/login`;
+    const state = Math.random().toString(36).substring(7);
+    
+    // Salvar state para validação
+    localStorage.setItem('twitch_oauth_state', state);
+    
+    // Redirecionar para Twitch OAuth
+    const twitchAuthUrl = `https://id.twitch.tv/oauth2/authorize?` +
+      `client_id=${TWITCH_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=user:read:email&` +
+      `state=${state}`;
+    
+    window.location.href = twitchAuthUrl;
   };
 
   if (checkingAdmin) {
