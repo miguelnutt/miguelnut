@@ -114,6 +114,7 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
 
     const startTime = Date.now();
     const duration = duracaoSpin * 1000;
+    let lastPlayedSegment = -1;
 
     const checkSegment = () => {
       const elapsed = Date.now() - startTime;
@@ -129,15 +130,18 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
       const eased = 1 - Math.pow(1 - progress, 3); // cubic-bezier approximation
       const currentRotation = rotation * eased;
       
-      // Converter para radianos
-      const angleInRadians = (currentRotation * Math.PI) / 180;
+      // Converter para radianos e normalizar
+      const angleInDegrees = currentRotation % 360;
+      const angleInRadians = (angleInDegrees * Math.PI) / 180;
       
       // Detectar qual segmento está sob a seta
       const segment = indexAtPin(angleInRadians, recompensas.length);
       
-      if (segment !== currentSegment) {
+      // Tocar som apenas quando mudar de segmento (evitar duplicatas)
+      if (segment !== lastPlayedSegment) {
+        lastPlayedSegment = segment;
         setCurrentSegment(segment);
-        // Tocar som
+        
         if (audioRef.current) {
           audioRef.current.currentTime = 0;
           audioRef.current.play().catch(() => {});
@@ -154,7 +158,7 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [spinning, rotation, recompensas.length, duracaoSpin, currentSegment]);
+  }, [spinning, rotation, recompensas.length, duracaoSpin]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { z } from "zod";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import confetti from "canvas-confetti";
+import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
 
 interface Recompensa {
   tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
@@ -46,6 +47,19 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
   const [isModoTeste, setIsModoTeste] = useState(testMode);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const rewardAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Inicializar áudio de recompensa
+  useEffect(() => {
+    rewardAudioRef.current = new Audio(rewardSound);
+    rewardAudioRef.current.volume = 0.5;
+    return () => {
+      if (rewardAudioRef.current) {
+        rewardAudioRef.current.pause();
+        rewardAudioRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -247,6 +261,11 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       setTimeout(() => {
         setShowResultDialog(true);
         launchConfetti();
+        // Tocar som de recompensa
+        if (rewardAudioRef.current) {
+          rewardAudioRef.current.currentTime = 0;
+          rewardAudioRef.current.play().catch(() => {});
+        }
       }, 500);
 
       // Se for modo teste, não precisa salvar nada
@@ -348,7 +367,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
             {resultado && (
               <div className="p-6 bg-gradient-card rounded-lg shadow-glow">
                 <p className="text-lg text-muted-foreground mb-2">Ganhou:</p>
-                <p className="text-4xl font-bold" style={{ color: resultado.cor }}>
+                <p className="text-4xl font-bold text-foreground">
                   {resultado.valor} {resultado.tipo}
                 </p>
               </div>
