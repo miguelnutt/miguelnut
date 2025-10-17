@@ -1,11 +1,50 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase-helper";
 import { useTwitchStatus } from "@/hooks/useTwitchStatus";
 import { Loader2, Radio, Youtube } from "lucide-react";
 
 export default function Index() {
   const { isLive, loading: twitchLoading } = useTwitchStatus();
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSettings();
+
+    // Realtime para atualizar quando admin mudar o vídeo
+    const channel = supabase
+      .channel("site_settings_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, () => fetchSettings())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setYoutubeVideoId(data.youtube_video_id);
+      }
+    } catch (error: any) {
+      console.error("Error fetching settings:", error);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  const loading = twitchLoading || settingsLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -18,7 +57,7 @@ export default function Index() {
           </h1>
         </div>
 
-        {twitchLoading ? (
+        {loading ? (
           <Card className="shadow-card max-w-5xl mx-auto">
             <CardContent className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -43,18 +82,18 @@ export default function Index() {
                     />
                   </div>
                 </div>
-              ) : (
+              ) : youtubeVideoId ? (
                 <div className="space-y-4 p-4 md:p-6">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Youtube className="h-5 w-5" />
-                    <span className="font-semibold">📺 Canal do YouTube</span>
+                    <span className="font-semibold">📺 Última Live no YouTube</span>
                   </div>
                   <div className="aspect-video rounded-lg overflow-hidden bg-muted">
                     <iframe
                       width="100%"
                       height="100%"
-                      src="https://www.youtube.com/embed?listType=user_uploads&list=miguelnutt"
-                      title="Canal do YouTube - Miguelnutt"
+                      src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                      title="Última Live do YouTube"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
@@ -70,6 +109,11 @@ export default function Index() {
                       Visite o canal completo no YouTube →
                     </a>
                   </div>
+                </div>
+              ) : (
+                <div className="p-8 md:p-12 text-center text-muted-foreground">
+                  <p className="text-lg">Nenhum conteúdo disponível no momento</p>
+                  <p className="text-sm mt-2">O admin ainda não configurou a última live do YouTube</p>
                 </div>
               )}
             </CardContent>
