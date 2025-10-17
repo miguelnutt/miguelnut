@@ -19,6 +19,8 @@ export function useTwitchAuth() {
 
   const checkAuth = async () => {
     try {
+      console.log('🔍 Checking Twitch auth...');
+      
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-auth-me`,
         {
@@ -32,10 +34,13 @@ export function useTwitchAuth() {
       );
 
       const data = await response.json();
+      console.log('📦 Auth response:', data);
 
       if (data.success && data.user) {
+        console.log('✅ User authenticated:', data.user.display_name);
         setUser(data.user);
       } else {
+        console.log('❌ Not authenticated');
         setUser(null);
       }
     } catch (error) {

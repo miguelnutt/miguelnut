@@ -136,15 +136,31 @@ serve(async (req) => {
       display_name: twitchUser.display_name,
       profile_image_url: twitchUser.profile_image_url,
       email: twitchUser.email,
-      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 horas
+      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 dias
     };
 
     const sessionToken = await generateJWT(sessionPayload);
 
-    // 5. Criar cookie HttpOnly
+    // 5. Criar cookie HttpOnly (sem Secure para funcionar em HTTP também)
     const headers = new Headers(corsHeaders);
     headers.set('Content-Type', 'application/json');
-    headers.append('Set-Cookie', `twitch_session=${sessionToken}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${24 * 60 * 60}`);
+    
+    const cookieOptions = [
+      `twitch_session=${sessionToken}`,
+      'HttpOnly',
+      'SameSite=Lax',
+      'Path=/',
+      `Max-Age=${7 * 24 * 60 * 60}`
+    ];
+    
+    // Adicionar Secure apenas se for HTTPS
+    if (origin?.includes('https://')) {
+      cookieOptions.push('Secure');
+    }
+    
+    headers.append('Set-Cookie', cookieOptions.join('; '));
+    
+    console.log('🍪 Cookie set for:', twitchUser.login);
 
     return new Response(
       JSON.stringify({
