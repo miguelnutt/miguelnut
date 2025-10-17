@@ -63,7 +63,7 @@ export function TwitchLoginButton() {
       
       console.log('🔗 Redirect URI final:', redirectUri);
 
-      // Redirecionar para Twitch OAuth
+      // Redirecionar na MESMA janela (não abrir nova aba)
       const authUrl = new URL('https://id.twitch.tv/oauth2/authorize');
       authUrl.searchParams.set('client_id', client_id);
       authUrl.searchParams.set('redirect_uri', redirectUri);
@@ -73,7 +73,8 @@ export function TwitchLoginButton() {
       authUrl.searchParams.set('code_challenge', codeChallenge);
       authUrl.searchParams.set('code_challenge_method', 'S256');
 
-      window.open(authUrl.toString(), '_blank');
+      // Redirecionar na mesma janela
+      window.location.href = authUrl.toString();
     } catch (error) {
       console.error('❌ Erro no login:', error);
       toast.error('Erro ao iniciar login com Twitch');

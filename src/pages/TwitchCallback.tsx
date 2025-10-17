@@ -72,7 +72,9 @@ export default function TwitchCallback() {
       localStorage.removeItem('twitch_state');
 
       toast.success(`Bem-vindo, ${data.user.display_name}!`);
-      navigate('/');
+      
+      // Forçar reload para atualizar o estado do auth
+      window.location.href = '/';
     } catch (error: any) {
       console.error('Callback error:', error);
       setError(error.message);
