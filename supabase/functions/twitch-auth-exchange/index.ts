@@ -45,7 +45,9 @@ serve(async (req) => {
       .replace(/\//g, '_')
       .replace(/=/g, '');
     
-    const redirectUri = `${origin}/auth/twitch/callback`;
+    // Usar a URL base do aplicativo
+    const appUrl = origin || 'https://miguelnut.com.br';
+    const redirectUri = `${appUrl}/auth/twitch/callback`;
     const state = btoa(JSON.stringify({ code_verifier: codeVerifier, redirect_uri: redirectUri }));
     
     const authUrl = `https://id.twitch.tv/oauth2/authorize?` +
