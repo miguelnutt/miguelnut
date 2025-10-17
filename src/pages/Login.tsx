@@ -246,7 +246,7 @@ export default function Login() {
           />
           
           {!hasAdmin && (
-            <CardTitle className="text-2xl">
+            <CardTitle className="text-2xl mt-4">
               Primeiro Acesso - Criar Conta
             </CardTitle>
           )}
