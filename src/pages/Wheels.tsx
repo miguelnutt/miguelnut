@@ -220,7 +220,7 @@ export default function Wheels() {
     }
 
     return (
-      <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
         {wheels.map((wheel, index) => (
           <Card 
             key={wheel.id} 
@@ -349,27 +349,15 @@ export default function Wheels() {
           </div>
         )}
 
-        {/* Layout para ADMIN: Roletas em cima, Ranking embaixo */}
-        {isAdmin ? (
-          <div className="space-y-6">
-            <div>
-              {renderWheelsSection()}
-            </div>
-            <div>
-              <WheelRanking />
-            </div>
+        {/* Layout: Ranking esquerda, Roletas direita (2 por linha) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <WheelRanking />
           </div>
-        ) : (
-          /* Layout para VISITANTE: Ranking esquerda, Roletas direita */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <WheelRanking />
-            </div>
-            <div className="lg:col-span-2">
-              {renderWheelsSection()}
-            </div>
+          <div className="lg:col-span-2">
+            {renderWheelsSection()}
           </div>
-        )}
+        </div>
       </main>
 
       <WheelDialog

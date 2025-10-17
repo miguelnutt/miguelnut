@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase-helper";
 import { Trophy, Coins } from "lucide-react";
 
@@ -14,6 +15,7 @@ export function WheelRanking() {
   const [pontosLojaRanking, setPontosLojaRanking] = useState<RankingData[]>([]);
   const [rubiniCoinsRanking, setRubiniCoinsRanking] = useState<RankingData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [periodo, setPeriodo] = useState<"tudo" | "diario" | "semanal" | "mensal">("tudo");
 
   useEffect(() => {
     fetchRankings();
@@ -36,15 +38,36 @@ export function WheelRanking() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [periodo]);
 
   const fetchRankings = async () => {
     try {
+      // Calcular data de início baseado no período
+      let dataInicio: string | null = null;
+      const agora = new Date();
+      
+      if (periodo === "diario") {
+        agora.setHours(0, 0, 0, 0);
+        dataInicio = agora.toISOString();
+      } else if (periodo === "semanal") {
+        agora.setDate(agora.getDate() - 7);
+        dataInicio = agora.toISOString();
+      } else if (periodo === "mensal") {
+        agora.setDate(agora.getDate() - 30);
+        dataInicio = agora.toISOString();
+      }
+
       // Ranking de Pontos de Loja
-      const { data: pontosData, error: pontosError } = await supabase
+      let pontosQuery = supabase
         .from("spins")
-        .select("nome_usuario, valor")
+        .select("nome_usuario, valor, created_at")
         .eq("tipo_recompensa", "Pontos de Loja");
+      
+      if (dataInicio) {
+        pontosQuery = pontosQuery.gte("created_at", dataInicio);
+      }
+
+      const { data: pontosData, error: pontosError } = await pontosQuery;
 
       if (pontosError) throw pontosError;
 
@@ -66,10 +89,16 @@ export function WheelRanking() {
       setPontosLojaRanking(pontosRanking);
 
       // Ranking de Rubini Coins
-      const { data: rubiniData, error: rubiniError } = await supabase
+      let rubiniQuery = supabase
         .from("spins")
-        .select("nome_usuario, valor")
+        .select("nome_usuario, valor, created_at")
         .eq("tipo_recompensa", "Rubini Coins");
+      
+      if (dataInicio) {
+        rubiniQuery = rubiniQuery.gte("created_at", dataInicio);
+      }
+
+      const { data: rubiniData, error: rubiniError } = await rubiniQuery;
 
       if (rubiniError) throw rubiniError;
 
@@ -147,10 +176,23 @@ export function WheelRanking() {
   return (
     <Card className="shadow-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Trophy className="h-5 w-5" />
-          Ranking de Prêmios
-        </CardTitle>
+        <div className="flex items-center justify-between gap-4">
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Ranking de Prêmios
+          </CardTitle>
+          <Select value={periodo} onValueChange={(value: any) => setPeriodo(value)}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tudo">Tudo</SelectItem>
+              <SelectItem value="diario">Diário</SelectItem>
+              <SelectItem value="semanal">Semanal</SelectItem>
+              <SelectItem value="mensal">Mensal</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="pontos" className="w-full">
