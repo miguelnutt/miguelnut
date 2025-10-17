@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_reward_config: {
+        Row: {
+          created_at: string | null
+          dia: number
+          id: string
+          pontos: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dia: number
+          id?: string
+          pontos?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dia?: number
+          id?: string
+          pontos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      daily_rewards_history: {
+        Row: {
+          created_at: string | null
+          dia: number
+          id: string
+          pontos: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dia: number
+          id?: string
+          pontos: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dia?: number
+          id?: string
+          pontos?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_rewards_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -192,6 +248,41 @@ export type Database = {
           },
         ]
       }
+      user_daily_logins: {
+        Row: {
+          created_at: string | null
+          dia_atual: number
+          id: string
+          ultimo_login: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dia_atual?: number
+          id?: string
+          ultimo_login: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dia_atual?: number
+          id?: string
+          ultimo_login?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_daily_logins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -223,6 +314,7 @@ export type Database = {
           ordem: number | null
           recompensas: Json
           updated_at: string
+          visivel_para_usuarios: boolean | null
         }
         Insert: {
           ativa?: boolean
@@ -233,6 +325,7 @@ export type Database = {
           ordem?: number | null
           recompensas?: Json
           updated_at?: string
+          visivel_para_usuarios?: boolean | null
         }
         Update: {
           ativa?: boolean
@@ -243,6 +336,7 @@ export type Database = {
           ordem?: number | null
           recompensas?: Json
           updated_at?: string
+          visivel_para_usuarios?: boolean | null
         }
         Relationships: []
       }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, Copy, GripVertical } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, GripVertical, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { WheelDialog } from "@/components/WheelDialog";
@@ -24,6 +24,7 @@ interface Wheel {
   ativa: boolean;
   ordem: number;
   duracao_spin: number;
+  visivel_para_usuarios: boolean;
 }
 
 export default function Wheels() {
@@ -51,7 +52,9 @@ export default function Wheels() {
   }, []);
 
   useEffect(() => {
-    fetchWheels();
+    if (!adminLoading) {
+      fetchWheels();
+    }
 
     const channel = supabase
       .channel("wheels_changes")
@@ -62,21 +65,32 @@ export default function Wheels() {
           schema: "public",
           table: "wheels"
         },
-        () => fetchWheels()
+        () => {
+          if (!adminLoading) {
+            fetchWheels();
+          }
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isAdmin, adminLoading]);
 
   const fetchWheels = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("wheels")
         .select("*")
-        .eq("ativa", true)
+        .eq("ativa", true);
+      
+      // Se não for admin, mostrar apenas roletas visíveis
+      if (!isAdmin) {
+        query = query.eq("visivel_para_usuarios", true);
+      }
+      
+      const { data, error } = await query
         .order("ordem", { ascending: true })
         .order("created_at", { ascending: false });
 
@@ -246,6 +260,23 @@ export default function Wheels() {
                     </div>
                     {isAdmin && (
                       <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={async () => {
+                            const { error } = await supabase
+                              .from("wheels")
+                              .update({ visivel_para_usuarios: !wheel.visivel_para_usuarios })
+                              .eq("id", wheel.id);
+                            
+                            if (!error) {
+                              toast.success(wheel.visivel_para_usuarios ? "Roleta ocultada" : "Roleta visível");
+                            }
+                          }}
+                          title={wheel.visivel_para_usuarios ? "Ocultar roleta" : "Tornar roleta visível"}
+                        >
+                          {wheel.visivel_para_usuarios ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </Button>
                         <Button
                           size="icon"
                           variant="ghost"

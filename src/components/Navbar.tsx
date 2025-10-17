@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -10,12 +10,14 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
 import { TwitchLoginButton } from "@/components/TwitchLoginButton";
+import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 
 export const Navbar = () => {
   const navigate = useNavigate();
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [session, setSession] = useState<Session | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { isAdmin } = useAdmin(session?.user ?? null);
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
@@ -142,6 +144,15 @@ export const Navbar = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => setDailyRewardOpen(true)}
+                    className="rounded-full"
+                    title="Recompensa Diária"
+                  >
+                    <Gift className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => navigate("/account")}
                     className="rounded-full"
                     title="Configurações da Conta"
@@ -245,6 +256,17 @@ export const Navbar = () => {
                     <Button
                       variant="outline"
                       onClick={() => {
+                        setDailyRewardOpen(true);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full justify-start"
+                    >
+                      <Gift className="mr-2 h-4 w-4" />
+                      Recompensa Diária
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
                         navigate("/account");
                         setMobileMenuOpen(false);
                       }}
@@ -284,6 +306,8 @@ export const Navbar = () => {
           </div>
         )}
       </div>
+
+      <DailyRewardDialog open={dailyRewardOpen} onOpenChange={setDailyRewardOpen} />
     </nav>
   );
 };

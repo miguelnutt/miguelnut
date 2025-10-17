@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import QRCode from "qrcode";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
+import { DailyRewardConfigDialog } from "@/components/DailyRewardConfigDialog";
+import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -34,6 +36,8 @@ export default function AccountSettings() {
   const [loadingPontos, setLoadingPontos] = useState(false);
   const [editandoPersonagem, setEditandoPersonagem] = useState(false);
   const [personagemSalvo, setPersonagemSalvo] = useState<string | null>(null);
+  const [dailyRewardConfigOpen, setDailyRewardConfigOpen] = useState(false);
+  const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -130,12 +134,33 @@ export default function AccountSettings() {
 
     setSavingPersonagem(true);
     try {
-      const { error } = await supabase
+      // Primeiro buscar o perfil
+      const { data: profile } = await supabase
         .from('profiles')
-        .update({ nome_personagem: nomePersonagem.trim() })
-        .eq('twitch_username', twitchUser.login);
+        .select('id')
+        .eq('twitch_username', twitchUser.login)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (!profile) {
+        // Criar perfil se não existir
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            nome: twitchUser.display_name,
+            twitch_username: twitchUser.login,
+            nome_personagem: nomePersonagem.trim()
+          });
+
+        if (insertError) throw insertError;
+      } else {
+        // Atualizar perfil existente
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ nome_personagem: nomePersonagem.trim() })
+          .eq('id', profile.id);
+
+        if (updateError) throw updateError;
+      }
       
       setPersonagemSalvo(nomePersonagem.trim());
       setEditandoPersonagem(false);
@@ -546,8 +571,31 @@ export default function AccountSettings() {
             </CardContent>
           </Card>
           )}
+
+          {/* Configuração de Recompensa Diária - Apenas Admin */}
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                  <Gift className="h-5 w-5" />
+                  Recompensas Diárias
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure as recompensas de login diário para usuários da Twitch
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => setDailyRewardConfigOpen(true)}>
+                  Configurar Recompensas
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
+
+      <DailyRewardConfigDialog open={dailyRewardConfigOpen} onOpenChange={setDailyRewardConfigOpen} />
+      <DailyRewardDialog open={dailyRewardOpen} onOpenChange={setDailyRewardOpen} />
     </>
   );
 }

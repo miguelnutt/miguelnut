@@ -12,14 +12,8 @@ verify_jwt = false
 [functions.loyalty-balance]
 verify_jwt = false
 
-[functions.twitch-auth-exchange]
-verify_jwt = false
-
-[functions.twitch-auth-me]
-verify_jwt = false
-
-[functions.twitch-auth-logout]
-verify_jwt = false
-
 [functions.twitch-config]
+verify_jwt = false
+
+[functions.claim-daily-reward]
 verify_jwt = false
