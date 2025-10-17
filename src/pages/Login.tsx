@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Shield, ArrowLeft } from "lucide-react";
 import { FaTwitch } from "react-icons/fa";
@@ -293,12 +292,7 @@ export default function Login() {
               </form>
             </>
           ) : (
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-1">
-                <TabsTrigger value="login">Login</TabsTrigger>
-              </TabsList>
-
-            <TabsContent value="login" className="space-y-4">
+            <div className="space-y-4">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -344,15 +338,18 @@ export default function Login() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  window.location.href = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-auth-exchange`;
+                  const clientId = 'b0a7u3x4vb3f4d9l6n1tzi3f1kf79v';
+                  const redirectUri = encodeURIComponent(window.location.origin + '/auth/twitch/callback');
+                  const codeChallenge = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+                  localStorage.setItem('code_verifier', codeChallenge);
+                  window.location.href = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=user:read:email&code_challenge=${codeChallenge}&code_challenge_method=plain`;
                 }}
               >
                 <FaTwitch className="mr-2 h-5 w-5 text-purple-500" />
                 Login com a Twitch
               </Button>
 
-            </TabsContent>
-            </Tabs>
+            </div>
           )}
         </CardContent>
       </Card>
