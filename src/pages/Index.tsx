@@ -19,16 +19,47 @@ export default function Index() {
   const { isAdmin } = useAdmin(user);
   const { isLive, loading: twitchLoading } = useTwitchStatus();
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>(DEFAULT_VIDEO_ID);
+  const [videoStartTime, setVideoStartTime] = useState<number>(0);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newVideoUrl, setNewVideoUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [recentRewards, setRecentRewards] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
   }, []);
+
+  useEffect(() => {
+    fetchRecentRewards();
+  }, []);
+
+  const fetchRecentRewards = async () => {
+    try {
+      const { data: spins } = await supabase
+        .from("spins")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      const { data: raffles } = await supabase
+        .from("raffles")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      const combined = [
+        ...(spins || []).map(s => ({ ...s, type: 'spin' })),
+        ...(raffles || []).map(r => ({ ...r, type: 'raffle' }))
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+
+      setRecentRewards(combined);
+    } catch (error) {
+      console.error("Error fetching recent rewards:", error);
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -69,31 +100,41 @@ export default function Index() {
     }
   };
 
-  const extractVideoId = (url: string) => {
+  const extractVideoId = (url: string): { videoId: string; startTime: number } => {
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
       /youtube\.com\/embed\/([^&\n?#]+)/,
       /youtube\.com\/live\/([^&\n?#]+)/,
     ];
 
+    let videoId = url;
+    let startTime = 0;
+
     for (const pattern of patterns) {
       const match = url.match(pattern);
       if (match) {
-        return match[1];
+        videoId = match[1];
+        break;
       }
     }
 
     if (url.length === 11 && !url.includes('/')) {
-      return url;
+      videoId = url;
     }
 
-    return url;
+    // Extract timestamp from URL
+    const timeMatch = url.match(/[?&]t=(\d+)s?/) || url.match(/[?&]start=(\d+)/);
+    if (timeMatch) {
+      startTime = parseInt(timeMatch[1]);
+    }
+
+    return { videoId, startTime };
   };
 
   const handleSaveVideo = async () => {
     setSaving(true);
     try {
-      const videoId = extractVideoId(newVideoUrl);
+      const { videoId, startTime } = extractVideoId(newVideoUrl);
       
       if (!videoId) {
         toast.error("URL inválida. Por favor, insira uma URL válida do YouTube.");
@@ -122,6 +163,7 @@ export default function Index() {
       }
 
       setYoutubeVideoId(videoId);
+      setVideoStartTime(startTime);
       setDialogOpen(false);
       setNewVideoUrl("");
       toast.success("Vídeo atualizado com sucesso!");
@@ -140,6 +182,37 @@ export default function Index() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-4 md:py-8">
+        {/* Recent Rewards Section */}
+        {recentRewards.length > 0 && (
+          <div className="max-w-5xl mx-auto mb-4">
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Últimas Recompensas</h3>
+                  <a href="/dashboard" className="text-sm text-primary hover:underline">
+                    Ir para Dashboard →
+                  </a>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {recentRewards.map((reward, idx) => (
+                    <div key={idx} className="flex-shrink-0 bg-muted rounded-lg px-3 py-2 min-w-[200px]">
+                      <div className="text-xs text-muted-foreground">
+                        {reward.type === 'spin' ? '🎰 Roleta' : '🎉 Sorteio'}
+                      </div>
+                      <div className="font-semibold text-sm">
+                        {reward.type === 'spin' ? reward.nome_usuario : reward.nome_vencedor}
+                      </div>
+                      <div className="text-xs text-primary">
+                        {reward.type === 'spin' ? `${reward.valor} ${reward.tipo_recompensa}` : `${reward.valor_premio} ${reward.tipo_premio}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <div className="mb-6 md:mb-8">
           <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent text-center" style={{ WebkitTextStroke: '1px rgba(139, 92, 246, 0.3)' }}>
             Bem-vindo!
@@ -173,12 +246,8 @@ export default function Index() {
                 </div>
               ) : (
                 <div className="space-y-4 p-4 md:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Youtube className="h-5 w-5" />
-                      <span className="font-semibold">📺 Última Live no YouTube</span>
-                    </div>
-                    {isAdmin && (
+                  {isAdmin && (
+                    <div className="flex items-center justify-end mb-2">
                       <Button
                         onClick={() => setDialogOpen(true)}
                         variant="outline"
@@ -188,13 +257,13 @@ export default function Index() {
                         <Edit className="h-4 w-4" />
                         Trocar Vídeo
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <div className="aspect-video rounded-lg overflow-hidden bg-muted">
                     <iframe
                       width="100%"
                       height="100%"
-                      src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=0`}
+                      src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=0${videoStartTime > 0 ? `&start=${videoStartTime}` : ''}`}
                       title="Última Live do YouTube"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
