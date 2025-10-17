@@ -47,6 +47,7 @@ export type Database = {
           id: string
           nome_vencedor: string
           observacoes: string | null
+          pago: boolean
           participantes: Json
           tipo_premio: string | null
           valor_premio: number | null
@@ -57,6 +58,7 @@ export type Database = {
           id?: string
           nome_vencedor: string
           observacoes?: string | null
+          pago?: boolean
           participantes?: Json
           tipo_premio?: string | null
           valor_premio?: number | null
@@ -67,6 +69,7 @@ export type Database = {
           id?: string
           nome_vencedor?: string
           observacoes?: string | null
+          pago?: boolean
           participantes?: Json
           tipo_premio?: string | null
           valor_premio?: number | null
@@ -79,6 +82,7 @@ export type Database = {
           created_at: string
           id: string
           nome_usuario: string
+          pago: boolean
           tipo_recompensa: string
           user_id: string | null
           valor: string
@@ -88,6 +92,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome_usuario: string
+          pago?: boolean
           tipo_recompensa: string
           user_id?: string | null
           valor: string
@@ -97,6 +102,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome_usuario?: string
+          pago?: boolean
           tipo_recompensa?: string
           user_id?: string | null
           valor?: string

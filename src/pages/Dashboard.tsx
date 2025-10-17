@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Trophy, Ticket, Coins, RotateCw, Calendar as CalendarIcon } from "lucide-react";
+import { Trophy, Ticket, Coins, RotateCw, Calendar as CalendarIcon, X, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { useAdmin } from "@/hooks/useAdmin";
 import { format, startOfDay, startOfWeek, startOfMonth, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { User } from "@supabase/supabase-js";
 
 interface Stats {
   totalSpins: number;
@@ -34,6 +35,7 @@ interface RecentRaffle {
   created_at: string;
   tipo_premio: string;
   valor_premio: number;
+  pago: boolean;
 }
 
 type PeriodType = "today" | "week" | "month" | "custom" | "all";
@@ -228,6 +230,23 @@ export default function Dashboard() {
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString("pt-BR");
+  };
+
+  const toggleRafflePago = async (id: string, currentPago: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("raffles")
+        .update({ pago: !currentPago })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success(currentPago ? "Marcado como não pago" : "Marcado como pago!");
+      await fetchData();
+    } catch (error: any) {
+      console.error("Error updating payment status:", error);
+      toast.error("Erro ao atualizar status: " + error.message);
+    }
   };
 
   if (loading) {
@@ -430,9 +449,33 @@ export default function Dashboard() {
                           {formatDate(raffle.created_at)}
                         </p>
                       </div>
-                      <p className="text-sm text-muted-foreground ml-7">
-                        Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
-                      </p>
+                      <div className="flex items-center justify-between ml-7">
+                        <p className="text-sm text-muted-foreground">
+                          Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
+                        </p>
+                        {raffle.tipo_premio === "Rubini Coins" && (
+                          <div className="flex items-center">
+                            {isAdmin ? (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => toggleRafflePago(raffle.id, raffle.pago)}
+                                className={`h-7 w-7 ${raffle.pago ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}`}
+                              >
+                                {raffle.pago ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                              </Button>
+                            ) : (
+                              <div className="flex justify-center">
+                                {raffle.pago ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <X className="h-4 w-4 text-red-500" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
