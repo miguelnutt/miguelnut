@@ -13,6 +13,7 @@ interface Participante {
   user_id: string;
   nome: string;
   tickets: number;
+  nome_personagem?: string;
 }
 
 interface RaffleDialogProps {
@@ -54,7 +55,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
         .select(`
           user_id,
           tickets_atual,
-          profiles(nome)
+          profiles(nome, nome_personagem)
         `)
         .gt("tickets_atual", 0);
 
@@ -63,7 +64,8 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       const participantesList: Participante[] = (ticketsData || []).map((t: any) => ({
         user_id: t.user_id,
         nome: t.profiles?.nome || "Usuário desconhecido",
-        tickets: t.tickets_atual
+        tickets: t.tickets_atual,
+        nome_personagem: t.profiles?.nome_personagem || undefined
       }));
 
       setParticipantes(participantesList);
@@ -302,17 +304,33 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           )}
 
           {vencedor && (
-            <div className="text-center p-6 bg-gradient-primary rounded-lg shadow-glow">
-              <Trophy className="h-16 w-16 mx-auto mb-4 text-primary-foreground animate-pulse-glow" />
-              <h3 className="text-2xl font-bold text-primary-foreground mb-2">
-                🎉 Vencedor! 🎉
-              </h3>
-              <p className="text-xl font-semibold text-primary-foreground">
-                {vencedor.nome}
-              </p>
-              <p className="text-sm text-primary-foreground/80 mt-2">
-                Tinha {vencedor.tickets} {vencedor.tickets === 1 ? "ticket" : "tickets"}
-              </p>
+            <div className="text-center p-6 bg-gradient-primary rounded-lg shadow-glow space-y-4">
+              <Trophy className="h-16 w-16 mx-auto text-primary-foreground animate-pulse-glow" />
+              <div>
+                <h3 className="text-2xl font-bold text-primary-foreground mb-2">
+                  🎉 Vencedor! 🎉
+                </h3>
+                <p className="text-xl font-semibold text-primary-foreground">
+                  {vencedor.nome}
+                </p>
+                <p className="text-sm text-primary-foreground/80 mt-2">
+                  Tinha {vencedor.tickets} {vencedor.tickets === 1 ? "ticket" : "tickets"}
+                </p>
+              </div>
+              <div className="pt-4 border-t border-primary-foreground/20">
+                <p className="text-sm text-primary-foreground/80 mb-1">Prêmio:</p>
+                <p className="text-2xl font-bold text-primary-foreground">
+                  {valorPremio} {tipoPremio}
+                </p>
+                {tipoPremio === "Rubini Coins" && vencedor.nome_personagem && (
+                  <div className="mt-3">
+                    <p className="text-xs text-primary-foreground/70">Personagem:</p>
+                    <p className="text-lg font-semibold text-primary-foreground">
+                      {vencedor.nome_personagem}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

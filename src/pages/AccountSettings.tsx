@@ -32,6 +32,8 @@ export default function AccountSettings() {
   const [savingPersonagem, setSavingPersonagem] = useState(false);
   const [pontosStreamElements, setPontosStreamElements] = useState<number | null>(null);
   const [loadingPontos, setLoadingPontos] = useState(false);
+  const [editandoPersonagem, setEditandoPersonagem] = useState(false);
+  const [personagemSalvo, setPersonagemSalvo] = useState<string | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -68,8 +70,12 @@ export default function AccountSettings() {
         .eq('twitch_username', twitchUser.login)
         .maybeSingle();
 
-      if (profile) {
-        setNomePersonagem(profile.nome_personagem || "");
+      if (profile && profile.nome_personagem) {
+        setNomePersonagem(profile.nome_personagem);
+        setPersonagemSalvo(profile.nome_personagem);
+        setEditandoPersonagem(false);
+      } else {
+        setEditandoPersonagem(true);
       }
       
       await fetchStreamElementsPoints();
@@ -131,6 +137,8 @@ export default function AccountSettings() {
 
       if (error) throw error;
       
+      setPersonagemSalvo(nomePersonagem.trim());
+      setEditandoPersonagem(false);
       toast.success("Nome do personagem salvo com sucesso!");
     } catch (error: any) {
       console.error("Error saving character name:", error);
@@ -336,21 +344,46 @@ export default function AccountSettings() {
                     onChange={(e) => setNomePersonagem(e.target.value)}
                     placeholder="Digite o nome do seu personagem"
                     maxLength={50}
+                    disabled={!editandoPersonagem}
+                    className={!editandoPersonagem ? "bg-muted" : ""}
                   />
                 </div>
-                <Button
-                  onClick={handleSavePersonagem}
-                  disabled={savingPersonagem || !nomePersonagem.trim()}
-                >
-                  {savingPersonagem ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Salvar Nome"
-                  )}
-                </Button>
+                {editandoPersonagem ? (
+                  <div className="flex gap-2">
+                    {personagemSalvo && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setNomePersonagem(personagemSalvo);
+                          setEditandoPersonagem(false);
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleSavePersonagem}
+                      disabled={savingPersonagem || !nomePersonagem.trim()}
+                      className="flex-1"
+                    >
+                      {savingPersonagem ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        "Salvar Nome"
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditandoPersonagem(true)}
+                  >
+                    Alterar Nome do Personagem
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

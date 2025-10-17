@@ -77,6 +77,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       setIsModoTeste(testMode);
       setShowResultDialog(false);
       setAwaitingConfirmation(false);
+      setNomePersonagem(null);
     } else {
       setIsModoTeste(testMode);
     }
@@ -127,6 +128,19 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         toast.error("Erro ao processar usuário");
         setAwaitingConfirmation(false);
         return;
+      }
+
+      // Se for Rubini Coins, buscar nome do personagem
+      if (resultado.tipo === "Rubini Coins" && userId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('nome_personagem')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (profile?.nome_personagem) {
+          setNomePersonagem(profile.nome_personagem);
+        }
       }
 
       // Salvar o spin com tipo correto para RC
