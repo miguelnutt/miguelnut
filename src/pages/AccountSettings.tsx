@@ -71,16 +71,21 @@ export default function AccountSettings() {
   const loadTwitchUserProfile = async () => {
     if (!twitchUser) return;
     
+    console.log("Carregando perfil Twitch...");
+    
     try {
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, nome_personagem')
         .eq('twitch_username', twitchUser.login);
 
+      console.log("Perfis carregados:", profiles);
+
       let profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
       // Se não tem perfil, criar
       if (!profile) {
+        console.log("Criando perfil inicial...");
         const { data: newProfiles } = await supabase
           .from('profiles')
           .insert({
@@ -90,25 +95,34 @@ export default function AccountSettings() {
           .select('id, nome_personagem');
 
         profile = newProfiles && newProfiles.length > 0 ? newProfiles[0] : null;
+        console.log("Perfil criado:", profile);
       }
 
       // Atualizar estado com o que está salvo
       if (profile) {
         const personagemAtual = profile.nome_personagem || "";
-        setNomePersonagem(personagemAtual);
+        console.log("Personagem atual no DB:", personagemAtual);
+        
+        // Só atualizar se não estiver editando
+        if (!editandoPersonagem) {
+          setNomePersonagem(personagemAtual);
+        }
         
         if (personagemAtual) {
           setPersonagemSalvo(personagemAtual);
           setEditandoPersonagem(false);
         } else {
           setPersonagemSalvo(null);
-          setEditandoPersonagem(true);
+          // Só colocar em modo de edição se realmente não tem personagem
+          if (!personagemSalvo) {
+            setEditandoPersonagem(true);
+          }
         }
       }
       
       await fetchStreamElementsPoints();
     } catch (error) {
-      console.error("Erro:", error);
+      console.error("Erro ao carregar perfil:", error);
     }
   };
 
@@ -158,16 +172,21 @@ export default function AccountSettings() {
 
     setSavingPersonagem(true);
     try {
+      console.log("Salvando personagem:", nomePersonagem.trim());
+      
       // Buscar perfil
       const { data: profiles, error: fetchError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, nome_personagem')
         .eq('twitch_username', twitchUser.login);
 
       if (fetchError) throw fetchError;
 
+      console.log("Perfis encontrados:", profiles);
+
       if (!profiles || profiles.length === 0) {
         // Criar perfil
+        console.log("Criando novo perfil");
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
@@ -179,6 +198,7 @@ export default function AccountSettings() {
         if (insertError) throw insertError;
       } else {
         // Atualizar perfil
+        console.log("Atualizando perfil existente");
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ nome_personagem: nomePersonagem.trim() })
@@ -187,12 +207,14 @@ export default function AccountSettings() {
         if (updateError) throw updateError;
       }
       
-      setPersonagemSalvo(nomePersonagem.trim());
+      // Atualizar estado SEM recarregar
+      const nomeParaSalvar = nomePersonagem.trim();
+      setPersonagemSalvo(nomeParaSalvar);
+      setNomePersonagem(nomeParaSalvar);
       setEditandoPersonagem(false);
-      toast.success("Nome do personagem salvo!");
       
-      // Recarregar
-      await loadTwitchUserProfile();
+      console.log("Personagem salvo com sucesso:", nomeParaSalvar);
+      toast.success("Nome do personagem salvo!");
     } catch (error: any) {
       console.error("Erro:", error);
       toast.error("Erro ao salvar: " + error.message);
