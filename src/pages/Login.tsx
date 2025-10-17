@@ -183,29 +183,24 @@ export default function Login() {
   };
 
   const handleTwitchLogin = async () => {
-    try {
-      setLoading(true);
-      const redirectUrl = `${window.location.origin}/login`;
-      
-      console.log("Iniciando login Twitch com redirect:", redirectUrl);
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'twitch',
-        options: {
-          redirectTo: redirectUrl,
-        },
-      });
-
-      if (error) {
-        console.error("Erro no OAuth Twitch:", error);
-        toast.error("Erro ao fazer login: " + error.message);
-      }
-    } catch (error: any) {
-      console.error("Erro ao iniciar login Twitch:", error);
-      toast.error("Erro ao fazer login com Twitch: " + error.message);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    
+    const TWITCH_CLIENT_ID = "gvbk9smrzjp6wrdq5hzhyf9xhk1k43";
+    const redirectUri = `${window.location.origin}/login`;
+    const state = Math.random().toString(36).substring(7);
+    
+    // Salvar state para validação
+    localStorage.setItem('twitch_oauth_state', state);
+    
+    // Redirecionar para Twitch OAuth
+    const twitchAuthUrl = `https://id.twitch.tv/oauth2/authorize?` +
+      `client_id=${TWITCH_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=user:read:email&` +
+      `state=${state}`;
+    
+    window.location.href = twitchAuthUrl;
   };
 
   if (checkingAdmin) {
