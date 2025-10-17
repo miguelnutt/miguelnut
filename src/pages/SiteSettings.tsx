@@ -131,10 +131,6 @@ export default function SiteSettings() {
     );
   }
 
-  if (!isAdmin) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
