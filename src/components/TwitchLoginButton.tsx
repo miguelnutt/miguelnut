@@ -57,8 +57,11 @@ export function TwitchLoginButton() {
       localStorage.setItem('twitch_code_verifier', codeVerifier);
       localStorage.setItem('twitch_state', state);
 
-      const origin = window.location.origin.replace(/\/$/, ''); // Remove / do final
-      const redirectUri = `${origin}/auth/twitch/callback`;
+      // Garantir URL sem barras duplas
+      const origin = window.location.origin;
+      const redirectUri = `${origin}/auth/twitch/callback`.replace(/([^:]\/)\/+/g, "$1");
+      
+      console.log('🔗 Redirect URI final:', redirectUri);
 
       // Redirecionar para Twitch OAuth
       const authUrl = new URL('https://id.twitch.tv/oauth2/authorize');
