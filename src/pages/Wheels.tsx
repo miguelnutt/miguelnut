@@ -8,6 +8,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { WheelDialog } from "@/components/WheelDialog";
 import { SpinDialog } from "@/components/SpinDialog";
 import { CanvasWheel } from "@/components/CanvasWheel";
+import { WheelRanking } from "@/components/WheelRanking";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 
@@ -203,6 +204,125 @@ export default function Wheels() {
     );
   }
 
+  const renderWheelsSection = () => {
+    if (wheels.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">Nenhuma roleta criada ainda</p>
+          {isAdmin && (
+            <Button onClick={() => setWheelDialogOpen(true)} className="bg-gradient-primary">
+              <Plus className="mr-2 h-4 w-4" />
+              Criar Primeira Roleta
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {wheels.map((wheel, index) => (
+          <Card 
+            key={wheel.id} 
+            className={`shadow-card hover:shadow-glow transition-all duration-300 ${
+              isAdmin ? 'cursor-move' : ''
+            } ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
+            draggable={isAdmin}
+            onDragStart={() => isAdmin && handleDragStart(index)}
+            onDragOver={(e) => isAdmin && handleDragOver(e, index)}
+            onDragEnd={() => isAdmin && handleDragEnd()}
+          >
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                  )}
+                  <CardTitle>{wheel.nome}</CardTitle>
+                </div>
+                {isAdmin && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from("wheels")
+                          .update({ visivel_para_usuarios: !wheel.visivel_para_usuarios })
+                          .eq("id", wheel.id);
+                        
+                        if (!error) {
+                          toast.success(wheel.visivel_para_usuarios ? "Roleta ocultada" : "Roleta visível");
+                        }
+                      }}
+                      title={wheel.visivel_para_usuarios ? "Ocultar roleta" : "Tornar roleta visível"}
+                    >
+                      {wheel.visivel_para_usuarios ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleEdit(wheel)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleDuplicate(wheel)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleDelete(wheel.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="aspect-square rounded-lg bg-card flex items-center justify-center mb-4 relative overflow-hidden p-2">
+                <div className="w-full h-full flex items-center justify-center scale-[0.85]">
+                  <CanvasWheel
+                    recompensas={wheel.recompensas}
+                    rotation={0}
+                    spinning={false}
+                    showArrow={false}
+                  />
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground mb-3">
+                {wheel.recompensas.length} recompensas
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button 
+                  onClick={() => handleSpin(wheel, true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  🎮 Testar Roleta
+                </Button>
+                {isAdmin && (
+                  <Button 
+                    onClick={() => handleSpin(wheel, false)}
+                    className="w-full bg-gradient-primary"
+                  >
+                    Girar Roleta
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -215,6 +335,7 @@ export default function Wheels() {
         </div>
 
         {isAdmin && (
+          <div className="mb-6">
             <Button 
               onClick={() => {
                 setEditingWheel(null);
@@ -225,118 +346,28 @@ export default function Wheels() {
               <Plus className="mr-2 h-4 w-4" />
               Nova Roleta
             </Button>
-          )}
+          </div>
+        )}
 
-        {wheels.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">Nenhuma roleta criada ainda</p>
-            {isAdmin && (
-              <Button onClick={() => setWheelDialogOpen(true)} className="bg-gradient-primary">
-                <Plus className="mr-2 h-4 w-4" />
-                Criar Primeira Roleta
-              </Button>
-            )}
+        {/* Layout para ADMIN: Roletas em cima, Ranking embaixo */}
+        {isAdmin ? (
+          <div className="space-y-6">
+            <div>
+              {renderWheelsSection()}
+            </div>
+            <div>
+              <WheelRanking />
+            </div>
           </div>
         ) : (
-          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {wheels.map((wheel, index) => (
-              <Card 
-                key={wheel.id} 
-                className={`shadow-card hover:shadow-glow transition-all duration-300 ${
-                  isAdmin ? 'cursor-move' : ''
-                } ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
-                draggable={isAdmin}
-                onDragStart={() => isAdmin && handleDragStart(index)}
-                onDragOver={(e) => isAdmin && handleDragOver(e, index)}
-                onDragEnd={() => isAdmin && handleDragEnd()}
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {isAdmin && (
-                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                      )}
-                      <CardTitle>{wheel.nome}</CardTitle>
-                    </div>
-                    {isAdmin && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={async () => {
-                            const { error } = await supabase
-                              .from("wheels")
-                              .update({ visivel_para_usuarios: !wheel.visivel_para_usuarios })
-                              .eq("id", wheel.id);
-                            
-                            if (!error) {
-                              toast.success(wheel.visivel_para_usuarios ? "Roleta ocultada" : "Roleta visível");
-                            }
-                          }}
-                          title={wheel.visivel_para_usuarios ? "Ocultar roleta" : "Tornar roleta visível"}
-                        >
-                          {wheel.visivel_para_usuarios ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleEdit(wheel)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleDuplicate(wheel)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleDelete(wheel.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="aspect-square rounded-lg bg-card flex items-center justify-center mb-4 relative overflow-hidden p-2">
-                    <div className="w-full h-full flex items-center justify-center scale-[0.85]">
-                      <CanvasWheel
-                        recompensas={wheel.recompensas}
-                        rotation={0}
-                        spinning={false}
-                        showArrow={false}
-                      />
-                    </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground mb-3">
-                    {wheel.recompensas.length} recompensas
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button 
-                      onClick={() => handleSpin(wheel, true)}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      🎮 Testar Roleta
-                    </Button>
-                    {isAdmin && (
-                      <Button 
-                        onClick={() => handleSpin(wheel, false)}
-                        className="w-full bg-gradient-primary"
-                      >
-                        Girar Roleta
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          /* Layout para VISITANTE: Ranking esquerda, Roletas direita */
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              <WheelRanking />
+            </div>
+            <div className="lg:col-span-2">
+              {renderWheelsSection()}
+            </div>
           </div>
         )}
       </main>
