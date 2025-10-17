@@ -172,39 +172,34 @@ export default function AccountSettings() {
 
     setSavingPersonagem(true);
     try {
-      console.log("Salvando personagem:", nomePersonagem.trim());
+      console.log("Salvando personagem via edge function:", nomePersonagem.trim());
       
-      // Buscar perfil
-      const { data: profiles, error: fetchError } = await supabase
-        .from('profiles')
-        .select('id, nome_personagem')
-        .eq('twitch_username', twitchUser.login);
+      const twitchToken = localStorage.getItem('twitch_token');
+      if (!twitchToken) {
+        throw new Error('Token da Twitch não encontrado');
+      }
 
-      if (fetchError) throw fetchError;
-
-      console.log("Perfis encontrados:", profiles);
-
-      if (!profiles || profiles.length === 0) {
-        // Criar perfil
-        console.log("Criando novo perfil");
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            nome: twitchUser.display_name,
-            twitch_username: twitchUser.login,
+      // Chamar edge function que faz a operação com privilégios de admin
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/save-twitch-character`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${twitchToken}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
             nome_personagem: nomePersonagem.trim()
-          });
-        
-        if (insertError) throw insertError;
-      } else {
-        // Atualizar perfil
-        console.log("Atualizando perfil existente");
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ nome_personagem: nomePersonagem.trim() })
-          .eq('id', profiles[0].id);
-        
-        if (updateError) throw updateError;
+          }),
+        }
+      );
+
+      const data = await response.json();
+      console.log("Resposta da edge function:", data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Erro ao salvar personagem');
       }
       
       // Atualizar estado SEM recarregar
@@ -216,7 +211,7 @@ export default function AccountSettings() {
       console.log("Personagem salvo com sucesso:", nomeParaSalvar);
       toast.success("Nome do personagem salvo!");
     } catch (error: any) {
-      console.error("Erro:", error);
+      console.error("Erro ao salvar personagem:", error);
       toast.error("Erro ao salvar: " + error.message);
     } finally {
       setSavingPersonagem(false);

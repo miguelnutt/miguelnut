@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.manage-streamelements-points]
 verify_jwt = false
+
+[functions.save-twitch-character]
+verify_jwt = false
