@@ -15,6 +15,7 @@ import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { DailyRewardConfigDialog } from "@/components/DailyRewardConfigDialog";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
+import { ManagePointsDialog } from "@/components/ManagePointsDialog";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ export default function AccountSettings() {
   const [dailyRewardConfigOpen, setDailyRewardConfigOpen] = useState(false);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
   const [manageRewardsOpen, setManageRewardsOpen] = useState(false);
+  const [managePointsOpen, setManagePointsOpen] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -70,35 +72,24 @@ export default function AccountSettings() {
     if (!twitchUser) return;
     
     try {
-      console.log("Carregando perfil para:", twitchUser.login);
-      
-      let { data: profile, error: fetchError } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id, nome_personagem')
-        .eq('twitch_username', twitchUser.login)
-        .maybeSingle();
+        .eq('twitch_username', twitchUser.login);
 
-      console.log("Perfil buscado:", profile, "Erro:", fetchError);
+      let profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
-      // Se não encontrou perfil, criar um
+      // Se não tem perfil, criar
       if (!profile) {
-        console.log("Criando perfil automaticamente...");
-        const { data: newProfile, error: insertError } = await supabase
+        const { data: newProfiles } = await supabase
           .from('profiles')
           .insert({
             nome: twitchUser.display_name,
             twitch_username: twitchUser.login,
           })
-          .select('id, nome_personagem')
-          .single();
+          .select('id, nome_personagem');
 
-        console.log("Perfil criado:", newProfile, "Erro:", insertError);
-        
-        if (insertError) {
-          console.error("Erro ao criar perfil:", insertError);
-        } else {
-          profile = newProfile;
-        }
+        profile = newProfiles && newProfiles.length > 0 ? newProfiles[0] : null;
       }
 
       if (profile && profile.nome_personagem) {
@@ -106,12 +97,13 @@ export default function AccountSettings() {
         setPersonagemSalvo(profile.nome_personagem);
         setEditandoPersonagem(false);
       } else {
+        setNomePersonagem("");
         setEditandoPersonagem(true);
       }
       
       await fetchStreamElementsPoints();
     } catch (error) {
-      console.error("Error loading profile:", error);
+      console.error("Erro:", error);
     }
   };
 
@@ -161,55 +153,38 @@ export default function AccountSettings() {
 
     setSavingPersonagem(true);
     try {
-      console.log("Salvando personagem para:", twitchUser.login);
-      
-      // Primeiro buscar o perfil
-      const { data: profile, error: fetchError } = await supabase
+      // Buscar perfil
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id')
-        .eq('twitch_username', twitchUser.login)
-        .maybeSingle();
+        .eq('twitch_username', twitchUser.login);
 
-      console.log("Perfil encontrado:", profile, "Erro:", fetchError);
-
-      if (!profile) {
-        // Criar perfil se não existir
-        console.log("Criando novo perfil...");
-        const { data: newProfile, error: insertError } = await supabase
+      if (!profiles || profiles.length === 0) {
+        // Criar perfil
+        await supabase
           .from('profiles')
           .insert({
             nome: twitchUser.display_name,
             twitch_username: twitchUser.login,
             nome_personagem: nomePersonagem.trim()
-          })
-          .select()
-          .single();
-
-        console.log("Perfil criado:", newProfile, "Erro:", insertError);
-        if (insertError) throw insertError;
+          });
       } else {
-        // Atualizar perfil existente
-        console.log("Atualizando perfil existente...");
-        const { data: updatedProfile, error: updateError } = await supabase
+        // Atualizar perfil
+        await supabase
           .from('profiles')
           .update({ nome_personagem: nomePersonagem.trim() })
-          .eq('id', profile.id)
-          .select()
-          .single();
-
-        console.log("Perfil atualizado:", updatedProfile, "Erro:", updateError);
-        if (updateError) throw updateError;
+          .eq('id', profiles[0].id);
       }
       
       setPersonagemSalvo(nomePersonagem.trim());
       setEditandoPersonagem(false);
-      toast.success("Nome do personagem salvo com sucesso!");
+      toast.success("Nome do personagem salvo!");
       
-      // Recarregar para confirmar
+      // Recarregar
       await loadTwitchUserProfile();
     } catch (error: any) {
-      console.error("Error saving character name:", error);
-      toast.error("Erro ao salvar nome do personagem: " + error.message);
+      console.error("Erro:", error);
+      toast.error("Erro ao salvar: " + error.message);
     } finally {
       setSavingPersonagem(false);
     }
@@ -637,12 +612,15 @@ export default function AccountSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
                   <Button onClick={() => setDailyRewardConfigOpen(true)}>
                     Configurar Recompensas
                   </Button>
                   <Button variant="outline" onClick={() => setManageRewardsOpen(true)}>
-                    Gerenciar Usuários
+                    Gerenciar Recompensas de Usuários
+                  </Button>
+                  <Button variant="outline" onClick={() => setManagePointsOpen(true)}>
+                    Adicionar/Remover Pontos
                   </Button>
                 </div>
               </CardContent>
@@ -654,6 +632,7 @@ export default function AccountSettings() {
       <DailyRewardConfigDialog open={dailyRewardConfigOpen} onOpenChange={setDailyRewardConfigOpen} />
       <DailyRewardDialog open={dailyRewardOpen} onOpenChange={setDailyRewardOpen} />
       <ManageDailyRewardsDialog open={manageRewardsOpen} onOpenChange={setManageRewardsOpen} />
+      <ManagePointsDialog open={managePointsOpen} onOpenChange={setManagePointsOpen} />
     </>
   );
 }
