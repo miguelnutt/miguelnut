@@ -101,7 +101,7 @@ export default function Index() {
                   </div>
                   <div className="text-center">
                     <a 
-                      href="https://www.youtube.com/@miguelnutt" 
+                      href="https://www.youtube.com/@MiguelnutTibiano" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-sm text-primary hover:underline"

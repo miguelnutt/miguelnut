@@ -203,7 +203,7 @@ export default function SiteSettings() {
                 Como funciona:
               </p>
               <ul className="list-disc list-inside space-y-1">
-                <li>Vá para a página de Lives do YouTube: <a href="https://www.youtube.com/@miguelnutt/streams" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">youtube.com/@miguelnutt/streams</a></li>
+                <li>Vá para a página de Lives do YouTube: <a href="https://www.youtube.com/@MiguelnutTibiano/streams" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">youtube.com/@MiguelnutTibiano/streams</a></li>
                 <li>Clique na sua última live transmitida</li>
                 <li>Copie a URL da live e cole aqui</li>
                 <li>Se sua live da Twitch estiver online, ela será exibida automaticamente</li>
