@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.twitch-auth-logout]
 verify_jwt = false
+
+[functions.twitch-config]
+verify_jwt = false
