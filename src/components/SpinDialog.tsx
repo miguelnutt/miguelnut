@@ -347,6 +347,41 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         }
       }
       
+      // Se for Rubini Coins, buscar nome do personagem
+      if (sorteada.tipo === "Rubini Coins" && !isModoTeste) {
+        try {
+          console.log("🎮 Buscando personagem para:", nomeParaExibir);
+          
+          // Buscar perfil por twitch_username primeiro
+          const { data: profileByTwitch } = await supabase
+            .from('profiles')
+            .select('id, nome, twitch_username, nome_personagem')
+            .ilike('twitch_username', nomeParaExibir)
+            .maybeSingle();
+          
+          // Se não encontrou por twitch_username, buscar por nome
+          const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
+            .from('profiles')
+            .select('id, nome, twitch_username, nome_personagem')
+            .ilike('nome', nomeParaExibir)
+            .maybeSingle();
+          
+          const profileData = profileByTwitch || profileByName;
+          console.log("📋 Perfil encontrado:", profileData);
+          
+          if (profileData?.nome_personagem) {
+            setNomePersonagem(profileData.nome_personagem);
+            console.log("✅ Personagem:", profileData.nome_personagem);
+          } else {
+            setNomePersonagem("NÃO CADASTRADO");
+            console.log("⚠️ Personagem não cadastrado");
+          }
+        } catch (error) {
+          console.error("Erro ao buscar personagem:", error);
+          setNomePersonagem("NÃO CADASTRADO");
+        }
+      }
+      
       // Pequeno delay antes de mostrar o resultado para criar suspense
       setTimeout(() => {
         setShowResultDialog(true);
