@@ -82,18 +82,21 @@ export type Database = {
           created_at: string | null
           id: string
           updated_at: string | null
+          video_start_time: number | null
           youtube_video_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           updated_at?: string | null
+          video_start_time?: number | null
           youtube_video_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           updated_at?: string | null
+          video_start_time?: number | null
           youtube_video_id?: string | null
         }
         Relationships: []

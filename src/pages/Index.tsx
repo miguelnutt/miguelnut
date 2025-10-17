@@ -88,13 +88,16 @@ export default function Index() {
       // Se o admin configurou um vídeo, usa ele. Senão usa o padrão
       if (data && data.youtube_video_id) {
         setYoutubeVideoId(data.youtube_video_id);
+        setVideoStartTime(data.video_start_time || 0);
       } else {
         setYoutubeVideoId(DEFAULT_VIDEO_ID);
+        setVideoStartTime(0);
       }
     } catch (error: any) {
       console.error("Error fetching settings:", error);
       // Em caso de erro, usa o vídeo padrão
       setYoutubeVideoId(DEFAULT_VIDEO_ID);
+      setVideoStartTime(0);
     } finally {
       setSettingsLoading(false);
     }
@@ -150,14 +153,20 @@ export default function Index() {
       if (existing) {
         const { error } = await supabase
           .from("site_settings")
-          .update({ youtube_video_id: videoId })
+          .update({ 
+            youtube_video_id: videoId,
+            video_start_time: startTime 
+          })
           .eq("id", existing.id);
 
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("site_settings")
-          .insert({ youtube_video_id: videoId });
+          .insert({ 
+            youtube_video_id: videoId,
+            video_start_time: startTime 
+          });
 
         if (error) throw error;
       }
@@ -213,11 +222,6 @@ export default function Index() {
           </div>
         )}
 
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent text-center" style={{ WebkitTextStroke: '1px rgba(139, 92, 246, 0.3)' }}>
-            Bem-vindo!
-          </h1>
-        </div>
 
         {loading ? (
           <Card className="shadow-card max-w-5xl mx-auto">
