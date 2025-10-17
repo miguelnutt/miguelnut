@@ -146,7 +146,7 @@ export const Navbar = () => {
                 </>
               ) : (
                 <Button onClick={() => navigate("/login")} variant="default">
-                  Login Admin
+                  Login
                 </Button>
               )}
             </div>
@@ -244,7 +244,7 @@ export const Navbar = () => {
                     }} 
                     className="w-full"
                   >
-                    Login Admin
+                    Login
                   </Button>
                 )}
               </div>
