@@ -41,8 +41,7 @@ serve(async (req) => {
       throw new Error('Twitch credentials not configured');
     }
 
-    console.log('Exchanging code for token...');
-    console.log('Redirect URI:', redirect_uri);
+    // Exchange code for token
 
     // 1. Trocar código por access_token
     const tokenResponse = await fetch('https://id.twitch.tv/oauth2/token', {
@@ -65,7 +64,6 @@ serve(async (req) => {
     }
 
     const tokens = await tokenResponse.json();
-    console.log('Tokens received');
 
     // 2. Buscar dados do usuário da Twitch
     const userResponse = await fetch('https://api.twitch.tv/helix/users', {
@@ -87,8 +85,6 @@ serve(async (req) => {
     if (!twitchUser) {
       throw new Error('No Twitch user found');
     }
-
-    console.log('User authenticated:', twitchUser.login);
 
     // 3. Criar/atualizar perfil no Supabase
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -118,11 +114,7 @@ serve(async (req) => {
 
           if (profileError) {
             console.error('Error creating profile:', profileError);
-          } else {
-            console.log('Profile created for:', twitchUser.login);
           }
-        } else {
-          console.log('Profile already exists for:', twitchUser.login);
         }
       } catch (error) {
         console.error('Error managing profile:', error);

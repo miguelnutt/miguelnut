@@ -329,7 +329,7 @@ export default function AccountSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nome-personagem">Nome do Personagem no Rubin</Label>
+                  <Label htmlFor="nome-personagem">Nome do Personagem no RubinOT</Label>
                   <Input
                     id="nome-personagem"
                     value={nomePersonagem}
