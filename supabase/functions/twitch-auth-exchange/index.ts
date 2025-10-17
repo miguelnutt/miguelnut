@@ -31,6 +31,42 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Se for GET, inicia o fluxo OAuth redirecionando para Twitch
+  if (req.method === 'GET') {
+    const TWITCH_CLIENT_ID = Deno.env.get('TWITCH_CLIENT_ID');
+    
+    if (!TWITCH_CLIENT_ID) {
+      throw new Error('Twitch credentials not configured');
+    }
+
+    // Gerar code_verifier e code_challenge
+    const codeVerifier = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+    
+    const redirectUri = `${origin}/auth/twitch/callback`;
+    const state = btoa(JSON.stringify({ code_verifier: codeVerifier, redirect_uri: redirectUri }));
+    
+    const authUrl = `https://id.twitch.tv/oauth2/authorize?` +
+      `client_id=${TWITCH_CLIENT_ID}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=code` +
+      `&scope=user:read:email` +
+      `&code_challenge=${codeVerifier}` +
+      `&code_challenge_method=plain` +
+      `&state=${encodeURIComponent(state)}`;
+    
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...corsHeaders,
+        'Location': authUrl
+      }
+    });
+  }
+
+  // Se for POST, processar o código de autorização
   try {
     const { code, code_verifier, redirect_uri } = await req.json();
     

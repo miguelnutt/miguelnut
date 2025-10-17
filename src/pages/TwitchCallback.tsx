@@ -17,31 +17,20 @@ export default function TwitchCallback() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
-      const state = urlParams.get('state');
+      const stateParam = urlParams.get('state');
       const error = urlParams.get('error');
 
       if (error) {
         throw new Error(`Twitch OAuth error: ${error}`);
       }
 
-      if (!code || !state) {
+      if (!code || !stateParam) {
         throw new Error('Missing code or state parameter');
       }
 
-      // Validar state (CSRF protection)
-      const savedState = localStorage.getItem('twitch_state');
-      if (state !== savedState) {
-        throw new Error('Invalid state parameter');
-      }
-
-      // Recuperar code_verifier
-      const codeVerifier = localStorage.getItem('twitch_code_verifier');
-      if (!codeVerifier) {
-        throw new Error('Missing code verifier');
-      }
-
-      const redirectUri = `${window.location.origin}/auth/twitch/callback`.replace(/([^:]\/)\/+/g, "$1");
-      console.log('🔗 Callback Redirect URI:', redirectUri);
+      // Decodificar state para recuperar code_verifier e redirect_uri
+      const stateData = JSON.parse(atob(stateParam));
+      const { code_verifier, redirect_uri } = stateData;
 
       // Trocar código por token via edge function
       const response = await fetch(
@@ -55,8 +44,8 @@ export default function TwitchCallback() {
           },
           body: JSON.stringify({
             code,
-            code_verifier: codeVerifier,
-            redirect_uri: redirectUri,
+            code_verifier: code_verifier,
+            redirect_uri: redirect_uri,
           }),
         }
       );
@@ -71,10 +60,6 @@ export default function TwitchCallback() {
       if (data.token) {
         localStorage.setItem('twitch_token', data.token);
       }
-
-      // Limpar localStorage
-      localStorage.removeItem('twitch_code_verifier');
-      localStorage.removeItem('twitch_state');
 
       toast.success(`Bem-vindo, ${data.user.display_name}!`);
       
