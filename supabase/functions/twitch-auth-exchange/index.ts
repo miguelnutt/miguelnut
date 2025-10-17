@@ -90,7 +90,46 @@ serve(async (req) => {
 
     console.log('User authenticated:', twitchUser.login);
 
-    // 3. Criar JWT de sessão
+    // 3. Criar/atualizar perfil no Supabase
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+        // Verificar se já existe perfil com este twitch_username
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('twitch_username', twitchUser.login)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          // Criar novo perfil
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: crypto.randomUUID(),
+              nome: twitchUser.display_name,
+              twitch_username: twitchUser.login,
+            });
+
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+          } else {
+            console.log('Profile created for:', twitchUser.login);
+          }
+        } else {
+          console.log('Profile already exists for:', twitchUser.login);
+        }
+      } catch (error) {
+        console.error('Error managing profile:', error);
+      }
+    }
+
+    // 4. Criar JWT de sessão
     const sessionPayload = {
       twitch_user_id: twitchUser.id,
       login: twitchUser.login,
@@ -102,7 +141,7 @@ serve(async (req) => {
 
     const sessionToken = await generateJWT(sessionPayload);
 
-    // 4. Criar cookie HttpOnly
+    // 5. Criar cookie HttpOnly
     const headers = new Headers(corsHeaders);
     headers.set('Content-Type', 'application/json');
     headers.append('Set-Cookie', `twitch_session=${sessionToken}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${24 * 60 * 60}`);

@@ -137,13 +137,8 @@ export const Navbar = () => {
               {twitchLoading ? (
                 <UserBadgeLoading />
               ) : twitchUser ? (
-                <UserBadge user={twitchUser} onLogout={twitchLogout} />
-              ) : (
-                <TwitchLoginButton />
-              )}
-
-              {session && (
                 <>
+                  <UserBadge user={twitchUser} onLogout={twitchLogout} />
                   <Button
                     variant="ghost"
                     size="icon"
@@ -153,16 +148,21 @@ export const Navbar = () => {
                   >
                     <User className="h-5 w-5" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLogout}
-                    className="rounded-full"
-                    title="Sair"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </Button>
                 </>
+              ) : (
+                <TwitchLoginButton />
+              )}
+
+              {session && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  className="rounded-full"
+                  title="Sair (Admin)"
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
               )}
             </div>
           </div>
@@ -237,13 +237,6 @@ export const Navbar = () => {
                 ) : twitchUser ? (
                   <div className="flex flex-col gap-2">
                     <UserBadge user={twitchUser} onLogout={twitchLogout} />
-                  </div>
-                ) : (
-                  <TwitchLoginButton />
-                )}
-
-                {session && (
-                  <>
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -255,18 +248,23 @@ export const Navbar = () => {
                       <User className="mr-2 h-4 w-4" />
                       Configurações da Conta
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        handleLogout();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full justify-start"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sair
-                    </Button>
-                  </>
+                  </div>
+                ) : (
+                  <TwitchLoginButton />
+                )}
+
+                {session && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full justify-start"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair (Admin)
+                  </Button>
                 )}
               </div>
             </div>
