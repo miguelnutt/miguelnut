@@ -140,7 +140,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         .ilike('nome', nomeParaUsar)
         .maybeSingle();
       
-      const profileData = profileByTwitch || profileByName;
+      let profileData = profileByTwitch || profileByName;
       console.log("Perfil encontrado:", profileData);
 
       let userId: string;
@@ -158,7 +158,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
             nome: nomeParaUsar,
             twitch_username: nomeParaUsar // Assumir que é username da Twitch
           })
-          .select('id')
+          .select('id, nome, twitch_username, nome_personagem')
           .single();
 
         if (createError) {
@@ -169,19 +169,31 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         }
 
         userId = newProfile.id;
+        profileData = newProfile; // ✅ IMPORTANTE: Atualizar profileData com o novo perfil
+        console.log("Novo perfil criado:", profileData);
       }
 
       // Se for Rubini Coins, usar o nome_personagem do perfil encontrado
       let personagemInfo = null;
       if (resultado.tipo === "Rubini Coins") {
-        console.log("Verificando personagem para Rubini Coins");
+        console.log("🎮 Verificando personagem para Rubini Coins");
+        console.log("📋 Dados do perfil:", {
+          id: profileData?.id,
+          nome: profileData?.nome,
+          twitch_username: profileData?.twitch_username,
+          nome_personagem: profileData?.nome_personagem
+        });
+        
         if (profileData?.nome_personagem) {
           setNomePersonagem(profileData.nome_personagem);
           personagemInfo = profileData.nome_personagem;
-          console.log("Nome do personagem:", profileData.nome_personagem);
+          console.log("✅ Nome do personagem encontrado:", profileData.nome_personagem);
         } else {
           setNomePersonagem("NÃO CADASTRADO");
-          console.log("Personagem não cadastrado");
+          console.log("⚠️ Personagem NÃO CADASTRADO");
+          console.log("   - User ID:", userId);
+          console.log("   - Nome:", profileData?.nome);
+          console.log("   - Twitch Username:", profileData?.twitch_username);
         }
       }
 

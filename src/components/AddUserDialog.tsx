@@ -100,10 +100,12 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
           .from("profiles")
           .insert({
             id: userId,
-            nome: nome.trim()
+            nome: nome.trim(),
+            twitch_username: nome.trim().toLowerCase() // Salvar como twitch_username também
           });
 
         if (profileError) throw profileError;
+        console.log("Novo perfil criado com twitch_username:", nome.trim().toLowerCase());
       }
 
       // Criar entrada de tickets
