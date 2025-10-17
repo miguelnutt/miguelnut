@@ -79,37 +79,34 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
 
     setProcessing(true);
     try {
-      const seToken = import.meta.env.VITE_STREAMELEMENTS_JWT_TOKEN;
-      const seChannelId = import.meta.env.VITE_STREAMELEMENTS_CHANNEL_ID;
-
-      if (!seToken || !seChannelId) {
-        toast.error("StreamElements não configurado");
-        return;
-      }
-
-      const finalPoints = isAdd ? pointsNum : -pointsNum;
-
       const response = await fetch(
-        `https://api.streamelements.com/kappa/v2/points/${seChannelId}/${selectedUser.twitch_username}/${finalPoints}`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-streamelements-points`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: {
-            'Authorization': `Bearer ${seToken}`,
             'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
+          body: JSON.stringify({
+            username: selectedUser.twitch_username,
+            points: pointsNum,
+            action: isAdd ? 'add' : 'remove'
+          }),
         }
       );
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Erro ao modificar pontos');
+        throw new Error(data.error || 'Erro ao modificar pontos');
       }
 
-      toast.success(`${isAdd ? 'Adicionado' : 'Removido'} ${pointsNum} pontos de ${selectedUser.nome}`);
+      toast.success(data.message);
       setPoints("");
       setSelectedUser(null);
     } catch (error: any) {
       console.error("Erro:", error);
-      toast.error("Erro ao modificar pontos");
+      toast.error(error.message || "Erro ao modificar pontos");
     } finally {
       setProcessing(false);
     }

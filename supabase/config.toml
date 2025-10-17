@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.claim-daily-reward]
 verify_jwt = false
+
+[functions.manage-streamelements-points]
+verify_jwt = false

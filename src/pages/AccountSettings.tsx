@@ -92,13 +92,18 @@ export default function AccountSettings() {
         profile = newProfiles && newProfiles.length > 0 ? newProfiles[0] : null;
       }
 
-      if (profile && profile.nome_personagem) {
-        setNomePersonagem(profile.nome_personagem);
-        setPersonagemSalvo(profile.nome_personagem);
-        setEditandoPersonagem(false);
-      } else {
-        setNomePersonagem("");
-        setEditandoPersonagem(true);
+      // Atualizar estado com o que está salvo
+      if (profile) {
+        const personagemAtual = profile.nome_personagem || "";
+        setNomePersonagem(personagemAtual);
+        
+        if (personagemAtual) {
+          setPersonagemSalvo(personagemAtual);
+          setEditandoPersonagem(false);
+        } else {
+          setPersonagemSalvo(null);
+          setEditandoPersonagem(true);
+        }
       }
       
       await fetchStreamElementsPoints();

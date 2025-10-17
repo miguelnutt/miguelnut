@@ -171,23 +171,22 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
                   <div
                     key={reward.dia}
                     className={`
-                      relative p-3 rounded-lg border-2 text-center transition-all
+                      relative p-3 rounded-lg border-2 text-center transition-all min-h-[80px] flex flex-col items-center justify-center
                       ${isCurrent ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border'}
                       ${isCompleted ? 'bg-green-500/10 border-green-500/50' : ''}
-                      ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-90' : ''}
                     `}
                   >
                     {(isCompleted || (jaResgatouHoje && isCurrent)) && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-green-500 rounded-full p-2">
-                          <Check className="h-6 w-6 text-white" strokeWidth={3} />
+                      <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <div className="bg-primary rounded-full p-2.5 shadow-lg">
+                          <Check className="h-7 w-7 text-white" strokeWidth={3} />
                         </div>
                       </div>
                     )}
-                    <div className={`text-xs text-muted-foreground mb-1 ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-30' : ''}`}>
+                    <div className={`text-xs text-muted-foreground mb-1 ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-20' : ''}`}>
                       Dia {reward.dia}
                     </div>
-                    <div className={`font-semibold text-sm ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-30' : ''}`}>
+                    <div className={`font-semibold text-sm ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-20' : ''}`}>
                       {reward.pontos} pts
                     </div>
                   </div>
