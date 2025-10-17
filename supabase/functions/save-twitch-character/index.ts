@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,9 +14,10 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const jwtSecret = Deno.env.get('JWT_SECRET')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Pegar token da Twitch do header
+    // Pegar token JWT do header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
@@ -24,31 +26,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    const twitchToken = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace('Bearer ', '');
 
-    // Validar token com a API da Twitch
-    const twitchResponse = await fetch('https://api.twitch.tv/helix/users', {
-      headers: {
-        'Authorization': `Bearer ${twitchToken}`,
-        'Client-Id': Deno.env.get('TWITCH_CLIENT_ID')!,
-      },
-    });
-
-    if (!twitchResponse.ok) {
-      console.error('Twitch validation failed:', await twitchResponse.text());
+    // Decodificar e validar o JWT
+    let twitchUser;
+    try {
+      const secret = new TextEncoder().encode(jwtSecret);
+      const { payload } = await jose.jwtVerify(token, secret);
+      twitchUser = payload;
+      console.log('JWT decodificado:', twitchUser);
+    } catch (jwtError: any) {
+      console.error('Erro ao validar JWT:', jwtError);
       return new Response(
         JSON.stringify({ error: 'Token inválido' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const twitchData = await twitchResponse.json();
-    const twitchUser = twitchData.data[0];
-
-    if (!twitchUser) {
+    if (!twitchUser || !twitchUser.login) {
       return new Response(
-        JSON.stringify({ error: 'Usuário não encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Usuário não encontrado no token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -70,8 +68,8 @@ Deno.serve(async (req) => {
     // Buscar perfil existente
     const { data: existingProfile } = await supabase
       .from('profiles')
-      .select('id')
-      .eq('twitch_username', twitchUser.login)
+      .select('id, nome_personagem')
+      .eq('twitch_username', twitchUser.login as string)
       .maybeSingle();
 
     if (existingProfile) {
@@ -82,27 +80,27 @@ Deno.serve(async (req) => {
         .eq('id', existingProfile.id);
 
       if (updateError) {
-        console.error('Update error:', updateError);
+        console.error('Erro ao atualizar perfil:', updateError);
         throw updateError;
       }
 
-      console.log('Perfil atualizado com sucesso');
+      console.log('Perfil atualizado:', existingProfile.id);
     } else {
       // Criar novo perfil
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
-          nome: twitchUser.display_name,
-          twitch_username: twitchUser.login,
+          nome: (twitchUser.display_name as string) || (twitchUser.login as string),
+          twitch_username: twitchUser.login as string,
           nome_personagem: nome_personagem.trim()
         });
 
       if (insertError) {
-        console.error('Insert error:', insertError);
+        console.error('Erro ao criar perfil:', insertError);
         throw insertError;
       }
 
-      console.log('Perfil criado com sucesso');
+      console.log('Novo perfil criado para:', twitchUser.login);
     }
 
     return new Response(
