@@ -40,7 +40,7 @@ export default function TwitchCallback() {
         throw new Error('Missing code verifier');
       }
 
-      const redirectUri = `${window.location.origin}/auth/twitch/callback`;
+      const redirectUri = `${window.location.origin.replace(/\/$/, '')}/auth/twitch/callback`;
 
       // Trocar código por token via edge function
       const response = await fetch(

@@ -57,7 +57,7 @@ export function TwitchLoginButton() {
       localStorage.setItem('twitch_code_verifier', codeVerifier);
       localStorage.setItem('twitch_state', state);
 
-      const origin = window.location.origin;
+      const origin = window.location.origin.replace(/\/$/, ''); // Remove / do final
       const redirectUri = `${origin}/auth/twitch/callback`;
 
       // Redirecionar para Twitch OAuth
