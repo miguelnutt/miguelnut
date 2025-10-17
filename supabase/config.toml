@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.twitch-auth-logout]
 verify_jwt = false
+
+[functions.loyalty-balance]
+verify_jwt = false

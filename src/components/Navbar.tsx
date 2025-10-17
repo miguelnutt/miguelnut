@@ -7,6 +7,9 @@ import { Session } from "@supabase/supabase-js";
 import profileImage from "@/assets/profile-miguelnut.png";
 import { useTwitchStatus } from "@/hooks/useTwitchStatus";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useTwitchAuth } from "@/hooks/useTwitchAuth";
+import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
+import { TwitchLoginButton } from "@/components/TwitchLoginButton";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -15,6 +18,7 @@ export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { isAdmin } = useAdmin(session?.user ?? null);
+  const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
@@ -130,7 +134,15 @@ export const Navbar = () => {
                 )}
               </Button>
 
-              {session ? (
+              {twitchLoading ? (
+                <UserBadgeLoading />
+              ) : twitchUser ? (
+                <UserBadge user={twitchUser} onLogout={twitchLogout} />
+              ) : (
+                <TwitchLoginButton />
+              )}
+
+              {session && (
                 <>
                   <Button
                     variant="ghost"
@@ -151,10 +163,6 @@ export const Navbar = () => {
                     <LogOut className="h-5 w-5" />
                   </Button>
                 </>
-              ) : (
-                <Button onClick={() => navigate("/login")} variant="default">
-                  Login
-                </Button>
               )}
             </div>
           </div>
@@ -224,7 +232,17 @@ export const Navbar = () => {
               </Link>
 
               <div className="border-t border-border pt-4 flex flex-col gap-2">
-                {session ? (
+                {twitchLoading ? (
+                  <UserBadgeLoading />
+                ) : twitchUser ? (
+                  <div className="flex flex-col gap-2">
+                    <UserBadge user={twitchUser} onLogout={twitchLogout} />
+                  </div>
+                ) : (
+                  <TwitchLoginButton />
+                )}
+
+                {session && (
                   <>
                     <Button
                       variant="outline"
@@ -249,16 +267,6 @@ export const Navbar = () => {
                       Sair
                     </Button>
                   </>
-                ) : (
-                  <Button 
-                    onClick={() => {
-                      navigate("/login");
-                      setMobileMenuOpen(false);
-                    }} 
-                    className="w-full"
-                  >
-                    Login
-                  </Button>
                 )}
               </div>
             </div>
