@@ -16,7 +16,7 @@ import {
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { RaffleDialog } from "@/components/RaffleDialog";
-import { AddUserDialog } from "@/components/AddUserDialog";
+import { AddTicketDialog } from "@/components/AddTicketDialog";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 
@@ -53,7 +53,7 @@ export default function Tickets() {
   const [ticketHistory, setTicketHistory] = useState<TicketHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [raffleDialogOpen, setRaffleDialogOpen] = useState(false);
-  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [addTicketDialogOpen, setAddTicketDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [ticketAdjustment, setTicketAdjustment] = useState("");
   const [directValue, setDirectValue] = useState<Record<string, string>>({});
@@ -386,12 +386,12 @@ export default function Tickets() {
         {isAdmin && (
             <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <Button 
-                onClick={() => setAddUserDialogOpen(true)}
+                onClick={() => setAddTicketDialogOpen(true)}
                 variant="outline"
                 className="w-full sm:w-auto"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Adicionar Usuário
+                Adicionar Ticket
               </Button>
               <Button 
                 onClick={() => setRaffleDialogOpen(true)}
@@ -807,9 +807,9 @@ export default function Tickets() {
         onSuccess={fetchData}
       />
 
-      <AddUserDialog
-        open={addUserDialogOpen}
-        onOpenChange={setAddUserDialogOpen}
+      <AddTicketDialog
+        open={addTicketDialogOpen}
+        onOpenChange={setAddTicketDialogOpen}
         onSuccess={fetchData}
       />
     </div>
