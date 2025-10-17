@@ -41,8 +41,14 @@ export function TwitchLoginButton() {
       sessionStorage.setItem('twitch_code_verifier', codeVerifier);
       sessionStorage.setItem('twitch_state', state);
 
+      // ⚠️ IMPORTANTE: Pegue este Client ID do seu app "lovableproject.auth" no console da Twitch
+      // Vá em https://dev.twitch.tv/console/apps e copie o Client ID do app correto
       const TWITCH_CLIENT_ID = "gvbk9smrzjp6wrdq5hzhyf9xhk1k43";
       const redirectUri = `${window.location.origin}/auth/twitch/callback`;
+
+      console.log('🔐 Iniciando login Twitch...');
+      console.log('📍 Redirect URI:', redirectUri);
+      console.log('🔑 Client ID:', TWITCH_CLIENT_ID);
 
       // Redirecionar para Twitch OAuth
       const authUrl = new URL('https://id.twitch.tv/oauth2/authorize');
@@ -54,9 +60,11 @@ export function TwitchLoginButton() {
       authUrl.searchParams.set('code_challenge', codeChallenge);
       authUrl.searchParams.set('code_challenge_method', 'S256');
 
+      console.log('🌐 URL de autenticação:', authUrl.toString());
+
       window.location.href = authUrl.toString();
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Erro no login:', error);
       toast.error('Erro ao iniciar login com Twitch');
       setLoading(false);
     }
