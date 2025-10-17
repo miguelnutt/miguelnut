@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { Trophy } from "lucide-react";
 import { z } from "zod";
+import confetti from "canvas-confetti";
+import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
 
 interface Participante {
   user_id: string;
@@ -30,6 +32,7 @@ const raffleSchema = z.object({
 
 export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProps) {
   const [participantes, setParticipantes] = useState<Participante[]>([]);
+  const [participantesSelecionados, setParticipantesSelecionados] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [vencedor, setVencedor] = useState<Participante | null>(null);
@@ -39,6 +42,21 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
   const [valorPremio, setValorPremio] = useState<number>(25);
   const [pontosAtuaisVencedor, setPontosAtuaisVencedor] = useState<number | null>(null);
   const [carregandoPontos, setCarregandoPontos] = useState(false);
+  const [showResultDialog, setShowResultDialog] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const rewardAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Inicializar áudio de recompensa
+  useEffect(() => {
+    rewardAudioRef.current = new Audio(rewardSound);
+    rewardAudioRef.current.volume = 0.5;
+    return () => {
+      if (rewardAudioRef.current) {
+        rewardAudioRef.current.pause();
+        rewardAudioRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -47,6 +65,9 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       setIsModoTeste(false);
       setTipoPremio("Rubini Coins");
       setValorPremio(25);
+      setShowResultDialog(false);
+      setAwaitingConfirmation(false);
+      setPontosAtuaisVencedor(null);
     }
   }, [open]);
 
@@ -83,6 +104,8 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
 
       console.log("Lista final de participantes:", participantesList);
       setParticipantes(participantesList);
+      // Inicialmente todos estão selecionados
+      setParticipantesSelecionados(new Set(participantesList.map(p => p.user_id)));
     } catch (error: any) {
       console.error("Error fetching participants:", error);
       toast.error("Erro ao carregar participantes");
@@ -93,9 +116,59 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
     return ((tickets / total) * 100).toFixed(1);
   };
 
+  const launchConfetti = () => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval = window.setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+      });
+    }, 250);
+  };
+
+  const toggleParticipante = (userId: string) => {
+    setParticipantesSelecionados(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleTodos = () => {
+    if (participantesSelecionados.size === participantes.length) {
+      setParticipantesSelecionados(new Set());
+    } else {
+      setParticipantesSelecionados(new Set(participantes.map(p => p.user_id)));
+    }
+  };
+
   const realizarSorteio = async () => {
-    if (participantes.length === 0) {
-      toast.error("Não há participantes com tickets");
+    const participantesAtivos = participantes.filter(p => participantesSelecionados.has(p.user_id));
+    
+    if (participantesAtivos.length === 0) {
+      toast.error("Selecione pelo menos um participante");
       return;
     }
 
@@ -108,15 +181,15 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
 
     setDrawing(true);
 
-    // Calcular total de tickets
-    const totalTickets = participantes.reduce((sum, p) => sum + p.tickets, 0);
+    // Calcular total de tickets apenas dos participantes ativos
+    const totalTickets = participantesAtivos.reduce((sum, p) => sum + p.tickets, 0);
 
     // Sortear um número aleatório
     let sorteio = Math.floor(Math.random() * totalTickets);
 
-    // Determinar vencedor baseado nos tickets
+    // Determinar vencedor baseado nos tickets (apenas dos ativos)
     let vencedorSorteado: Participante | null = null;
-    for (const participante of participantes) {
+    for (const participante of participantesAtivos) {
       sorteio -= participante.tickets;
       if (sorteio < 0) {
         vencedorSorteado = participante;
@@ -125,7 +198,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
     }
 
     if (!vencedorSorteado) {
-      vencedorSorteado = participantes[0];
+      vencedorSorteado = participantesAtivos[0];
     }
 
     // Animação de sorteio
@@ -154,56 +227,100 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
         }
       }
 
-      // Se for modo teste, apenas mostrar resultado sem salvar
+      // Mostrar dialog de resultado
+      setTimeout(() => {
+        setShowResultDialog(true);
+        launchConfetti();
+        // Tocar som de recompensa
+        if (rewardAudioRef.current) {
+          rewardAudioRef.current.currentTime = 0;
+          rewardAudioRef.current.play().catch(() => {});
+        }
+      }, 500);
+    }, 3000);
+  };
+
+  const handleConfirmPrize = async () => {
+    if (!vencedor) return;
+
+    setAwaitingConfirmation(true);
+
+    try {
+      // Se for modo teste, apenas fechar
       if (isModoTeste) {
-        toast.success(`🎮 TESTE: ${vencedorSorteado.nome} ganhou o sorteio!`, {
+        toast.success(`🎮 TESTE: ${vencedor.nome} ganhou o sorteio!`, {
           description: "Modo simulação - tickets não foram zerados e nada foi salvo"
         });
+        setShowResultDialog(false);
+        onOpenChange(false);
         return;
       }
 
-      try {
-        // Salvar sorteio com prêmio
-        const { error: raffleError } = await supabase
-          .from("raffles")
-          .insert({
-            vencedor_id: vencedorSorteado.user_id,
-            nome_vencedor: vencedorSorteado.nome,
-            tipo_premio: tipoPremio,
-            valor_premio: valorPremio,
-            participantes: participantes.map(p => ({
-              user_id: p.user_id,
-              nome: p.nome,
-              tickets: p.tickets
-            }))
+      // Salvar sorteio com prêmio
+      const { error: raffleError } = await supabase
+        .from("raffles")
+        .insert({
+          vencedor_id: vencedor.user_id,
+          nome_vencedor: vencedor.nome,
+          tipo_premio: tipoPremio,
+          valor_premio: valorPremio,
+          participantes: participantes.map(p => ({
+            user_id: p.user_id,
+            nome: p.nome,
+            tickets: p.tickets
+          }))
+        });
+
+      if (raffleError) throw raffleError;
+
+      // Se for Pontos de Loja, sincronizar com StreamElements
+      if (tipoPremio === "Pontos de Loja") {
+        try {
+          await supabase.functions.invoke('sync-streamelements-points', {
+            body: {
+              username: vencedor.nome,
+              points: valorPremio
+            }
           });
-
-        if (raffleError) throw raffleError;
-
-        // Zerar tickets do vencedor
-        const { error: ticketsError } = await supabase
-          .from("tickets")
-          .update({ tickets_atual: 0 })
-          .eq("user_id", vencedorSorteado.user_id);
-
-        if (ticketsError) throw ticketsError;
-
-        // Salvar no ledger
-        await supabase
-          .from("ticket_ledger")
-          .insert({
-            user_id: vencedorSorteado.user_id,
-            variacao: -vencedorSorteado.tickets,
-            motivo: "Ganhou sorteio - tickets zerados"
-          });
-
-        toast.success(`${vencedorSorteado.nome} ganhou o sorteio!`);
-        onSuccess();
-      } catch (error: any) {
-        console.error("Error saving raffle:", error);
-        toast.error("Erro ao salvar sorteio: " + error.message);
+          console.log(`StreamElements sync: ${vencedor.nome} ganhou ${valorPremio} pontos de loja`);
+        } catch (seError: any) {
+          console.error("StreamElements sync error:", seError);
+        }
       }
-    }, 3000);
+
+      // Zerar tickets do vencedor
+      const { error: ticketsError } = await supabase
+        .from("tickets")
+        .update({ tickets_atual: 0 })
+        .eq("user_id", vencedor.user_id);
+
+      if (ticketsError) throw ticketsError;
+
+      // Salvar no ledger
+      await supabase
+        .from("ticket_ledger")
+        .insert({
+          user_id: vencedor.user_id,
+          variacao: -vencedor.tickets,
+          motivo: "Ganhou sorteio - tickets zerados"
+        });
+
+      toast.success(`Prêmio entregue: ${valorPremio} ${tipoPremio} para ${vencedor.nome}!`);
+      setShowResultDialog(false);
+      onOpenChange(false);
+      onSuccess();
+    } catch (error: any) {
+      console.error("Error confirming prize:", error);
+      toast.error("Erro ao confirmar prêmio: " + error.message);
+    } finally {
+      setAwaitingConfirmation(false);
+    }
+  };
+
+  const handleCancelPrize = () => {
+    toast.info("Sorteio cancelado");
+    setShowResultDialog(false);
+    setVencedor(null);
   };
 
   return (
@@ -295,35 +412,58 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">
-              Participantes ({participantes.length})
-            </h3>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold">
+                Participantes ({participantes.filter(p => participantesSelecionados.has(p.user_id)).length}/{participantes.length})
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleTodos}
+                disabled={drawing}
+              >
+                {participantesSelecionados.size === participantes.length ? "Desmarcar Todos" : "Marcar Todos"}
+              </Button>
+            </div>
             <div className="max-h-64 overflow-y-auto space-y-2">
               {participantes.map((p) => {
-                const totalTickets = participantes.reduce((sum, item) => sum + item.tickets, 0);
-                const probabilidade = calcularProbabilidade(p.tickets, totalTickets);
+                const participantesAtivos = participantes.filter(p => participantesSelecionados.has(p.user_id));
+                const totalTickets = participantesAtivos.reduce((sum, item) => sum + item.tickets, 0);
+                const probabilidade = participantesSelecionados.has(p.user_id) 
+                  ? calcularProbabilidade(p.tickets, totalTickets) 
+                  : "0.0";
+                const isSelected = participantesSelecionados.has(p.user_id);
                 
                 return (
                   <div
                     key={p.user_id}
-                    className="p-3 bg-gradient-card rounded-lg space-y-2"
+                    className={`p-3 bg-gradient-card rounded-lg space-y-2 transition-opacity ${!isSelected ? 'opacity-50' : ''}`}
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{p.nome}</span>
-                      <span className="text-sm font-semibold text-primary">
-                        {probabilidade}%
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-primary h-full rounded-full transition-all"
-                          style={{ width: `${probabilidade}%` }}
-                        />
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleParticipante(p.user_id)}
+                        disabled={drawing}
+                      />
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-medium">{p.nome}</span>
+                          <span className="text-sm font-semibold text-primary">
+                            {probabilidade}%
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-primary h-full rounded-full transition-all"
+                              style={{ width: isSelected ? `${probabilidade}%` : '0%' }}
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground min-w-[80px] text-right">
+                            {p.tickets} {p.tickets === 1 ? "ticket" : "tickets"}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-xs text-muted-foreground min-w-[80px] text-right">
-                        {p.tickets} {p.tickets === 1 ? "ticket" : "tickets"}
-                      </span>
                     </div>
                   </div>
                 );
@@ -337,77 +477,6 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
               <p className="text-lg font-semibold">Sorteando...</p>
             </div>
           )}
-
-          {vencedor && (
-            <div className="text-center p-6 bg-gradient-primary rounded-lg shadow-glow space-y-4">
-              <Trophy className="h-16 w-16 mx-auto text-primary-foreground animate-pulse-glow" />
-              <div>
-                <h3 className="text-2xl font-bold text-primary-foreground mb-2">
-                  🎉 Vencedor! 🎉
-                </h3>
-                <p className="text-xl font-semibold text-primary-foreground">
-                  {vencedor.nome}
-                </p>
-                <p className="text-sm text-primary-foreground/80 mt-2">
-                  Tinha {vencedor.tickets} {vencedor.tickets === 1 ? "ticket" : "tickets"}
-                </p>
-              </div>
-              <div className="pt-4 border-t border-primary-foreground/20">
-                <p className="text-sm text-primary-foreground/80 mb-1">Prêmio:</p>
-                <p className="text-2xl font-bold text-primary-foreground">
-                  {valorPremio} {tipoPremio}
-                </p>
-                
-                {/* Mostrar pontos atuais e futuros para Pontos de Loja */}
-                {tipoPremio === "Pontos de Loja" && !isModoTeste && (
-                  <div className="mt-3 space-y-2 pt-3 border-t border-primary-foreground/10">
-                    {carregandoPontos ? (
-                      <p className="text-xs text-primary-foreground/70">Carregando pontos...</p>
-                    ) : pontosAtuaisVencedor !== null ? (
-                      <>
-                        <div className="flex justify-between items-center">
-                          <p className="text-xs text-primary-foreground/70">Pontos Atuais:</p>
-                          <p className="text-sm font-semibold text-primary-foreground">
-                            {pontosAtuaisVencedor.toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <p className="text-xs text-primary-foreground/70">Após Prêmio:</p>
-                          <p className="text-lg font-bold text-primary-foreground">
-                            {(pontosAtuaisVencedor + valorPremio).toLocaleString()}
-                          </p>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-xs text-yellow-300">
-                        Não foi possível carregar os pontos do usuário
-                      </p>
-                    )}
-                  </div>
-                )}
-                
-                {tipoPremio === "Rubini Coins" && (
-                  <div className="mt-3">
-                    <p className="text-xs text-primary-foreground/70">Personagem:</p>
-                    {vencedor.nome_personagem ? (
-                      <p className="text-lg font-semibold text-primary-foreground">
-                        {vencedor.nome_personagem}
-                      </p>
-                    ) : (
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-yellow-300">
-                          ⚠️ Usuário ainda não cadastrou o nome do personagem
-                        </p>
-                        <p className="text-xs text-primary-foreground/60">
-                          Peça para acessar Configurações da Conta
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         <DialogFooter>
@@ -418,17 +487,126 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           >
             Fechar
           </Button>
-          {!vencedor && (
-            <Button
-              onClick={realizarSorteio}
-              disabled={drawing || participantes.length === 0}
-              className="bg-gradient-primary"
-            >
-              {drawing ? "Sorteando..." : isModoTeste ? "🎮 Testar Sorteio" : "Sortear Vencedor"}
-            </Button>
-          )}
+          <Button
+            onClick={realizarSorteio}
+            disabled={drawing || participantes.filter(p => participantesSelecionados.has(p.user_id)).length === 0}
+            className="bg-gradient-primary"
+          >
+            {drawing ? "Sorteando..." : isModoTeste ? "🎮 Testar Sorteio" : "Sortear Vencedor"}
+          </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Dialog de Resultado */}
+      <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+        <DialogContent className="max-w-md">
+          <div className="text-center space-y-6 py-6">
+            <div className="text-6xl animate-bounce">🎉</div>
+            
+            <div className="space-y-2">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
+                {isModoTeste ? "🎮 Teste!" : "Vencedor!"}
+              </h2>
+              <p className="text-xl font-semibold text-foreground">
+                {vencedor?.nome}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Tinha {vencedor?.tickets} {vencedor?.tickets === 1 ? "ticket" : "tickets"}
+              </p>
+            </div>
+
+            {vencedor && (
+              <div className="p-6 bg-gradient-card rounded-lg shadow-glow space-y-4">
+                <div>
+                  <p className="text-lg text-muted-foreground mb-2">Ganhou:</p>
+                  <p className="text-4xl font-bold text-foreground">
+                    {valorPremio} {tipoPremio}
+                  </p>
+                </div>
+                
+                {/* Mostrar pontos atuais e futuros para Pontos de Loja */}
+                {tipoPremio === "Pontos de Loja" && !isModoTeste && (
+                  <div className="pt-4 border-t border-border space-y-2">
+                    {carregandoPontos ? (
+                      <p className="text-sm text-muted-foreground">Carregando pontos...</p>
+                    ) : pontosAtuaisVencedor !== null ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-muted-foreground">Pontos Atuais:</p>
+                          <p className="text-lg font-semibold">{pontosAtuaisVencedor.toLocaleString()}</p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-muted-foreground">Após Prêmio:</p>
+                          <p className="text-lg font-bold text-primary">
+                            {(pontosAtuaisVencedor + valorPremio).toLocaleString()}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                        Não foi possível carregar os pontos do usuário
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                {tipoPremio === "Rubini Coins" && (
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">Personagem:</p>
+                    {vencedor.nome_personagem ? (
+                      <p className="text-xl font-semibold text-primary">
+                        {vencedor.nome_personagem}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+                          ⚠️ Usuário ainda não cadastrou o nome do personagem
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Peça para o usuário acessar as Configurações da Conta e cadastrar
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isModoTeste ? (
+              <Button
+                onClick={() => {
+                  setShowResultDialog(false);
+                  setVencedor(null);
+                }}
+                className="w-full bg-gradient-primary"
+                size="lg"
+              >
+                OK
+              </Button>
+            ) : (
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleCancelPrize}
+                  variant="outline"
+                  disabled={awaitingConfirmation}
+                  className="flex-1"
+                  size="lg"
+                >
+                  Cancelar Prêmio
+                </Button>
+                <Button
+                  onClick={handleConfirmPrize}
+                  disabled={awaitingConfirmation}
+                  className="flex-1 bg-gradient-primary"
+                  size="lg"
+                >
+                  {awaitingConfirmation ? "Processando..." : "Dar Prêmio"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
