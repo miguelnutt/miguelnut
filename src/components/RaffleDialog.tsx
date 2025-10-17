@@ -52,24 +52,36 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
 
   const fetchParticipantes = async () => {
     try {
+      console.log("Buscando participantes do sorteio...");
       const { data: ticketsData, error } = await supabase
         .from("tickets")
         .select(`
           user_id,
           tickets_atual,
-          profiles(nome, nome_personagem)
+          profiles(nome, nome_personagem, twitch_username)
         `)
         .gt("tickets_atual", 0);
 
       if (error) throw error;
 
-      const participantesList: Participante[] = (ticketsData || []).map((t: any) => ({
-        user_id: t.user_id,
-        nome: t.profiles?.nome || "Usuário desconhecido",
-        tickets: t.tickets_atual,
-        nome_personagem: t.profiles?.nome_personagem || undefined
-      }));
+      console.log("Dados brutos dos tickets:", ticketsData);
 
+      const participantesList: Participante[] = (ticketsData || []).map((t: any) => {
+        console.log("Processando participante:", {
+          user_id: t.user_id,
+          nome: t.profiles?.nome,
+          nome_personagem: t.profiles?.nome_personagem,
+          tickets: t.tickets_atual
+        });
+        return {
+          user_id: t.user_id,
+          nome: t.profiles?.nome || "Usuário desconhecido",
+          tickets: t.tickets_atual,
+          nome_personagem: t.profiles?.nome_personagem || undefined
+        };
+      });
+
+      console.log("Lista final de participantes:", participantesList);
       setParticipantes(participantesList);
     } catch (error: any) {
       console.error("Error fetching participants:", error);

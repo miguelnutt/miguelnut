@@ -137,17 +137,23 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       // Se for Rubini Coins, buscar nome do personagem ANTES de salvar o spin
       let personagemInfo = null;
       if (resultado.tipo === "Rubini Coins" && userId) {
-        const { data: profile } = await supabase
+        console.log("Buscando personagem para user_id:", userId);
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('nome_personagem')
+          .select('nome_personagem, nome, twitch_username')
           .eq('id', userId)
           .maybeSingle();
+        
+        console.log("Perfil encontrado:", profile);
+        console.log("Erro ao buscar perfil:", profileError);
         
         if (profile?.nome_personagem) {
           setNomePersonagem(profile.nome_personagem);
           personagemInfo = profile.nome_personagem;
+          console.log("Nome do personagem definido:", profile.nome_personagem);
         } else {
           setNomePersonagem("NÃO CADASTRADO");
+          console.log("Personagem não cadastrado");
         }
       }
 
