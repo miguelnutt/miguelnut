@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Shield } from "lucide-react";
-import { FaTwitch } from "react-icons/fa";
+import { TwitchLoginButton } from "@/components/TwitchLoginButton";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -24,49 +24,7 @@ export default function Login() {
 
   useEffect(() => {
     checkIfAdminExists();
-    handleTwitchCallback();
   }, []);
-
-  const handleTwitchCallback = async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    const savedState = localStorage.getItem('twitch_oauth_state');
-
-    if (code && state && state === savedState) {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('twitch-oauth-callback', {
-          body: { code }
-        });
-
-        if (error) throw error;
-
-        if (data.success && data.access_token) {
-          // Fazer login com o token recebido
-          const { error: signInError } = await supabase.auth.setSession({
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-          });
-
-          if (signInError) throw signInError;
-
-          toast.success(`Bem-vindo, ${data.user.display_name}!`);
-          localStorage.removeItem('twitch_oauth_state');
-          navigate('/');
-        } else {
-          throw new Error(data.error || 'Erro no login com Twitch');
-        }
-      } catch (error: any) {
-        console.error('Twitch callback error:', error);
-        toast.error('Erro ao fazer login com Twitch: ' + error.message);
-        // Limpar URL
-        window.history.replaceState({}, document.title, '/login');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
 
   const checkIfAdminExists = async () => {
     try {
@@ -180,27 +138,6 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleTwitchLogin = async () => {
-    setLoading(true);
-    
-    const TWITCH_CLIENT_ID = "gvbk9smrzjp6wrdq5hzhyf9xhk1k43";
-    const redirectUri = `${window.location.origin}/login`;
-    const state = Math.random().toString(36).substring(7);
-    
-    // Salvar state para validação
-    localStorage.setItem('twitch_oauth_state', state);
-    
-    // Redirecionar para Twitch OAuth
-    const twitchAuthUrl = `https://id.twitch.tv/oauth2/authorize?` +
-      `client_id=${TWITCH_CLIENT_ID}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `response_type=code&` +
-      `scope=user:read:email&` +
-      `state=${state}`;
-    
-    window.location.href = twitchAuthUrl;
   };
 
   if (checkingAdmin) {
@@ -386,16 +323,7 @@ export default function Login() {
                 </div>
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleTwitchLogin}
-                disabled={loading}
-              >
-                <FaTwitch className="mr-2 h-5 w-5" style={{ color: '#9146FF' }} />
-                Entrar com Twitch
-              </Button>
+              <TwitchLoginButton />
             </TabsContent>
             </Tabs>
           )}

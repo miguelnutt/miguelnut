@@ -9,6 +9,7 @@ import History from "./pages/History";
 import Tickets from "./pages/Tickets";
 import Login from "./pages/Login";
 import AccountSettings from "./pages/AccountSettings";
+import TwitchCallback from "./pages/TwitchCallback";
 import NotFound from "./pages/NotFound";
 import { Footer } from "@/components/Footer";
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/tickets" element={<Tickets />} />
             <Route path="/login" element={<Login />} />
             <Route path="/account" element={<AccountSettings />} />
+            <Route path="/auth/twitch/callback" element={<TwitchCallback />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Footer />

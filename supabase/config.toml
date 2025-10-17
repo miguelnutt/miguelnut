@@ -1,1 +1,10 @@
 project_id = "qkwctrccuqkjygqurqxt"
+
+[functions.twitch-auth-exchange]
+verify_jwt = false
+
+[functions.twitch-auth-me]
+verify_jwt = false
+
+[functions.twitch-auth-logout]
+verify_jwt = false
