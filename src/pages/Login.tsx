@@ -338,11 +338,7 @@ export default function Login() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  const clientId = 'b0a7u3x4vb3f4d9l6n1tzi3f1kf79v';
-                  const redirectUri = encodeURIComponent(window.location.origin + '/auth/twitch/callback');
-                  const codeChallenge = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-                  localStorage.setItem('code_verifier', codeChallenge);
-                  window.location.href = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=user:read:email&code_challenge=${codeChallenge}&code_challenge_method=plain`;
+                  window.location.href = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-auth-exchange`;
                 }}
               >
                 <FaTwitch className="mr-2 h-5 w-5 text-purple-500" />
