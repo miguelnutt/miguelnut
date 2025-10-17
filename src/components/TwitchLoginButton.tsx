@@ -70,7 +70,7 @@ export function TwitchLoginButton() {
       authUrl.searchParams.set('code_challenge', codeChallenge);
       authUrl.searchParams.set('code_challenge_method', 'S256');
 
-      window.location.href = authUrl.toString();
+      (window.top || window).location.href = authUrl.toString();
     } catch (error) {
       console.error('❌ Erro no login:', error);
       toast.error('Erro ao iniciar login com Twitch');
