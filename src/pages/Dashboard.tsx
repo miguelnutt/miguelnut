@@ -153,7 +153,8 @@ export default function Dashboard() {
       let rcQuery = supabase
         .from("spins")
         .select("valor, tipo_recompensa")
-        .or("tipo_recompensa.eq.RC,tipo_recompensa.eq.Rubini Coins");
+        .or("tipo_recompensa.eq.RC,tipo_recompensa.eq.Rubini Coins")
+        .eq("pago", true);
       if (startDate && endDate) {
         rcQuery = rcQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
@@ -164,7 +165,8 @@ export default function Dashboard() {
       let rcRafflesQuery = supabase
         .from("raffles")
         .select("valor_premio, tipo_premio")
-        .eq("tipo_premio", "Rubini Coins");
+        .eq("tipo_premio", "Rubini Coins")
+        .eq("pago", true);
       if (startDate && endDate) {
         rcRafflesQuery = rcRafflesQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
