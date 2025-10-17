@@ -132,17 +132,6 @@ export const Navbar = () => {
 
               {session ? (
                 <>
-                  {isAdmin && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => navigate("/settings")}
-                      className="rounded-full"
-                      title="Configurações do Site"
-                    >
-                      <SettingsIcon className="h-5 w-5 text-primary" />
-                    </Button>
-                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -237,19 +226,6 @@ export const Navbar = () => {
               <div className="border-t border-border pt-4 flex flex-col gap-2">
                 {session ? (
                   <>
-                    {isAdmin && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          navigate("/settings");
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full justify-start"
-                      >
-                        <SettingsIcon className="mr-2 h-4 w-4 text-primary" />
-                        Configurações do Site
-                      </Button>
-                    )}
                     <Button
                       variant="outline"
                       onClick={() => {
