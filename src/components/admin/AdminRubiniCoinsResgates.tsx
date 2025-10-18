@@ -126,12 +126,12 @@ export function AdminRubiniCoinsResgates() {
           {/* Filtro */}
           <div className="flex items-center gap-4">
             <Label>Filtrar por status:</Label>
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+            <Select value={filtroStatus || "TODOS"} onValueChange={(value) => setFiltroStatus(value === "TODOS" ? "" : value)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="TODOS">Todos</SelectItem>
                 <SelectItem value="PENDENTE">Pendente</SelectItem>
                 <SelectItem value="PROCESSANDO">Processando</SelectItem>
                 <SelectItem value="ENTREGUE">Entregue</SelectItem>
