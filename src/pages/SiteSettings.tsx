@@ -4,16 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Youtube, Calendar, Gift, Users } from "lucide-react";
+import { Youtube } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
-import { DailyRewardConfigDialog } from "@/components/DailyRewardConfigDialog";
-import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
-import { DailyRewardsStatsDialog } from "@/components/DailyRewardsStatsDialog";
+import { DailyRewardTodaySection } from "@/components/admin/DailyRewardTodaySection";
+import { StreakRulesSection } from "@/components/admin/StreakRulesSection";
 import { DailyRewardSpecialConfigDialog } from "@/components/DailyRewardSpecialConfigDialog";
+import { MaintenanceSection } from "@/components/admin/MaintenanceSection";
+import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection";
+import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -22,10 +24,8 @@ export default function SiteSettings() {
   const [youtubeVideoId, setYoutubeVideoId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [configDialogOpen, setConfigDialogOpen] = useState(false);
-  const [manageDialogOpen, setManageDialogOpen] = useState(false);
-  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [showSpecialDialog, setShowSpecialDialog] = useState(false);
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -223,88 +223,59 @@ export default function SiteSettings() {
             </CardContent>
           </Card>
 
-          {/* Configurações de Recompensas Diárias */}
+          {/* Seção 1: Recompensa Diária (hoje) */}
+          <DailyRewardTodaySection />
+
+          {/* Seção 2: Sequência (Streak) — Regras */}
+          <StreakRulesSection />
+
+          {/* Seção 3: Recompensas Especiais por Dia da Sequência */}
           <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Gift className="h-5 w-5" />
-                Recompensas Diárias
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Gerencie as recompensas diárias e os usuários que coletaram
+            <CardContent className="pt-6">
+              <Button 
+                onClick={() => setShowSpecialDialog(true)}
+                className="w-full bg-gradient-primary shadow-glow"
+              >
+                Gerenciar Recompensas Especiais da Sequência
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2 text-center">
+                Configure prêmios específicos para dias da sequência
               </p>
-              
-              <div className="flex flex-col gap-2">
-                <Button 
-                  onClick={() => setConfigDialogOpen(true)}
-                  className="bg-gradient-primary shadow-glow w-full"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configurar Valores das Recompensas
-                </Button>
-                
-                <Button 
-                  onClick={() => setManageDialogOpen(true)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Gerenciar Progresso dos Usuários
-                </Button>
+            </CardContent>
+          </Card>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    onClick={() => setStatsDialogOpen(true)}
-                    variant="outline"
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Ver Resgates
-                  </Button>
-                  <Button 
-                    onClick={() => setShowSpecialDialog(true)}
-                    variant="outline"
-                  >
-                    <Gift className="h-4 w-4 mr-2" />
-                    Recompensas Especiais
-                  </Button>
-                </div>
-              </div>
+          {/* Seção 4: Manutenção e Auditoria */}
+          <MaintenanceSection />
 
-              <div className="text-sm text-muted-foreground mt-4 p-4 bg-muted rounded-lg">
-                <p className="font-semibold mb-2 flex items-center gap-2">
-                  <Gift className="h-4 w-4" />
-                  Como funciona:
-                </p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li><strong>Configurar Valores:</strong> Define quantos pontos cada dia de login consecutivo dá (dias 1-30)</li>
-                  <li><strong>Gerenciar Progresso:</strong> Veja o progresso de cada usuário e resete se necessário</li>
-                  <li>Usuários ganham recompensas ao fazer login diariamente</li>
-                  <li>Se pularem um dia, o progresso volta para o dia 1</li>
-                </ul>
-              </div>
+          {/* Seção 5: Rankings e Exibição */}
+          <RankingDisplaySection />
+
+          {/* Gerenciar Progresso dos Usuários */}
+          <Card className="shadow-card">
+            <CardContent className="pt-6">
+              <Button 
+                onClick={() => setManageDialogOpen(true)}
+                variant="outline"
+                className="w-full"
+              >
+                Gerenciar Progresso dos Usuários
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2 text-center">
+                Visualizar e resetar sequências de usuários
+              </p>
             </CardContent>
           </Card>
         </div>
       </main>
 
       {/* Dialogs de Gerenciamento */}
-      <DailyRewardConfigDialog 
-        open={configDialogOpen} 
-        onOpenChange={setConfigDialogOpen}
+      <DailyRewardSpecialConfigDialog 
+        open={showSpecialDialog} 
+        onOpenChange={setShowSpecialDialog}
       />
       <ManageDailyRewardsDialog 
         open={manageDialogOpen} 
         onOpenChange={setManageDialogOpen}
-      />
-      <DailyRewardsStatsDialog 
-        open={statsDialogOpen} 
-        onOpenChange={setStatsDialogOpen}
-      />
-      <DailyRewardSpecialConfigDialog 
-        open={showSpecialDialog} 
-        onOpenChange={setShowSpecialDialog}
       />
     </div>
   );

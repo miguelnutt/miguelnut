@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_maintenance_log: {
+        Row: {
+          acao: string
+          executado_em: string | null
+          executado_por: string | null
+          id: string
+        }
+        Insert: {
+          acao: string
+          executado_em?: string | null
+          executado_por?: string | null
+          id?: string
+        }
+        Update: {
+          acao?: string
+          executado_em?: string | null
+          executado_por?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       daily_reward_config: {
         Row: {
           created_at: string | null
@@ -34,6 +55,30 @@ export type Database = {
           dia?: number
           id?: string
           pontos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      daily_reward_default_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          pontos_dia_comum: number
+          pontos_multiplo_cinco: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          pontos_dia_comum?: number
+          pontos_multiplo_cinco?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          pontos_dia_comum?: number
+          pontos_multiplo_cinco?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -221,6 +266,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      streak_ranking_config: {
+        Row: {
+          created_at: string | null
+          exibir_publicamente: boolean
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exibir_publicamente?: boolean
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exibir_publicamente?: boolean
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       ticket_ledger: {
         Row: {
