@@ -33,7 +33,8 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'apikey': supabaseKey,
+          'apikey': Deno.env.get('SUPABASE_ANON_KEY')!,
+          'Content-Type': 'application/json',
         },
       }
     );
