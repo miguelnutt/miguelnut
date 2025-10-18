@@ -45,18 +45,19 @@ const AdminTibiaTermo = () => {
   }, []);
 
   useEffect(() => {
-    // Só verifica acesso depois que terminou de carregar
-    if (!adminLoading && isAdmin) {
+    // Aguarda o carregamento completo antes de qualquer ação
+    if (adminLoading) return;
+    
+    if (isAdmin) {
+      // É admin, carregar dados
       loadWords();
       loadRewardsConfig();
-    }
-    
-    // Só bloqueia se terminou de carregar E não é admin
-    if (!adminLoading && !isAdmin) {
+    } else if (user) {
+      // Tem usuário mas não é admin
       toast.error("Acesso negado!");
-      navigate("/games");
+      navigate("/account");
     }
-  }, [isAdmin, adminLoading, navigate]);
+  }, [user, isAdmin, adminLoading, navigate]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -280,7 +281,8 @@ const AdminTibiaTermo = () => {
   const activeCount = words.filter((w) => w.ativa).length;
   const inactiveCount = words.length - activeCount;
 
-  if (adminLoading) {
+  // Mostrar loading enquanto carrega usuário OU admin
+  if (!user || adminLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -289,6 +291,11 @@ const AdminTibiaTermo = () => {
         </div>
       </div>
     );
+  }
+
+  // Se não é admin, não renderiza nada (o useEffect já redireciona)
+  if (!isAdmin) {
+    return null;
   }
 
   return (
