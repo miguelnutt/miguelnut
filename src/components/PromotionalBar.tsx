@@ -121,7 +121,7 @@ export function PromotionalBar() {
             href={button1Url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-6 py-2 bg-background/95 backdrop-blur-sm border-2 border-primary/50 hover:border-primary hover:bg-background text-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
+            className="flex items-center gap-2 px-6 py-2 bg-white/80 backdrop-blur-sm border border-primary/20 hover:border-primary/40 text-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
           >
             <Crown className="h-4 w-4 text-primary" />
             {button1Text}
@@ -130,7 +130,7 @@ export function PromotionalBar() {
             href={button2Url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-6 py-2 bg-background/95 backdrop-blur-sm border-2 border-accent/50 hover:border-accent hover:bg-background text-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
+            className="flex items-center gap-2 px-6 py-2 bg-white/80 backdrop-blur-sm border border-accent/20 hover:border-accent/40 text-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
           >
             <Rocket className="h-4 w-4 text-accent" />
             {button2Text}
@@ -138,7 +138,7 @@ export function PromotionalBar() {
           {isAdmin && (
             <button
               onClick={abrirEdicao}
-              className="flex items-center gap-2 px-3 py-2 bg-background/95 backdrop-blur-sm border-2 border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-background text-muted-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
+              className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-muted-foreground/20 hover:border-muted-foreground/40 text-muted-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
               title="Editar barra promocional"
             >
               <Pencil className="h-4 w-4" />
