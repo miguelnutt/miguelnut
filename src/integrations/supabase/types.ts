@@ -38,6 +38,30 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_reward_special_config: {
+        Row: {
+          created_at: string | null
+          dia_sequencia: number
+          id: string
+          pontos: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dia_sequencia: number
+          id?: string
+          pontos: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dia_sequencia?: number
+          id?: string
+          pontos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       daily_rewards_history: {
         Row: {
           created_at: string | null

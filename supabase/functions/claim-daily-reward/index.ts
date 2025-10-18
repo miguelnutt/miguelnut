@@ -80,16 +80,24 @@ serve(async (req) => {
       }
     }
 
-    // Buscar pontos da recompensa do dia
-    const { data: rewardConfig, error: configError } = await supabase
-      .from('daily_reward_config')
+    // Calcular pontos baseado na sequência
+    // Regra padrão: 25 pontos, 50 pontos em múltiplos de 5
+    let pontos = 25;
+    
+    // Verificar se há recompensa especial configurada para este dia da sequência
+    const { data: specialReward } = await supabase
+      .from('daily_reward_special_config')
       .select('pontos')
-      .eq('dia', diaAtual)
-      .single();
-
-    if (configError) throw configError;
-
-    const pontos = rewardConfig.pontos;
+      .eq('dia_sequencia', diaAtual)
+      .maybeSingle();
+    
+    if (specialReward) {
+      // Usar recompensa especial se configurada
+      pontos = specialReward.pontos;
+    } else if (diaAtual % 5 === 0) {
+      // Múltiplo de 5: 50 pontos
+      pontos = 50;
+    }
 
     // Atualizar ou inserir registro de login com validação adicional
     const { error: upsertError } = await supabase

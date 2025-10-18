@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { DailyRewardConfigDialog } from "@/components/DailyRewardConfigDialog";
 import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
 import { DailyRewardsStatsDialog } from "@/components/DailyRewardsStatsDialog";
+import { DailyRewardSpecialConfigDialog } from "@/components/DailyRewardSpecialConfigDialog";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function SiteSettings() {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+  const [showSpecialDialog, setShowSpecialDialog] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -252,14 +254,22 @@ export default function SiteSettings() {
                   Gerenciar Progresso dos Usuários
                 </Button>
 
-                <Button 
-                  onClick={() => setStatsDialogOpen(true)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Ver Resgates do Dia
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    onClick={() => setStatsDialogOpen(true)}
+                    variant="outline"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Ver Resgates
+                  </Button>
+                  <Button 
+                    onClick={() => setShowSpecialDialog(true)}
+                    variant="outline"
+                  >
+                    <Gift className="h-4 w-4 mr-2" />
+                    Recompensas Especiais
+                  </Button>
+                </div>
               </div>
 
               <div className="text-sm text-muted-foreground mt-4 p-4 bg-muted rounded-lg">
@@ -291,6 +301,10 @@ export default function SiteSettings() {
       <DailyRewardsStatsDialog 
         open={statsDialogOpen} 
         onOpenChange={setStatsDialogOpen}
+      />
+      <DailyRewardSpecialConfigDialog 
+        open={showSpecialDialog} 
+        onOpenChange={setShowSpecialDialog}
       />
     </div>
   );

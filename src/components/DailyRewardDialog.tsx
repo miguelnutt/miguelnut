@@ -7,15 +7,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Gift, Check } from "lucide-react";
+import { Loader2, Trophy, Flame, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase-helper";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
-
-interface DailyRewardConfig {
-  dia: number;
-  pontos: number;
-}
 
 interface UserDailyLogin {
   dia_atual: number;
@@ -31,9 +26,9 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
   const { user: twitchUser } = useTwitchAuth();
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
-  const [rewards, setRewards] = useState<DailyRewardConfig[]>([]);
   const [userLogin, setUserLogin] = useState<UserDailyLogin | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [nextReward, setNextReward] = useState<number>(25);
 
   useEffect(() => {
     if (open && twitchUser) {
@@ -60,15 +55,6 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
       setUserId(profile.id);
 
-      // Buscar configurações de recompensa
-      const { data: rewardData, error: rewardError } = await supabase
-        .from('daily_reward_config')
-        .select('*')
-        .order('dia', { ascending: true });
-
-      if (rewardError) throw rewardError;
-      setRewards(rewardData || []);
-
       // Buscar login do usuário
       const { data: loginData } = await supabase
         .from('user_daily_logins')
@@ -77,6 +63,24 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
         .maybeSingle();
 
       setUserLogin(loginData);
+
+      // Calcular próxima recompensa
+      const proximoDia = loginData ? loginData.dia_atual + 1 : 1;
+      
+      // Verificar se há recompensa especial
+      const { data: specialReward } = await supabase
+        .from('daily_reward_special_config')
+        .select('pontos')
+        .eq('dia_sequencia', proximoDia)
+        .maybeSingle();
+      
+      if (specialReward) {
+        setNextReward(specialReward.pontos);
+      } else if (proximoDia % 5 === 0) {
+        setNextReward(50);
+      } else {
+        setNextReward(25);
+      }
     } catch (error: any) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar recompensas");
@@ -165,52 +169,60 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-5 gap-2">
-              {rewards.map((reward) => {
-                const diaAtual = getDiaAtual();
-                const isCurrent = diaAtual === reward.dia;
-                const isCompleted = userLogin && reward.dia < diaAtual;
-                const hoje = new Date().toISOString().split('T')[0];
-                const jaResgatouHoje = userLogin && userLogin.ultimo_login === hoje;
-
-                return (
-                  <div
-                    key={reward.dia}
-                    className={`
-                      relative p-3 rounded-lg border-2 text-center transition-all min-h-[80px] flex flex-col items-center justify-center
-                      ${isCurrent ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border'}
-                      ${isCompleted ? 'bg-green-500/10 border-green-500/50' : ''}
-                    `}
-                  >
-                    {(isCompleted || (jaResgatouHoje && isCurrent)) && (
-                      <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <div className="bg-primary rounded-full p-2.5 shadow-lg">
-                          <Check className="h-7 w-7 text-white" strokeWidth={3} />
-                        </div>
-                      </div>
-                    )}
-                    <div className={`text-xs text-muted-foreground mb-1 ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-20' : ''}`}>
-                      Dia {reward.dia}
-                    </div>
-                    <div className={`font-semibold text-sm ${(isCompleted || (jaResgatouHoje && isCurrent)) ? 'opacity-20' : ''}`}>
-                      {reward.pontos} pts
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="space-y-6">
+            {/* Sequência Atual */}
+            <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border-2 border-primary/20">
+              <div className="flex items-center gap-3">
+                <Flame className="h-8 w-8 text-primary" />
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Dias Consecutivos</p>
+                  <p className="text-5xl font-bold text-primary">
+                    {userLogin ? userLogin.dia_atual : 0}
+                  </p>
+                </div>
+              </div>
+              
+              {userLogin && userLogin.dia_atual > 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Último resgate: {new Date(userLogin.ultimo_login + 'T00:00:00').toLocaleDateString('pt-BR')}
+                </p>
+              )}
             </div>
 
-            <div className="flex flex-col items-center gap-2 pt-4">
-              <p className="text-sm text-muted-foreground">
-                {userLogin 
-                  ? `Você está no dia ${userLogin.dia_atual} de logins consecutivos`
-                  : "Comece sua sequência de logins hoje!"}
+            {/* Próxima Recompensa */}
+            <div className="p-4 bg-muted/50 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-primary" />
+                  <span className="font-medium">Próxima recompensa:</span>
+                </div>
+                <span className="text-lg font-bold text-primary">{nextReward} pontos</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {!userLogin || userLogin.dia_atual === 0 
+                  ? "Comece sua sequência resgatando hoje!"
+                  : `Dia ${userLogin.dia_atual + 1} da sequência`}
               </p>
+            </div>
+
+            {/* Regras */}
+            <div className="p-4 bg-muted/30 rounded-lg border text-sm space-y-2">
+              <p className="font-medium">📋 Regras da Sequência:</p>
+              <ul className="space-y-1 text-muted-foreground ml-4">
+                <li>• Todo dia: +25 pontos</li>
+                <li>• Múltiplos de 5: +50 pontos</li>
+                <li>• Resgate 1x por dia às 00:00</li>
+                <li>• Perder um dia zera a sequência</li>
+              </ul>
+            </div>
+
+            {/* Botão de Resgate */}
+            <div className="flex flex-col items-center gap-2 pt-2">
               <Button
                 onClick={handleClaimReward}
                 disabled={!podeClamar() || claiming}
                 size="lg"
+                className="w-full"
               >
                 {claiming ? (
                   <>

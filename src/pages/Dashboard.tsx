@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StreakRanking } from "@/components/StreakRanking";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -484,6 +485,11 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Ranking de Sequências */}
+        <div className="mt-8">
+          <StreakRanking />
         </div>
       </main>
     </div>
