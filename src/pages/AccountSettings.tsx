@@ -876,9 +876,9 @@ export default function AccountSettings() {
               {/* Gerenciar Progresso dos Usuários */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg md:text-xl">Gerenciar Usuários</CardTitle>
+                  <CardTitle className="text-lg md:text-xl">Gerenciar Usuários e Jogos</CardTitle>
                   <CardDescription className="text-sm">
-                    Visualizar e gerenciar sequências e pontos dos usuários
+                    Visualizar e gerenciar sequências, pontos e jogos dos usuários
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -895,6 +895,13 @@ export default function AccountSettings() {
                     className="w-full"
                   >
                     Adicionar/Remover Pontos
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/admin/tibiatermo')}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Configurar TibiaTermo
                   </Button>
                 </CardContent>
               </Card>
