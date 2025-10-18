@@ -12,10 +12,14 @@ import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import QRCode from "qrcode";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
-import { DailyRewardConfigDialog } from "@/components/DailyRewardConfigDialog";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
 import { ManagePointsDialog } from "@/components/ManagePointsDialog";
+import { DailyRewardTodaySection } from "@/components/admin/DailyRewardTodaySection";
+import { StreakRulesSection } from "@/components/admin/StreakRulesSection";
+import { DailyRewardSpecialConfigDialog } from "@/components/DailyRewardSpecialConfigDialog";
+import { MaintenanceSection } from "@/components/admin/MaintenanceSection";
+import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -38,10 +42,10 @@ export default function AccountSettings() {
   const [loadingPontos, setLoadingPontos] = useState(false);
   const [editandoPersonagem, setEditandoPersonagem] = useState(false);
   const [personagemSalvo, setPersonagemSalvo] = useState<string | null>(null);
-  const [dailyRewardConfigOpen, setDailyRewardConfigOpen] = useState(false);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
   const [manageRewardsOpen, setManageRewardsOpen] = useState(false);
   const [managePointsOpen, setManagePointsOpen] = useState(false);
+  const [showSpecialDialog, setShowSpecialDialog] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -630,40 +634,77 @@ export default function AccountSettings() {
           </Card>
           )}
 
-          {/* Configuração de Recompensa Diária - Apenas Admin */}
+          {/* SEÇÕES DE ADMINISTRAÇÃO - Apenas Admin */}
           {isAdmin && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                  <Gift className="h-5 w-5" />
-                  Recompensas Diárias
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Configure as recompensas de login diário para usuários da Twitch
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                  <Button onClick={() => setDailyRewardConfigOpen(true)}>
-                    Configurar Recompensas
+            <>
+              {/* Seção 1: Recompensa Diária (hoje) */}
+              <DailyRewardTodaySection />
+
+              {/* Seção 2: Sequência (Streak) — Regras */}
+              <StreakRulesSection />
+
+              {/* Seção 3: Recompensas Especiais por Dia da Sequência */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl">Recompensas Especiais da Sequência</CardTitle>
+                  <CardDescription className="text-sm">
+                    Configure prêmios específicos para dias da sequência
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => setShowSpecialDialog(true)}
+                    className="w-full"
+                  >
+                    <Gift className="h-4 w-4 mr-2" />
+                    Gerenciar Recompensas Especiais
                   </Button>
-                  <Button variant="outline" onClick={() => setManageRewardsOpen(true)}>
-                    Gerenciar Recompensas de Usuários
+                </CardContent>
+              </Card>
+
+              {/* Seção 4: Manutenção e Auditoria */}
+              <MaintenanceSection />
+
+              {/* Seção 5: Rankings e Exibição */}
+              <RankingDisplaySection />
+
+              {/* Gerenciar Progresso dos Usuários */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl">Gerenciar Usuários</CardTitle>
+                  <CardDescription className="text-sm">
+                    Visualizar e gerenciar sequências e pontos dos usuários
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button 
+                    onClick={() => setManageRewardsOpen(true)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Gerenciar Progresso dos Usuários
                   </Button>
-                  <Button variant="outline" onClick={() => setManagePointsOpen(true)}>
+                  <Button 
+                    onClick={() => setManagePointsOpen(true)}
+                    variant="outline"
+                    className="w-full"
+                  >
                     Adicionar/Remover Pontos
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </>
           )}
         </div>
       </div>
 
-      <DailyRewardConfigDialog open={dailyRewardConfigOpen} onOpenChange={setDailyRewardConfigOpen} />
       <DailyRewardDialog open={dailyRewardOpen} onOpenChange={setDailyRewardOpen} />
       <ManageDailyRewardsDialog open={manageRewardsOpen} onOpenChange={setManageRewardsOpen} />
       <ManagePointsDialog open={managePointsOpen} onOpenChange={setManagePointsOpen} />
+      <DailyRewardSpecialConfigDialog 
+        open={showSpecialDialog} 
+        onOpenChange={setShowSpecialDialog}
+      />
     </>
   );
 }
