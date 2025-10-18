@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Trash2, X, Check } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -25,7 +25,6 @@ interface Spin {
   tipo_recompensa: string;
   valor: string;
   created_at: string;
-  pago: boolean;
   wheels: { nome: string } | null;
 }
 
@@ -133,23 +132,6 @@ export default function History() {
     }
   };
 
-  const togglePago = async (id: string, currentPago: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("spins")
-        .update({ pago: !currentPago })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast.success(currentPago ? "Marcado como não pago" : "Marcado como pago!");
-      await fetchSpins();
-    } catch (error: any) {
-      console.error("Error updating payment status:", error);
-      toast.error("Erro ao atualizar status: " + error.message);
-    }
-  };
-
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString("pt-BR");
   };
@@ -235,7 +217,6 @@ export default function History() {
                         <TableHead className="whitespace-nowrap">Tipo</TableHead>
                         <TableHead className="whitespace-nowrap">Valor</TableHead>
                         <TableHead className="whitespace-nowrap">Data/Hora</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">Status</TableHead>
                         {isAdmin && <TableHead className="text-center whitespace-nowrap">Ações</TableHead>}
                       </TableRow>
                     </TableHeader>
@@ -248,28 +229,6 @@ export default function History() {
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>
                           <TableCell className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
                             {formatDate(spin.created_at)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {(spin.tipo_recompensa === "Rubini Coins" || spin.tipo_recompensa === "RC") && (
-                              isAdmin ? (
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => togglePago(spin.id, spin.pago)}
-                                  className={spin.pago ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}
-                                >
-                                  {spin.pago ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
-                                </Button>
-                              ) : (
-                                <div className="flex justify-center">
-                                  {spin.pago ? (
-                                    <Check className="h-5 w-5 text-green-500" />
-                                  ) : (
-                                    <X className="h-5 w-5 text-red-500" />
-                                  )}
-                                </div>
-                              )
-                            )}
                           </TableCell>
                           {isAdmin && (
                             <TableCell className="text-center">

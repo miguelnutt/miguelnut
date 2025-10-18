@@ -34,7 +34,6 @@ interface Raffle {
   participantes: any;
   tipo_premio: string;
   valor_premio: number;
-  pago: boolean;
 }
 
 interface TicketHistory {

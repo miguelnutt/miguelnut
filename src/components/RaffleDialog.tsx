@@ -264,7 +264,6 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           nome_vencedor: vencedor.nome,
           tipo_premio: tipoPremio,
           valor_premio: valorPremio,
-          pago: tipoPremio === "Rubini Coins", // Marcar como pago automaticamente se for Rubini Coins
           participantes: participantes.map(p => ({
             user_id: p.user_id,
             nome: p.nome,

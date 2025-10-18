@@ -5,7 +5,7 @@ import { StreakRanking } from "@/components/StreakRanking";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Trophy, Ticket, Coins, RotateCw, Calendar as CalendarIcon, X, Check } from "lucide-react";
+import { Trophy, Ticket, Coins, RotateCw, Calendar as CalendarIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -37,7 +37,6 @@ interface RecentRaffle {
   created_at: string;
   tipo_premio: string;
   valor_premio: number;
-  pago: boolean;
 }
 
 type PeriodType = "today" | "week" | "month" | "custom" | "all";
@@ -151,11 +150,13 @@ export default function Dashboard() {
       }
       const { count: rafflesCount } = await rafflesQuery;
 
-      // Total de Rubini Coins pagos - soma todas as variações positivas do histórico
+      // Total de Rubini Coins pagos - soma apenas recompensas automáticas (exclui operações manuais do admin e estornos)
       let rcHistoryQuery = supabase
         .from("rubini_coins_history")
-        .select("variacao")
-        .gt("variacao", 0);
+        .select("variacao, motivo")
+        .gt("variacao", 0)
+        .not("motivo", "like", "%Operação manual%")
+        .not("motivo", "like", "%Estorno%");
       if (startDate && endDate) {
         rcHistoryQuery = rcHistoryQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
