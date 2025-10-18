@@ -30,6 +30,11 @@ export default function SiteSettings() {
   const [saving, setSaving] = useState(false);
   const [showSpecialDialog, setShowSpecialDialog] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [button1Text, setButton1Text] = useState("Crie sua conta no Rubinot");
+  const [button1Url, setButton1Url] = useState("https://rubinot.site/miguelnutt");
+  const [button2Text, setButton2Text] = useState("Crie seu site com IA grátis");
+  const [button2Url, setButton2Url] = useState("https://lovable.dev/invite/RNZUAZW");
+  const [savingBar, setSavingBar] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -45,6 +50,7 @@ export default function SiteSettings() {
 
   useEffect(() => {
     fetchSettings();
+    fetchBarConfig();
   }, []);
 
   const fetchSettings = async () => {
@@ -65,6 +71,27 @@ export default function SiteSettings() {
       toast.error("Erro ao carregar configurações");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBarConfig = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("promotional_bar_config")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setButton1Text(data.button1_text);
+        setButton1Url(data.button1_url);
+        setButton2Text(data.button2_text);
+        setButton2Url(data.button2_url);
+      }
+    } catch (error: any) {
+      console.error("Error fetching bar config:", error);
     }
   };
 
@@ -101,6 +128,50 @@ export default function SiteSettings() {
       toast.error("Erro ao salvar configurações: " + error.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveBarConfig = async () => {
+    setSavingBar(true);
+    try {
+      const { data: existing } = await supabase
+        .from("promotional_bar_config")
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("promotional_bar_config")
+          .update({
+            button1_text: button1Text,
+            button1_url: button1Url,
+            button2_text: button2Text,
+            button2_url: button2Url
+          })
+          .eq("id", existing.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("promotional_bar_config")
+          .insert({
+            button1_text: button1Text,
+            button1_url: button1Url,
+            button2_text: button2Text,
+            button2_url: button2Url
+          });
+
+        if (error) throw error;
+      }
+
+      toast.success("Barra promocional atualizada!");
+      window.location.reload(); // Recarregar para atualizar a barra
+    } catch (error: any) {
+      console.error("Error saving bar config:", error);
+      toast.error("Erro ao salvar barra: " + error.message);
+    } finally {
+      setSavingBar(false);
     }
   };
 
@@ -157,7 +228,66 @@ export default function SiteSettings() {
         </div>
 
         <div className="grid gap-6 max-w-2xl">
-          {/* Configurações do YouTube */}
+          {/* Seção 1: Configurações da Barra Promocional */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Youtube className="h-5 w-5" />
+                Barra Promocional
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <h3 className="font-semibold">Botão 1 (Primário - com ícone de coroa)</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="button1-text">Texto do Botão 1</Label>
+                  <Input
+                    id="button1-text"
+                    placeholder="Crie sua conta no Rubinot"
+                    value={button1Text}
+                    onChange={(e) => setButton1Text(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="button1-url">Link do Botão 1</Label>
+                  <Input
+                    id="button1-url"
+                    placeholder="https://rubinot.site/miguelnutt"
+                    value={button1Url}
+                    onChange={(e) => setButton1Url(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="font-semibold">Botão 2 (Secundário - com ícone de foguete)</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="button2-text">Texto do Botão 2</Label>
+                  <Input
+                    id="button2-text"
+                    placeholder="Crie seu site com IA grátis"
+                    value={button2Text}
+                    onChange={(e) => setButton2Text(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="button2-url">Link do Botão 2</Label>
+                  <Input
+                    id="button2-url"
+                    placeholder="https://lovable.dev/invite/RNZUAZW"
+                    value={button2Url}
+                    onChange={(e) => setButton2Url(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <Button onClick={saveBarConfig} disabled={savingBar} className="w-full">
+                {savingBar ? "Salvando..." : "Salvar Barra Promocional"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Seção 2: Configurações do YouTube */}
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
