@@ -121,24 +121,24 @@ export function PromotionalBar() {
             href={button1Url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-1.5 bg-primary/90 hover:bg-primary text-primary-foreground rounded-full transition-colors text-sm font-medium shadow-sm hover:shadow-md"
+            className="flex items-center gap-2 px-6 py-2 bg-background/95 backdrop-blur-sm border-2 border-primary/50 hover:border-primary hover:bg-background text-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
           >
-            <Crown className="h-4 w-4" />
+            <Crown className="h-4 w-4 text-primary" />
             {button1Text}
           </a>
           <a
             href={button2Url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-1.5 bg-accent/90 hover:bg-accent text-accent-foreground rounded-full transition-colors text-sm font-medium shadow-sm hover:shadow-md"
+            className="flex items-center gap-2 px-6 py-2 bg-background/95 backdrop-blur-sm border-2 border-accent/50 hover:border-accent hover:bg-background text-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
           >
-            <Rocket className="h-4 w-4" />
+            <Rocket className="h-4 w-4 text-accent" />
             {button2Text}
           </a>
           {isAdmin && (
             <button
               onClick={abrirEdicao}
-              className="flex items-center gap-2 px-3 py-1.5 bg-muted/90 hover:bg-muted text-muted-foreground rounded-full transition-colors text-sm font-medium shadow-sm hover:shadow-md"
+              className="flex items-center gap-2 px-3 py-2 bg-background/95 backdrop-blur-sm border-2 border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-background text-muted-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md"
               title="Editar barra promocional"
             >
               <Pencil className="h-4 w-4" />
