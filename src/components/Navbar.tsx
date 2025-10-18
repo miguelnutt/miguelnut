@@ -21,10 +21,18 @@ export const Navbar = () => {
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
-  const [twitchUserProfile, setTwitchUserProfile] = useState<any>(null);
   
   // Sempre chamar useAdmin, mas passar user correto
-  const { isAdmin } = useAdmin(session?.user ?? null);
+  const { isAdmin, loading: adminLoading } = useAdmin(session?.user ?? null);
+
+  // Log para debug
+  useEffect(() => {
+    console.log('=== NAVBAR DEBUG ===');
+    console.log('Session user ID:', session?.user?.id);
+    console.log('isAdmin:', isAdmin);
+    console.log('adminLoading:', adminLoading);
+    console.log('twitchUser:', twitchUser?.login);
+  }, [session, isAdmin, adminLoading, twitchUser]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
@@ -166,15 +174,18 @@ export const Navbar = () => {
                   </Button>
                 </>
               ) : session ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate("/account")}
-                  className="rounded-full"
-                  title="Configurações da Conta"
-                >
-                  <SettingsIcon className="h-5 w-5" />
-                </Button>
+                <>
+                  {isAdmin && <AdminRubiniCoinsResgatesButton />}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate("/account")}
+                    className="rounded-full"
+                    title="Configurações da Conta"
+                  >
+                    <SettingsIcon className="h-5 w-5" />
+                  </Button>
+                </>
               ) : (
                 <Button 
                   onClick={() => navigate("/login")}
