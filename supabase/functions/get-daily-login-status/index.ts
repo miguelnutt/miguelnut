@@ -44,10 +44,31 @@ serve(async (req) => {
 
     console.log(`[get-daily-login-status] Dados encontrados:`, loginData);
 
+    // Calcular se pode resgatar
+    let podeResgatar = false;
+    
+    if (!loginData) {
+      // Primeira vez - pode resgatar
+      podeResgatar = true;
+    } else {
+      // Verificar se já resgatou hoje
+      const hoje = new Date().toISOString().split('T')[0];
+      const ultimoLogin = loginData.ultimo_login;
+      
+      console.log(`[get-daily-login-status] Hoje: ${hoje}, Último login: ${ultimoLogin}`);
+      
+      if (ultimoLogin !== hoje) {
+        podeResgatar = true;
+      }
+    }
+
+    console.log(`[get-daily-login-status] Pode resgatar: ${podeResgatar}`);
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        loginData: loginData || null
+        loginData: loginData || null,
+        pode_resgatar: podeResgatar
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

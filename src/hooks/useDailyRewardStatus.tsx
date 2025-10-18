@@ -51,9 +51,12 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-daily-login-status`,
         {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
+          body: JSON.stringify({ userId: profile.id }),
         }
       );
 
@@ -69,7 +72,8 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
         console.log('[DailyReward] hasRewardAvailable será:', hasReward);
         setHasRewardAvailable(hasReward);
       } else {
-        console.error('[DailyReward] Erro na resposta:', await response.text());
+        const errorText = await response.text();
+        console.error('[DailyReward] Erro na resposta:', errorText);
       }
     } catch (error) {
       console.error("[DailyReward] Erro ao verificar status da recompensa:", error);
