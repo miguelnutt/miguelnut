@@ -10,6 +10,8 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { Loader2, Radio, Youtube, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
+import { StreakRanking } from "@/components/StreakRanking";
+import { SiteChat } from "@/components/SiteChat";
 
 // Vídeo padrão - última live do canal
 const DEFAULT_VIDEO_ID = "EeF3UTkCoxY";
@@ -191,105 +193,88 @@ export default function Index() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-4 md:py-8">
-        {/* Recent Rewards Section */}
-        {recentRewards.length > 0 && (
-          <div className="max-w-5xl mx-auto mb-4">
-            <Card className="shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Últimas Recompensas</h3>
-                  <a href="/dashboard" className="text-sm text-primary hover:underline">
-                    Ir para Dashboard →
-                  </a>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {recentRewards.map((reward, idx) => (
-                    <div key={idx} className="flex-shrink-0 bg-muted rounded-lg px-3 py-2 min-w-[200px]">
-                      <div className="text-xs text-muted-foreground">
-                        {reward.type === 'spin' ? '🎰 Roleta' : '🎉 Sorteio'}
+        {/* Layout principal: Ranking à esquerda, Vídeo e Chat à direita */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+          {/* Coluna Esquerda: Ranking de Streak */}
+          <div className="lg:col-span-1">
+            <StreakRanking />
+          </div>
+
+          {/* Coluna Direita: Vídeo e Chat */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Vídeo */}
+            {loading ? (
+              <Card className="shadow-card">
+                <CardContent className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="shadow-card">
+                <CardContent className="p-0">
+                  {isLive ? (
+                    <div className="space-y-4 p-4 md:p-6">
+                      <div className="flex items-center gap-2 text-primary">
+                        <Radio className="h-5 w-5 animate-pulse" />
+                        <span className="font-semibold">🔴 AO VIVO NA TWITCH</span>
                       </div>
-                      <div className="font-semibold text-sm">
-                        {reward.type === 'spin' ? reward.nome_usuario : reward.nome_vencedor}
-                      </div>
-                      <div className="text-xs text-primary">
-                        {reward.type === 'spin' ? `${reward.valor} ${reward.tipo_recompensa}` : `${reward.valor_premio} ${reward.tipo_premio}`}
+                      <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                        <iframe
+                          src={`https://player.twitch.tv/?channel=miguelnutt&parent=${window.location.hostname}&autoplay=true&muted=false`}
+                          height="100%"
+                          width="100%"
+                          allowFullScreen
+                          title="Twitch Live Stream"
+                          className="border-0"
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-
-        {loading ? (
-          <Card className="shadow-card max-w-5xl mx-auto">
-            <CardContent className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="shadow-card max-w-5xl mx-auto">
-            <CardContent className="p-0">
-              {isLive ? (
-                <div className="space-y-4 p-4 md:p-6">
-                  <div className="flex items-center gap-2 text-primary">
-                    <Radio className="h-5 w-5 animate-pulse" />
-                    <span className="font-semibold">🔴 AO VIVO NA TWITCH</span>
-                  </div>
-                  <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                    <iframe
-                      src={`https://player.twitch.tv/?channel=miguelnutt&parent=${window.location.hostname}&autoplay=true&muted=false`}
-                      height="100%"
-                      width="100%"
-                      allowFullScreen
-                      title="Twitch Live Stream"
-                      className="border-0"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4 p-4 md:p-6">
-                  {isAdmin && (
-                    <div className="flex items-center justify-end mb-2">
-                      <Button
-                        onClick={() => setDialogOpen(true)}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Edit className="h-4 w-4" />
-                        Trocar Vídeo
-                      </Button>
+                  ) : (
+                    <div className="space-y-4 p-4 md:p-6">
+                      {isAdmin && (
+                        <div className="flex items-center justify-end mb-2">
+                          <Button
+                            onClick={() => setDialogOpen(true)}
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                          >
+                            <Edit className="h-4 w-4" />
+                            Trocar Vídeo
+                          </Button>
+                        </div>
+                      )}
+                      <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=0${videoStartTime > 0 ? `&start=${videoStartTime}` : ''}`}
+                          title="Última Live do YouTube"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div className="text-center">
+                        <a 
+                          href="https://www.youtube.com/@MiguelnutTibiano" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Visite o canal completo no YouTube →
+                        </a>
+                      </div>
                     </div>
                   )}
-                  <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=0${videoStartTime > 0 ? `&start=${videoStartTime}` : ''}`}
-                      title="Última Live do YouTube"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                  <div className="text-center">
-                    <a 
-                      href="https://www.youtube.com/@MiguelnutTibiano" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Visite o canal completo no YouTube →
-                    </a>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Chat */}
+            <SiteChat />
+          </div>
+        </div>
 
         {/* Dialog para trocar vídeo */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

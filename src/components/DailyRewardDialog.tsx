@@ -123,8 +123,23 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
         return;
       }
 
+      // Atualizar o streak imediatamente com o valor retornado
+      if (data.diaAtual !== undefined) {
+        setUserLogin({
+          dia_atual: data.diaAtual,
+          ultimo_login: new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).format(new Date())
+        });
+      }
+
       toast.success(data.message || "Recompensa resgatada com sucesso!");
-      loadData(); // Recarregar dados
+      
+      // Recarregar dados para garantir sincronização
+      setTimeout(() => loadData(), 500);
     } catch (error: any) {
       console.error("Erro ao resgatar:", error);
       toast.error("Erro ao resgatar recompensa");
@@ -153,7 +168,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Gift className="h-6 w-6" />
@@ -207,11 +222,10 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
             {/* Regras */}
             <div className="p-4 bg-muted/30 rounded-lg border text-sm space-y-2">
-              <p className="font-medium">📋 Regras da Sequência:</p>
+              <p className="font-medium">📋 Como Funciona:</p>
               <ul className="space-y-1 text-muted-foreground ml-4">
-                <li>• Todo dia: +25 pontos</li>
-                <li>• Múltiplos de 5: +50 pontos</li>
-                <li>• Resgate 1x por dia às 00:00</li>
+                <li>• Resgate 1x por dia</li>
+                <li>• Virada à meia-noite (horário de Brasília)</li>
                 <li>• Perder um dia zera a sequência</li>
               </ul>
             </div>
