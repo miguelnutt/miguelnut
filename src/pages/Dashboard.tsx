@@ -160,13 +160,20 @@ export default function Dashboard() {
       let rcHistoryQuery = supabase
         .from("rubini_coins_history")
         .select("variacao, motivo")
-        .gt("variacao", 0)
-        .or("motivo.ilike.%roleta%,motivo.ilike.%sorteio%");
+        .gt("variacao", 0);
       if (startDate && endDate) {
         rcHistoryQuery = rcHistoryQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
       const { data: rcHistoryData } = await rcHistoryQuery;
-      const totalRC = rcHistoryData?.reduce((sum, h) => sum + (h.variacao || 0), 0) || 0;
+      
+      // Filtrar apenas roletas e sorteios
+      const totalRC = rcHistoryData?.reduce((sum, h) => {
+        const motivo = h.motivo?.toLowerCase() || '';
+        if (motivo.includes('roleta') || motivo.includes('sorteio')) {
+          return sum + (h.variacao || 0);
+        }
+        return sum;
+      }, 0) || 0;
 
       setStats({
         totalSpins: spinsCount || 0,
