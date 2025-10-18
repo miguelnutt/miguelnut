@@ -19,6 +19,8 @@ import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog"
 import { ChatModerationPanel } from "@/components/ChatModerationPanel";
 import { PromotionalBar } from "@/components/PromotionalBar";
 import { AdminRubiniCoinsResgates } from "@/components/admin/AdminRubiniCoinsResgates";
+import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
+import { AdminRubiniCoinsHistory } from "@/components/admin/AdminRubiniCoinsHistory";
 import { PromotionalBarConfig } from "@/components/admin/PromotionalBarConfig";
 
 export default function SiteSettings() {
@@ -259,8 +261,17 @@ export default function SiteSettings() {
           {/* Seção 5: Rankings e Exibição */}
           <RankingDisplaySection />
 
-          {/* Seção 6: Resgates de Rubini Coins */}
-          <AdminRubiniCoinsResgates />
+          {/* Seção 6: Gerenciamento de Rubini Coins */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle>Gerenciamento de Rubini Coins</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <AdminManageRubiniCoins />
+              <AdminRubiniCoinsResgates />
+              <AdminRubiniCoinsHistory />
+            </CardContent>
+          </Card>
 
           {/* Seção 7: Configuração da Barra Promocional */}
           <PromotionalBarConfig />
