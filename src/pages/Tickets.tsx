@@ -341,23 +341,6 @@ export default function Tickets() {
     }
   };
 
-  const toggleRafflePago = async (id: string, currentPago: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("raffles")
-        .update({ pago: !currentPago })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast.success(currentPago ? "Marcado como não pago" : "Marcado como pago!");
-      fetchData();
-    } catch (error: any) {
-      console.error("Error updating payment status:", error);
-      toast.error("Erro ao atualizar status: " + error.message);
-    }
-  };
-
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString("pt-BR");
   };
@@ -708,28 +691,6 @@ export default function Tickets() {
                         <div className="text-xs text-primary font-semibold">
                           Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
                         </div>
-                        {raffle.tipo_premio === "Rubini Coins" && (
-                          <div className="flex items-center">
-                            {isAdmin ? (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => toggleRafflePago(raffle.id, raffle.pago)}
-                                className={`h-6 w-6 ${raffle.pago ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}`}
-                              >
-                                {raffle.pago ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                              </Button>
-                            ) : (
-                              <div className="flex justify-center">
-                                {raffle.pago ? (
-                                  <Check className="h-4 w-4 text-green-500" />
-                                ) : (
-                                  <X className="h-4 w-4 text-red-500" />
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {raffle.participantes?.length || 0} participantes

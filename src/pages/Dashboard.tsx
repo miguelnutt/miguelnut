@@ -236,23 +236,6 @@ export default function Dashboard() {
     return new Date(date).toLocaleString("pt-BR");
   };
 
-  const toggleRafflePago = async (id: string, currentPago: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("raffles")
-        .update({ pago: !currentPago })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast.success(currentPago ? "Marcado como não pago" : "Marcado como pago!");
-      fetchData();
-    } catch (error: any) {
-      console.error("Error updating payment status:", error);
-      toast.error("Erro ao atualizar status: " + error.message);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -458,28 +441,6 @@ export default function Dashboard() {
                         <p className="text-sm text-muted-foreground">
                           Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
                         </p>
-                        {raffle.tipo_premio === "Rubini Coins" && (
-                          <div className="flex items-center">
-                            {isAdmin ? (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => toggleRafflePago(raffle.id, raffle.pago)}
-                                className={`h-7 w-7 ${raffle.pago ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}`}
-                              >
-                                {raffle.pago ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                              </Button>
-                            ) : (
-                              <div className="flex justify-center">
-                                {raffle.pago ? (
-                                  <Check className="h-4 w-4 text-green-500" />
-                                ) : (
-                                  <X className="h-4 w-4 text-red-500" />
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))}

@@ -264,6 +264,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           nome_vencedor: vencedor.nome,
           tipo_premio: tipoPremio,
           valor_premio: valorPremio,
+          pago: tipoPremio === "Rubini Coins", // Marcar como pago automaticamente se for Rubini Coins
           participantes: participantes.map(p => ({
             user_id: p.user_id,
             nome: p.nome,
@@ -285,6 +286,29 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           console.log(`StreamElements sync: ${vencedor.nome} ganhou ${valorPremio} pontos de loja`);
         } catch (seError: any) {
           console.error("StreamElements sync error:", seError);
+        }
+      }
+
+      // Se for Rubini Coins, adicionar ao saldo automaticamente
+      if (tipoPremio === "Rubini Coins") {
+        try {
+          // Adicionar Rubini Coins ao saldo
+          const { error: rubiniError } = await supabase.functions.invoke('add-rubini-coins', {
+            body: {
+              userId: vencedor.user_id,
+              quantidade: valorPremio,
+              motivo: `Ganhou sorteio - Prêmio: ${valorPremio} Rubini Coins`
+            }
+          });
+          
+          if (rubiniError) {
+            console.error("Erro ao adicionar Rubini Coins:", rubiniError);
+            toast.warning("Rubini Coins não foram adicionados automaticamente");
+          } else {
+            console.log(`Rubini Coins adicionados: ${vencedor.nome} ganhou ${valorPremio} RC`);
+          }
+        } catch (rcError: any) {
+          console.error("Erro ao adicionar Rubini Coins:", rcError);
         }
       }
 

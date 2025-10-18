@@ -245,8 +245,36 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
             motivo: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
           });
         
-        // Mostrar toast com total atualizado
         toast.success(`${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Agora possui ${novoTotal} tickets)`);
+        setShowResultDialog(false);
+        onOpenChange(false);
+        setAwaitingConfirmation(false);
+        return;
+      }
+
+      // Se ganhou Rubini Coins, adicionar ao saldo automaticamente
+      if (resultado.tipo === "Rubini Coins" && userId) {
+        const rubiniGanhos = parseInt(resultado.valor) || 0;
+        
+        try {
+          const { error: rubiniError } = await supabase.functions.invoke('add-rubini-coins', {
+            body: {
+              userId: userId,
+              quantidade: rubiniGanhos,
+              motivo: `Ganhou ${rubiniGanhos} Rubini Coins na roleta ${wheel.nome}`
+            }
+          });
+          
+          if (rubiniError) {
+            console.error("Erro ao adicionar Rubini Coins:", rubiniError);
+            toast.warning("Rubini Coins não foram adicionados automaticamente");
+          } else {
+            toast.success(`${nomeParaUsar} ganhou +${rubiniGanhos} Rubini Coins!`);
+          }
+        } catch (rcError: any) {
+          console.error("Erro ao adicionar Rubini Coins:", rcError);
+        }
+        
         setShowResultDialog(false);
         onOpenChange(false);
         setAwaitingConfirmation(false);
