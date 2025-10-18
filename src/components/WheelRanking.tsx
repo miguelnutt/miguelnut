@@ -90,21 +90,24 @@ export function WheelRanking() {
       if (pontosError) throw pontosError;
 
       // Buscar pontos do TibiaTermo
+      console.log('Buscando TibiaTermo pontos - dataInicio:', dataInicio, 'periodo:', periodo);
+      
       let tibiaTermoPontosQuery = supabase
         .from("tibiatermo_history")
-        .select("nome_usuario, valor, created_at")
-        .eq("tipo_recompensa", "Pontos de Loja");
+        .select("nome_usuario, valor, created_at, tipo_recompensa");
       
       if (dataInicio) {
         tibiaTermoPontosQuery = tibiaTermoPontosQuery.gte("created_at", dataInicio);
       }
+      
+      tibiaTermoPontosQuery = tibiaTermoPontosQuery.eq("tipo_recompensa", "Pontos de Loja");
 
       const { data: tibiaTermoPontosData, error: tibiaTermoPontosError } = await tibiaTermoPontosQuery;
       
       if (tibiaTermoPontosError) {
         console.error('Erro ao buscar TibiaTermo pontos:', tibiaTermoPontosError);
       } else {
-        console.log('TibiaTermo pontos data:', tibiaTermoPontosData);
+        console.log('TibiaTermo pontos - Total rows:', tibiaTermoPontosData?.length, 'data:', tibiaTermoPontosData);
       }
 
       // Agrupar e somar pontos por usuário (spins + tibia termo)
@@ -201,21 +204,24 @@ export function WheelRanking() {
       if (ticketsError) throw ticketsError;
 
       // Buscar tickets do TibiaTermo
+      console.log('Buscando TibiaTermo tickets - dataInicio:', dataInicio, 'periodo:', periodo);
+      
       let tibiaTermoTicketsQuery = supabase
         .from("tibiatermo_history")
-        .select("nome_usuario, valor, created_at")
-        .eq("tipo_recompensa", "Tickets");
+        .select("nome_usuario, valor, created_at, tipo_recompensa");
       
       if (dataInicio) {
         tibiaTermoTicketsQuery = tibiaTermoTicketsQuery.gte("created_at", dataInicio);
       }
+      
+      tibiaTermoTicketsQuery = tibiaTermoTicketsQuery.eq("tipo_recompensa", "Tickets");
 
       const { data: tibiaTermoTicketsData, error: tibiaTermoTicketsError } = await tibiaTermoTicketsQuery;
       
       if (tibiaTermoTicketsError) {
         console.error('Erro ao buscar TibiaTermo tickets:', tibiaTermoTicketsError);
       } else {
-        console.log('TibiaTermo tickets data:', tibiaTermoTicketsData);
+        console.log('TibiaTermo tickets - Total rows:', tibiaTermoTicketsData?.length, 'data:', tibiaTermoTicketsData);
       }
 
       // Agrupar e somar tickets por usuário (spins + tibia termo)
