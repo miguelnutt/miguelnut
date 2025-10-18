@@ -15,10 +15,28 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
 
     checkRewardStatus();
 
-    // Atualizar a cada 30 segundos
+    // Ouvir mudanças na tabela user_daily_logins para atualizar em tempo real
+    const channel = supabase
+      .channel('daily_login_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_daily_logins'
+        },
+        () => {
+          console.log('[DailyReward] Detectou mudança em user_daily_logins, atualizando...');
+          checkRewardStatus();
+        }
+      )
+      .subscribe();
+
+    // Atualizar a cada 30 segundos também
     const interval = setInterval(checkRewardStatus, 30000);
 
     return () => {
+      supabase.removeChannel(channel);
       clearInterval(interval);
     };
   }, [twitchUsername]);
