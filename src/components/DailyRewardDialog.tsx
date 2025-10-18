@@ -155,12 +155,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
       const data = await response.json();
       console.log('[DailyReward] Resposta da edge function:', data);
 
-      if (!response.ok) {
-        toast.error(data.error || "Erro ao resgatar recompensa");
-        return;
-      }
-
-      // Atualizar o streak imediatamente com o valor retornado
+      // CRÍTICO: Atualizar streak mesmo quando retorna erro (já resgatado)
       if (data.diaAtual !== undefined) {
         const hoje = new Intl.DateTimeFormat('en-CA', {
           timeZone: 'America/Sao_Paulo',
@@ -175,6 +170,11 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
           dia_atual: data.diaAtual,
           ultimo_login: hoje
         });
+      }
+
+      if (!response.ok) {
+        toast.error(data.error || "Erro ao resgatar recompensa");
+        return;
       }
 
       toast.success(data.message || "Recompensa resgatada com sucesso!");
@@ -276,8 +276,8 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
                 onClick={handleClaimReward}
                 disabled={!podeClamar() || claiming}
                 size="lg"
-                className="w-full disabled:opacity-40"
-                variant={!podeClamar() && !claiming ? "secondary" : "default"}
+                className="w-full disabled:opacity-50 disabled:bg-muted disabled:text-muted-foreground"
+                variant={!podeClamar() && !claiming ? "outline" : "default"}
               >
                 {claiming ? (
                   <>
@@ -287,7 +287,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
                 ) : podeClamar() ? (
                   "Resgatar Recompensa de Hoje"
                 ) : (
-                  "Já Resgatado Hoje"
+                  "✓ Já Resgatado Hoje"
                 )}
               </Button>
               {!podeClamar() && !claiming && (
