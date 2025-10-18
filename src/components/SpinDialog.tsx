@@ -458,36 +458,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         return;
       }
 
-      // Modo real: adicionar Rubini Coins automaticamente
-      if (sorteada.tipo === "Rubini Coins") {
-        try {
-          // Buscar perfil do usuário
-          const { data: profileByTwitch } = await supabase
-            .from('profiles')
-            .select('id')
-            .ilike('twitch_username', nomeParaExibir)
-            .maybeSingle();
-          
-          const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
-            .from('profiles')
-            .select('id')
-            .ilike('nome', nomeParaExibir)
-            .maybeSingle();
-          
-          const userProfile = profileByTwitch || profileByName;
-
-          await supabase.functions.invoke('add-rubini-coins', {
-            body: {
-              userId: userProfile?.id || null,
-              twitchUsername: userProfile?.id ? null : nomeParaExibir,
-              quantidade: parseInt(sorteada.valor),
-              motivo: `Roleta: ${wheel.nome}`
-            }
-          });
-        } catch (error) {
-          console.error('Erro ao adicionar Rubini Coins:', error);
-        }
-      }
+      // Modo real: Rubini Coins serão adicionados apenas quando o admin clicar em "dar prêmio"
     }, duracaoMs + 500);
   };
 

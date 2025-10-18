@@ -77,9 +77,15 @@ export default function Dashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "raffles" }, () => fetchData())
       .subscribe();
 
+    const rcHistoryChannel = supabase
+      .channel("rc_history_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "rubini_coins_history" }, () => fetchData())
+      .subscribe();
+
     return () => {
       supabase.removeChannel(spinsChannel);
       supabase.removeChannel(rafflesChannel);
+      supabase.removeChannel(rcHistoryChannel);
     };
   }, [period, customStartDate, customEndDate]);
 
