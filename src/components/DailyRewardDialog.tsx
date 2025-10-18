@@ -65,7 +65,10 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
       setUserLogin(loginData);
 
       // Calcular próxima recompensa
-      const proximoDia = loginData ? loginData.dia_atual + 1 : 1;
+      // Se dia_atual for 0, significa que perdeu o streak, próximo é 1
+      // Se dia_atual > 0, próximo é dia_atual + 1
+      const diaAtualValido = loginData?.dia_atual || 0;
+      const proximoDia = diaAtualValido === 0 ? 1 : diaAtualValido + 1;
       
       // Verificar se há recompensa especial
       const { data: specialReward } = await supabase
@@ -138,8 +141,8 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
       toast.success(data.message || "Recompensa resgatada com sucesso!");
       
-      // Recarregar dados para garantir sincronização
-      setTimeout(() => loadData(), 500);
+      // NÃO recarregar - confiar no valor retornado pela função
+      // O setTimeout causava race condition com o banco
     } catch (error: any) {
       console.error("Erro ao resgatar:", error);
       toast.error("Erro ao resgatar recompensa");
