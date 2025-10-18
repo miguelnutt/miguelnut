@@ -1,9 +1,25 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, cookie',
+  'Access-Control-Allow-Credentials': 'true',
 };
+
+const JWT_SECRET = Deno.env.get('JWT_SECRET') || 'your-super-secret-jwt-key-change-this';
+
+async function verifyJWT(token: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(JWT_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"]
+  );
+
+  return await verify(token, key);
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,17 +31,24 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authorization header missing');
+    // Verificar autenticação via token no header
+    const authHeader = req.headers.get('authorization') || '';
+    const tokenMatch = authHeader.match(/Bearer (.+)/);
+    
+    if (!tokenMatch) {
+      return new Response(
+        JSON.stringify({ error: 'Not authenticated' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
+      );
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const token = tokenMatch[1];
+    const payload = await verifyJWT(token);
     
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
+    console.log('User authenticated:', payload);
 
     const { quantidade, personagem, userId } = await req.json();
 
@@ -45,8 +68,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Usar userId do corpo da requisição (profile ID) se fornecido, senão user.id do auth
-    const targetUserId = userId || user.id;
+    // Usar userId do corpo da requisição (profile ID) - obrigatório
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'userId é obrigatório' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const targetUserId = userId;
 
     // Verificar saldo disponível
     const { data: balance, error: balanceError } = await supabase
