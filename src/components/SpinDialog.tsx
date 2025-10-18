@@ -222,12 +222,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           .maybeSingle();
 
         const ticketsAtuais = ticketsData?.tickets_atual || 0;
+        const novoTotal = ticketsAtuais + ticketsGanhos;
 
         const { error: ticketsError } = await supabase
           .from("tickets")
           .upsert({
             user_id: userId,
-            tickets_atual: ticketsAtuais + ticketsGanhos
+            tickets_atual: novoTotal
           });
 
         if (ticketsError) throw ticketsError;
@@ -239,24 +240,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
             variacao: ticketsGanhos,
             motivo: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
           });
-      }
-
-      // Se ganhou Pontos de Loja, sincronizar com StreamElements
-      if (resultado.tipo === "Pontos de Loja") {
-        const pontosGanhos = parseInt(resultado.valor) || 0;
-        if (pontosGanhos > 0) {
-          try {
-            await supabase.functions.invoke('sync-streamelements-points', {
-              body: {
-                username: nomeParaUsar,
-                points: pontosGanhos
-              }
-            });
-            console.log(`StreamElements sync: ${nomeParaUsar} ganhou ${pontosGanhos} pontos de loja`);
-          } catch (seError: any) {
-            console.error("StreamElements sync error:", seError);
-          }
-        }
+        
+        // Mostrar toast com total atualizado
+        toast.success(`${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Agora possui ${novoTotal} tickets)`);
+        setShowResultDialog(false);
+        onOpenChange(false);
+        setAwaitingConfirmation(false);
+        return;
       }
 
       toast.success(`Prêmio entregue: ${resultado.valor} ${resultado.tipo} para ${nomeParaUsar}!`);

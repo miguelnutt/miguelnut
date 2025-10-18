@@ -77,18 +77,27 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
   };
 
   const handleReset = async (userId: string, userName: string) => {
-    if (!confirm(`Tem certeza que deseja resetar o progresso de ${userName}?`)) return;
+    if (!confirm(`Tem certeza que deseja resetar o progresso de ${userName}? Isso vai zerar a sequência e limpar o histórico de recompensas deste usuário.`)) return;
 
     setResetting(userId);
     try {
-      const { error } = await supabase
+      // Deletar registro de daily logins
+      const { error: loginError } = await supabase
         .from('user_daily_logins')
         .delete()
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (loginError) throw loginError;
 
-      toast.success(`Progresso de ${userName} resetado!`);
+      // Deletar histórico de recompensas
+      const { error: historyError } = await supabase
+        .from('daily_rewards_history')
+        .delete()
+        .eq('user_id', userId);
+
+      if (historyError) throw historyError;
+
+      toast.success(`Progresso de ${userName} resetado completamente!`);
       loadUsers();
     } catch (error: any) {
       console.error("Erro ao resetar:", error);

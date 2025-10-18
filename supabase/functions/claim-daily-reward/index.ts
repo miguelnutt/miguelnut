@@ -29,6 +29,8 @@ serve(async (req) => {
       );
     }
 
+    console.log(`[${new Date().toISOString()}] Iniciando resgate para userId: ${userId}`);
+
     // Pegar data atual no horário de Brasília usando Intl.DateTimeFormat
     const hoje = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Sao_Paulo',
@@ -36,6 +38,8 @@ serve(async (req) => {
       month: '2-digit',
       day: '2-digit'
     }).format(new Date());
+
+    console.log(`Data atual (Brasília): ${hoje}`);
 
     // Buscar registro de login do usuário
     const { data: loginData, error: loginError } = await supabase
@@ -45,8 +49,11 @@ serve(async (req) => {
       .maybeSingle();
 
     if (loginError && loginError.code !== 'PGRST116') {
+      console.error('Erro ao buscar login:', loginError);
       throw loginError;
     }
+
+    console.log('Dados de login encontrados:', loginData);
 
     let diaAtual = 1;
 
@@ -54,8 +61,11 @@ serve(async (req) => {
     if (loginData) {
       const ultimoLogin = loginData.ultimo_login; // já está em formato YYYY-MM-DD
       
+      console.log(`Último login: ${ultimoLogin}, Dia atual: ${loginData.dia_atual}`);
+      
       // Se já resgatou hoje, bloquear
       if (ultimoLogin === hoje) {
+        console.log('BLOQUEADO: Usuário já resgatou hoje');
         return new Response(
           JSON.stringify({ 
             error: 'Você já resgatou a recompensa de hoje',
@@ -71,17 +81,22 @@ serve(async (req) => {
         (new Date(hoje).getTime() - new Date(ultimoLogin).getTime()) / (1000 * 60 * 60 * 24)
       );
 
+      console.log(`Diferença de dias: ${diffDays}`);
+
       if (diffDays === 1) {
         // Login consecutivo - avançar dia
         diaAtual = loginData.dia_atual >= 30 ? 1 : loginData.dia_atual + 1;
+        console.log(`Login consecutivo detectado. Novo dia: ${diaAtual}`);
       } else {
         // Perdeu consecutivo - resetar para dia 1
         diaAtual = 1;
+        console.log(`Streak perdido. Resetando para dia 1`);
       }
+    } else {
+      console.log('Primeiro resgate do usuário');
     }
 
     // Calcular pontos baseado na sequência
-    // Regra padrão: 25 pontos, 50 pontos em múltiplos de 5
     let pontos = 25;
     
     // Verificar se há recompensa especial configurada para este dia da sequência
@@ -92,29 +107,38 @@ serve(async (req) => {
       .maybeSingle();
     
     if (specialReward) {
-      // Usar recompensa especial se configurada
       pontos = specialReward.pontos;
+      console.log(`Recompensa especial aplicada: ${pontos} pontos`);
     } else if (diaAtual % 5 === 0) {
-      // Múltiplo de 5: 50 pontos
       pontos = 50;
+      console.log(`Múltiplo de 5 detectado: ${pontos} pontos`);
+    } else {
+      console.log(`Recompensa padrão: ${pontos} pontos`);
     }
 
-    // Atualizar ou inserir registro de login com validação adicional
-    const { error: upsertError } = await supabase
+    // ATUALIZAÇÃO ATÔMICA: Usar upsert com validação adicional
+    console.log(`Atualizando registro com dia_atual=${diaAtual}, ultimo_login=${hoje}`);
+    
+    const { data: updatedLogin, error: upsertError } = await supabase
       .from('user_daily_logins')
       .upsert({
         user_id: userId,
         dia_atual: diaAtual,
         ultimo_login: hoje,
+        updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id',
         ignoreDuplicates: false
-      });
+      })
+      .select()
+      .single();
 
     if (upsertError) {
       console.error('Erro ao atualizar login:', upsertError);
       throw upsertError;
     }
+
+    console.log('Login atualizado com sucesso:', updatedLogin);
 
     // Registrar no histórico
     const { error: historyError } = await supabase
@@ -125,7 +149,12 @@ serve(async (req) => {
         pontos: pontos,
       });
 
-    if (historyError) throw historyError;
+    if (historyError) {
+      console.error('Erro ao inserir histórico:', historyError);
+      throw historyError;
+    }
+
+    console.log('Histórico registrado com sucesso');
 
     // Buscar perfil do usuário para pegar o username da Twitch
     const { data: profile, error: profileError } = await supabase
@@ -134,9 +163,13 @@ serve(async (req) => {
       .eq('id', userId)
       .single();
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('Erro ao buscar perfil:', profileError);
+      throw profileError;
+    }
 
     if (!profile.twitch_username) {
+      console.log('Usuário não possui username da Twitch vinculado');
       return new Response(
         JSON.stringify({ error: 'Usuário não possui username da Twitch vinculado' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -159,6 +192,8 @@ serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`Creditando ${pontos} pontos para ${profile.twitch_username}`);
 
     const seResponse = await fetch(
       `https://api.streamelements.com/kappa/v2/points/${seChannelId}/${profile.twitch_username}/${pontos}`,
@@ -183,6 +218,8 @@ serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Pontos creditados com sucesso na StreamElements');
 
     return new Response(
       JSON.stringify({ 
