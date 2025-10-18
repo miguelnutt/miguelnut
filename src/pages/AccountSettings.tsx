@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import QRCode from "qrcode";
@@ -56,6 +56,8 @@ export default function AccountSettings() {
   const [loadingSaldos, setLoadingSaldos] = useState(false);
   const [resgateDialogOpen, setResgateDialogOpen] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [resgates, setResgates] = useState<any[]>([]);
+  const [loadingResgates, setLoadingResgates] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -67,6 +69,12 @@ export default function AccountSettings() {
       carregarSaldos();
     }
   }, [twitchUser]);
+
+  useEffect(() => {
+    if (profileUserId) {
+      carregarResgates();
+    }
+  }, [profileUserId]);
 
   const carregarSaldos = async () => {
     if (!twitchUser) return;
@@ -104,6 +112,27 @@ export default function AccountSettings() {
       console.error('Erro ao carregar saldos:', error);
     } finally {
       setLoadingSaldos(false);
+    }
+  };
+
+  const carregarResgates = async () => {
+    if (!profileUserId) return;
+    
+    setLoadingResgates(true);
+    try {
+      const { data, error } = await supabase
+        .from('rubini_coins_resgates')
+        .select('*')
+        .eq('user_id', profileUserId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setResgates(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar resgates:', error);
+    } finally {
+      setLoadingResgates(false);
     }
   };
 
@@ -502,14 +531,70 @@ export default function AccountSettings() {
                 </TabsContent>
 
                 <TabsContent value="resgates" className="space-y-4">
-                  <div className="text-center py-8">
-                    <Coins className="h-12 w-12 mx-auto mb-4 text-primary" />
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Resgate seus Rubini Coins para recebê-los no jogo
-                    </p>
-                    <Button onClick={() => setResgateDialogOpen(true)}>
-                      Solicitar Resgate
-                    </Button>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">Histórico de Resgates</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Acompanhe suas solicitações de resgate
+                        </p>
+                      </div>
+                      <Button onClick={() => setResgateDialogOpen(true)}>
+                        Novo Resgate
+                      </Button>
+                    </div>
+
+                    {loadingResgates ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : resgates.length === 0 ? (
+                      <div className="text-center py-8 border rounded-lg bg-card/50">
+                        <Coins className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum resgate realizado ainda
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {resgates.map((resgate) => (
+                          <div 
+                            key={resgate.id} 
+                            className="border rounded-lg p-4 bg-card/50 hover:bg-card transition-colors"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {resgate.status === 'PENDENTE' && <Clock className="h-4 w-4 text-yellow-500" />}
+                                {resgate.status === 'PROCESSANDO' && <AlertCircle className="h-4 w-4 text-blue-500" />}
+                                {resgate.status === 'ENTREGUE' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                {resgate.status === 'RECUSADO' && <XCircle className="h-4 w-4 text-red-500" />}
+                                <span className="font-semibold">
+                                  {resgate.status === 'PENDENTE' && 'Pendente'}
+                                  {resgate.status === 'PROCESSANDO' && 'Processando'}
+                                  {resgate.status === 'ENTREGUE' && 'Entregue'}
+                                  {resgate.status === 'RECUSADO' && 'Recusado'}
+                                </span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(resgate.created_at).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                            <div className="text-sm space-y-1">
+                              <p>
+                                <span className="font-bold text-primary">{resgate.quantidade}</span> Rubini Coins
+                                {' → '} 
+                                <span className="font-medium">{resgate.personagem}</span>
+                              </p>
+                              {resgate.status === 'RECUSADO' && resgate.motivo_recusa && (
+                                <div className="bg-destructive/10 text-destructive rounded p-2 mt-2">
+                                  <strong>Motivo:</strong> {resgate.motivo_recusa}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
@@ -832,7 +917,10 @@ export default function AccountSettings() {
           onOpenChange={setResgateDialogOpen}
           userId={profileUserId}
           saldoAtual={rubiniCoins}
-          onResgateSuccess={carregarSaldos}
+          onResgateSuccess={() => {
+            carregarSaldos();
+            carregarResgates();
+          }}
         />
       )}
     </>
