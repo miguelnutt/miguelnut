@@ -1,9 +1,25 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, cookie',
+  'Access-Control-Allow-Credentials': 'true',
 };
+
+const JWT_SECRET = Deno.env.get('JWT_SECRET') || 'your-super-secret-jwt-key-change-this';
+
+async function verifyJWT(token: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(JWT_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"]
+  );
+
+  return await verify(token, key);
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,13 +27,44 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Verificar autenticação via token customizado Twitch
+    const authHeader = req.headers.get('authorization') || '';
+    const tokenMatch = authHeader.match(/Bearer (.+)/);
+    
+    if (!tokenMatch) {
+      return new Response(
+        JSON.stringify({ error: 'Token de autenticação não fornecido' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
+      );
+    }
+
+    const token = tokenMatch[1];
+    let payload;
+    
+    try {
+      payload = await verifyJWT(token);
+      console.log('✅ Usuário autenticado via Twitch JWT');
+    } catch (error) {
+      console.error('❌ Erro ao verificar JWT:', error);
+      return new Response(
+        JSON.stringify({ error: 'Token inválido ou expirado' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { quantidade, personagem, userId } = await req.json();
 
-    console.log('Processando resgate:', { quantidade, personagem, userId });
+    console.log('📝 Processando resgate:', { quantidade, personagem, userId });
 
     // Validar quantidade (múltiplo de 25)
     if (!quantidade || quantidade <= 0 || quantidade % 25 !== 0) {
@@ -51,7 +98,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (balanceError) {
-      console.error('Erro ao buscar saldo:', balanceError);
+      console.error('❌ Erro ao buscar saldo:', balanceError);
       return new Response(
         JSON.stringify({ error: 'Erro ao buscar saldo' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
@@ -79,7 +126,7 @@ Deno.serve(async (req) => {
       .eq('user_id', userId);
 
     if (debitError) {
-      console.error('Erro ao debitar saldo:', debitError);
+      console.error('❌ Erro ao debitar saldo:', debitError);
       throw new Error('Erro ao processar resgate');
     }
 
@@ -102,7 +149,7 @@ Deno.serve(async (req) => {
         .update({ saldo: balance.saldo })
         .eq('user_id', userId);
       
-      console.error('Erro ao criar resgate:', resgateError);
+      console.error('❌ Erro ao criar resgate:', resgateError);
       throw new Error('Erro ao criar solicitação');
     }
 
@@ -124,7 +171,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('❌ Erro:', error);
+    console.error('❌ Erro geral:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
       JSON.stringify({ error: errorMessage }),
