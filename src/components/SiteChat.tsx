@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,6 @@ export function SiteChat() {
   useEffect(() => {
     loadMessages();
 
-    // Realtime para novas mensagens
     const channel = supabase
       .channel('chat_messages_changes')
       .on(
