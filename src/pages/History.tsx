@@ -202,7 +202,6 @@ export default function History() {
                   <option value="Pontos de Loja">Pontos de Loja</option>
                   <option value="Tickets">Tickets</option>
                   <option value="Rubini Coins">Rubini Coins</option>
-                  <option value="RC">RC</option>
                 </select>
               </div>
               <div>

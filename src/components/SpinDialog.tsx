@@ -51,6 +51,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
   const [nomePersonagem, setNomePersonagem] = useState<string | null>(null);
   const [pontosAtuais, setPontosAtuais] = useState<number | null>(null);
   const [carregandoPontos, setCarregandoPontos] = useState(false);
+  const [ticketsAtuais, setTicketsAtuais] = useState<number | null>(null);
+  const [carregandoTickets, setCarregandoTickets] = useState(false);
 
   // Inicializar áudio de recompensa
   useEffect(() => {
@@ -82,6 +84,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       setNomePersonagem(null);
       setPontosAtuais(null);
       setCarregandoPontos(false);
+      setTicketsAtuais(null);
+      setCarregandoTickets(false);
     } else {
       setIsModoTeste(testMode);
     }
@@ -337,6 +341,44 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         }
       }
       
+      // Se for Tickets, buscar tickets atuais do usuário
+      if (sorteada.tipo === "Tickets" && !isModoTeste) {
+        setCarregandoTickets(true);
+        try {
+          // Buscar perfil por twitch_username ou nome
+          const { data: profileByTwitch } = await supabase
+            .from('profiles')
+            .select('id')
+            .ilike('twitch_username', nomeParaExibir)
+            .maybeSingle();
+          
+          const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
+            .from('profiles')
+            .select('id')
+            .ilike('nome', nomeParaExibir)
+            .maybeSingle();
+          
+          const profileData = profileByTwitch || profileByName;
+          
+          if (profileData?.id) {
+            const { data: ticketsData } = await supabase
+              .from('tickets')
+              .select('tickets_atual')
+              .eq('user_id', profileData.id)
+              .maybeSingle();
+            
+            setTicketsAtuais(ticketsData?.tickets_atual || 0);
+          } else {
+            setTicketsAtuais(0); // Novo usuário
+          }
+        } catch (error) {
+          console.error("Erro ao buscar tickets:", error);
+          setTicketsAtuais(null);
+        } finally {
+          setCarregandoTickets(false);
+        }
+      }
+      
       // Se for Rubini Coins, buscar nome do personagem
       if (sorteada.tipo === "Rubini Coins" && !isModoTeste) {
         try {
@@ -509,6 +551,32 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
                     ) : (
                       <p className="text-sm text-yellow-600 dark:text-yellow-400">
                         Não foi possível carregar os pontos do usuário
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Mostrar tickets atuais e futuros para Tickets */}
+                {resultado.tipo === "Tickets" && !isModoTeste && (
+                  <div className="pt-4 border-t border-border space-y-2">
+                    {carregandoTickets ? (
+                      <p className="text-sm text-muted-foreground">Carregando tickets...</p>
+                    ) : ticketsAtuais !== null ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-muted-foreground">Tickets Atuais:</p>
+                          <p className="text-lg font-semibold">{ticketsAtuais}</p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-muted-foreground">Após Prêmio:</p>
+                          <p className="text-lg font-bold text-primary">
+                            {ticketsAtuais + parseInt(resultado.valor)}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                        Não foi possível carregar os tickets do usuário
                       </p>
                     )}
                   </div>

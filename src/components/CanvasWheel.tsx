@@ -90,6 +90,7 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentSegment, setCurrentSegment] = useState<number>(0);
   const animationFrameRef = useRef<number>();
+  const lastTickTimeRef = useRef<number>(0);
   
   // Inicializar áudio
   useEffect(() => {
@@ -115,6 +116,11 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
     const startTime = Date.now();
     const duration = duracaoSpin * 1000;
     let lastPlayedSegment = -1;
+    lastTickTimeRef.current = 0;
+
+    // Calcular intervalo mínimo entre ticks baseado na duração e número de segmentos
+    // Garante que o áudio não fique acelerado demais
+    const minTickInterval = Math.max(50, duration / (recompensas.length * 8)); // Mínimo 50ms
 
     const checkSegment = () => {
       const elapsed = Date.now() - startTime;
@@ -137,9 +143,11 @@ export function CanvasWheel({ recompensas, rotation, spinning, labelFontSize = 5
       // Detectar qual segmento está sob a seta
       const segment = indexAtPin(angleInRadians, recompensas.length);
       
-      // Tocar som apenas quando mudar de segmento (evitar duplicatas)
-      if (segment !== lastPlayedSegment) {
+      // Tocar som apenas quando mudar de segmento E respeitando o intervalo mínimo
+      const now = Date.now();
+      if (segment !== lastPlayedSegment && (now - lastTickTimeRef.current) >= minTickInterval) {
         lastPlayedSegment = segment;
+        lastTickTimeRef.current = now;
         setCurrentSegment(segment);
         
         if (audioRef.current) {
