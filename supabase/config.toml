@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.save-twitch-character]
 verify_jwt = false
+
+[functions.get-daily-login-status]
+verify_jwt = false
