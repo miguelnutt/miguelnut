@@ -6,40 +6,45 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 
 const TibiaDle = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: twitchUser, loading: twitchLoading } = useTwitchAuth();
   const [gameData, setGameData] = useState<any>(null);
   const [currentGuess, setCurrentGuess] = useState("");
   const [guesses, setGuesses] = useState<string[]>([]);
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingGame, setLoadingGame] = useState(false);
 
   useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      toast.error("Você precisa estar logado para jogar!");
-      navigate("/login");
-      return;
+    if (!twitchLoading) {
+      if (!twitchUser) {
+        toast.error("Você precisa estar logado com a Twitch para jogar!");
+        navigate("/login");
+      } else {
+        loadGame();
+      }
     }
+  }, [twitchUser, twitchLoading, navigate]);
 
-    setUser(user);
-    await loadGame(user);
-  };
-
-  const loadGame = async (user: any) => {
+  const loadGame = async () => {
+    if (!twitchUser) return;
+    
+    setLoadingGame(true);
     try {
+      const twitchToken = localStorage.getItem('twitch_token');
+      if (!twitchToken) {
+        toast.error("Token da Twitch não encontrado. Faça login novamente.");
+        navigate("/login");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('get-tibiadle-word', {
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          Authorization: `Bearer ${twitchToken}`,
         },
       });
 
@@ -56,7 +61,7 @@ const TibiaDle = () => {
       console.error('Error loading game:', error);
       toast.error(error.message || "Erro ao carregar jogo");
     } finally {
-      setLoading(false);
+      setLoadingGame(false);
     }
   };
 
@@ -86,13 +91,20 @@ const TibiaDle = () => {
     setSubmitting(true);
 
     try {
+      const twitchToken = localStorage.getItem('twitch_token');
+      if (!twitchToken) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        navigate("/login");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('submit-tibiadle-guess', {
         body: { 
           tentativa: currentGuess,
           jogo_id: gameData.jogo_id,
         },
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          Authorization: `Bearer ${twitchToken}`,
         },
       });
 
@@ -147,7 +159,7 @@ const TibiaDle = () => {
     ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACKSPACE"],
   ];
 
-  if (loading) {
+  if (twitchLoading || loadingGame) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -156,6 +168,10 @@ const TibiaDle = () => {
         </div>
       </div>
     );
+  }
+
+  if (!twitchUser) {
+    return null;
   }
 
   const maxLength = gameData?.palavra.length || 8;
