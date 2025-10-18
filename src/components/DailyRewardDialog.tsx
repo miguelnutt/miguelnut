@@ -132,14 +132,13 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
   const podeClamar = () => {
     if (!userLogin) return true; // Primeira vez
 
-    // Comparar datas no fuso horário de Brasília
-    const agora = new Date();
-    const brasiliaOffset = -3 * 60; // UTC-3 em minutos
-    const offsetAtual = agora.getTimezoneOffset();
-    const diffMinutos = offsetAtual - brasiliaOffset;
-    
-    const horarioBrasilia = new Date(agora.getTime() + diffMinutos * 60000);
-    const hoje = horarioBrasilia.toISOString().split('T')[0];
+    // Pegar data atual no horário de Brasília
+    const hoje = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
     
     return userLogin.ultimo_login !== hoje;
   };

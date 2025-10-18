@@ -29,14 +29,13 @@ serve(async (req) => {
       );
     }
 
-    // Pegar data atual no horário de Brasília (UTC-3)
-    const agora = new Date();
-    const brasiliaOffset = -3 * 60; // UTC-3 em minutos
-    const offsetAtual = agora.getTimezoneOffset();
-    const diffMinutos = offsetAtual - brasiliaOffset;
-    
-    const horarioBrasilia = new Date(agora.getTime() + diffMinutos * 60000);
-    const hoje = horarioBrasilia.toISOString().split('T')[0];
+    // Pegar data atual no horário de Brasília usando Intl.DateTimeFormat
+    const hoje = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
 
     // Buscar registro de login do usuário
     const { data: loginData, error: loginError } = await supabase
@@ -68,10 +67,9 @@ serve(async (req) => {
       }
 
       // Calcular diferença de dias
-      const ultimoLoginDate = new Date(ultimoLogin + 'T00:00:00-03:00'); // Forçar timezone Brasília
-      const hojeDate = new Date(hoje + 'T00:00:00-03:00');
-      const diffTime = hojeDate.getTime() - ultimoLoginDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = Math.floor(
+        (new Date(hoje).getTime() - new Date(ultimoLogin).getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       if (diffDays === 1) {
         // Login consecutivo - avançar dia

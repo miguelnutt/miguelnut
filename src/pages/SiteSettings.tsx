@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Youtube, Calendar, Gift } from "lucide-react";
+import { Settings, Youtube, Calendar, Gift, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { DailyRewardConfigDialog } from "@/components/DailyRewardConfigDialog";
 import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
+import { DailyRewardsStatsDialog } from "@/components/DailyRewardsStatsDialog";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function SiteSettings() {
   const [saving, setSaving] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -246,8 +248,17 @@ export default function SiteSettings() {
                   variant="outline"
                   className="w-full"
                 >
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <Users className="h-4 w-4 mr-2" />
                   Gerenciar Progresso dos Usuários
+                </Button>
+
+                <Button 
+                  onClick={() => setStatsDialogOpen(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Ver Resgates do Dia
                 </Button>
               </div>
 
@@ -276,6 +287,10 @@ export default function SiteSettings() {
       <ManageDailyRewardsDialog 
         open={manageDialogOpen} 
         onOpenChange={setManageDialogOpen}
+      />
+      <DailyRewardsStatsDialog 
+        open={statsDialogOpen} 
+        onOpenChange={setStatsDialogOpen}
       />
     </div>
   );
