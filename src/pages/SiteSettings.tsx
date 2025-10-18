@@ -18,6 +18,7 @@ import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection"
 import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
 import { ChatModerationPanel } from "@/components/ChatModerationPanel";
 import { PromotionalBar } from "@/components/PromotionalBar";
+import { AdminRubiniCoinsResgates } from "@/components/admin/AdminRubiniCoinsResgates";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -256,6 +257,9 @@ export default function SiteSettings() {
 
           {/* Seção 5: Rankings e Exibição */}
           <RankingDisplaySection />
+
+          {/* Seção 6: Resgates de Rubini Coins */}
+          <AdminRubiniCoinsResgates />
 
           {/* Gerenciar Progresso dos Usuários */}
           <Card className="shadow-card">

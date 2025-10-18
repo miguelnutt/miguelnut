@@ -427,8 +427,23 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
 
       // Se for modo teste, não precisa salvar nada
       if (isModoTeste) {
-        // Apenas mostra o resultado, sem ações de salvar
         return;
+      }
+
+      // Modo real: adicionar Rubini Coins automaticamente
+      if (sorteada.tipo === "Rubini Coins") {
+        try {
+          await supabase.functions.invoke('add-rubini-coins', {
+            body: {
+              userId: profileData?.id || null,
+              twitchUsername: profileData?.id ? null : nomeParaExibir,
+              quantidade: parseInt(sorteada.valor),
+              motivo: `Roleta: ${wheel.nome}`
+            }
+          });
+        } catch (error) {
+          console.error('Erro ao adicionar Rubini Coins:', error);
+        }
       }
     }, duracaoMs + 500);
   };

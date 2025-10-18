@@ -21,6 +21,9 @@ import { DailyRewardSpecialConfigDialog } from "@/components/DailyRewardSpecialC
 import { MaintenanceSection } from "@/components/admin/MaintenanceSection";
 import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection";
 import { PromotionalBar } from "@/components/PromotionalBar";
+import { RubiniCoinsResgateDialog } from "@/components/RubiniCoinsResgateDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Ticket } from "lucide-react";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -47,6 +50,10 @@ export default function AccountSettings() {
   const [manageRewardsOpen, setManageRewardsOpen] = useState(false);
   const [managePointsOpen, setManagePointsOpen] = useState(false);
   const [showSpecialDialog, setShowSpecialDialog] = useState(false);
+  const [rubiniCoins, setRubiniCoins] = useState<number>(0);
+  const [tickets, setTickets] = useState<number>(0);
+  const [loadingSaldos, setLoadingSaldos] = useState(false);
+  const [resgateDialogOpen, setResgateDialogOpen] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -55,8 +62,46 @@ export default function AccountSettings() {
   useEffect(() => {
     if (twitchUser) {
       loadTwitchUserProfile();
+      carregarSaldos();
     }
   }, [twitchUser]);
+
+  const carregarSaldos = async () => {
+    if (!twitchUser) return;
+    
+    setLoadingSaldos(true);
+    try {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('twitch_username', twitchUser.login)
+        .maybeSingle();
+
+      if (!profiles?.id) return;
+
+      // Buscar Rubini Coins
+      const { data: rubiniData } = await supabase
+        .from('rubini_coins_balance')
+        .select('saldo')
+        .eq('user_id', profiles.id)
+        .maybeSingle();
+
+      setRubiniCoins(rubiniData?.saldo || 0);
+
+      // Buscar Tickets
+      const { data: ticketsData } = await supabase
+        .from('tickets')
+        .select('tickets_atual')
+        .eq('user_id', profiles.id)
+        .maybeSingle();
+
+      setTickets(ticketsData?.tickets_atual || 0);
+    } catch (error) {
+      console.error('Erro ao carregar saldos:', error);
+    } finally {
+      setLoadingSaldos(false);
+    }
+  };
 
   const checkUser = async () => {
     try {
@@ -354,50 +399,116 @@ export default function AccountSettings() {
         </div>
 
         <div className="space-y-4 md:space-y-6">
-          {/* Pontos StreamElements - Só para usuários Twitch */}
+          {/* Saldos Consolidados - Só para usuários Twitch */}
           {twitchUser && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                <Coins className="h-5 w-5 text-yellow-500" />
-                Pontos do Canal
+                <Coins className="h-5 w-5 text-primary" />
+                Seus Saldos
               </CardTitle>
-              <CardDescription className="text-sm">
-                Seus pontos do StreamElements
-              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between p-4 bg-gradient-card rounded-lg">
-                <div>
-                  <p className="text-sm text-muted-foreground">Saldo Atual</p>
-                  <p className="text-3xl font-bold text-yellow-500">
-                    {loadingPontos ? (
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    ) : (
-                      pontosStreamElements?.toLocaleString() || "0"
-                    )}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={fetchStreamElementsPoints}
-                  disabled={loadingPontos}
-                  title="Atualizar saldo"
-                >
-                  <RefreshCw className={`h-4 w-4 ${loadingPontos ? 'animate-spin' : ''}`} />
-                </Button>
-              </div>
-              <div className="mt-4">
-                <Button 
-                  onClick={() => setDailyRewardOpen(true)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Gift className="mr-2 h-4 w-4" />
-                  Ver Recompensa Diária
-                </Button>
-              </div>
+              <Tabs defaultValue="saldos" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="saldos">Saldos</TabsTrigger>
+                  <TabsTrigger value="resgates">Resgates de Rubini Coins</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="saldos" className="space-y-4">
+                  {/* Pontos de Loja */}
+                  <div className="flex items-center justify-between p-4 bg-gradient-card rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pontos de Loja</p>
+                      <p className="text-2xl font-bold text-yellow-500">
+                        {loadingPontos ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          pontosStreamElements?.toLocaleString() || "0"
+                        )}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={fetchStreamElementsPoints}
+                      disabled={loadingPontos}
+                      title="Atualizar"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loadingPontos ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+
+                  {/* Rubini Coins */}
+                  <div className="flex items-center justify-between p-4 bg-gradient-card rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Rubini Coins</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {loadingSaldos ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          rubiniCoins.toLocaleString()
+                        )}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={carregarSaldos}
+                      disabled={loadingSaldos}
+                      title="Atualizar"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loadingSaldos ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+
+                  {/* Tickets */}
+                  <div className="flex items-center justify-between p-4 bg-gradient-card rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Tickets</p>
+                      <p className="text-2xl font-bold text-accent">
+                        {loadingSaldos ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          tickets.toLocaleString()
+                        )}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={carregarSaldos}
+                      disabled={loadingSaldos}
+                      title="Atualizar"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loadingSaldos ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+
+                  <div className="pt-2">
+                    <Button 
+                      onClick={() => setDailyRewardOpen(true)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Gift className="mr-2 h-4 w-4" />
+                      Ver Recompensa Diária
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="resgates" className="space-y-4">
+                  <div className="text-center py-8">
+                    <Coins className="h-12 w-12 mx-auto mb-4 text-primary" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Resgate seus Rubini Coins para recebê-los no jogo
+                    </p>
+                    <Button onClick={() => setResgateDialogOpen(true)}>
+                      Solicitar Resgate
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
           )}
@@ -707,6 +818,16 @@ export default function AccountSettings() {
         open={showSpecialDialog} 
         onOpenChange={setShowSpecialDialog}
       />
+      
+      {resgateDialogOpen && twitchUser && (
+        <RubiniCoinsResgateDialog
+          open={resgateDialogOpen}
+          onOpenChange={setResgateDialogOpen}
+          userId={twitchUser.id}
+          saldoAtual={rubiniCoins}
+          onResgateSuccess={carregarSaldos}
+        />
+      )}
     </>
   );
 }

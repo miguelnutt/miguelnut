@@ -161,6 +161,39 @@ export type Database = {
           },
         ]
       }
+      creditos_provisorios: {
+        Row: {
+          aplicado: boolean | null
+          aplicado_em: string | null
+          created_at: string | null
+          id: string
+          motivo: string
+          tipo_credito: string
+          twitch_username: string
+          valor: number
+        }
+        Insert: {
+          aplicado?: boolean | null
+          aplicado_em?: string | null
+          created_at?: string | null
+          id?: string
+          motivo: string
+          tipo_credito: string
+          twitch_username: string
+          valor: number
+        }
+        Update: {
+          aplicado?: boolean | null
+          aplicado_em?: string | null
+          created_at?: string | null
+          id?: string
+          motivo?: string
+          tipo_credito?: string
+          twitch_username?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       daily_reward_config: {
         Row: {
           created_at: string | null
@@ -327,6 +360,121 @@ export type Database = {
           vencedor_id?: string | null
         }
         Relationships: []
+      }
+      rubini_coins_balance: {
+        Row: {
+          created_at: string | null
+          saldo: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          saldo?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          saldo?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubini_coins_balance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubini_coins_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          motivo: string
+          user_id: string | null
+          variacao: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          motivo: string
+          user_id?: string | null
+          variacao: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          motivo?: string
+          user_id?: string | null
+          variacao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubini_coins_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubini_coins_resgates: {
+        Row: {
+          alterado_por: string | null
+          created_at: string | null
+          id: string
+          motivo_recusa: string | null
+          observacoes: string | null
+          personagem: string
+          quantidade: number
+          status: Database["public"]["Enums"]["resgate_status"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          alterado_por?: string | null
+          created_at?: string | null
+          id?: string
+          motivo_recusa?: string | null
+          observacoes?: string | null
+          personagem: string
+          quantidade: number
+          status?: Database["public"]["Enums"]["resgate_status"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          alterado_por?: string | null
+          created_at?: string | null
+          id?: string
+          motivo_recusa?: string | null
+          observacoes?: string | null
+          personagem?: string
+          quantidade?: number
+          status?: Database["public"]["Enums"]["resgate_status"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubini_coins_resgates_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rubini_coins_resgates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_settings: {
         Row: {
@@ -579,6 +727,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      resgate_status: "PENDENTE" | "PROCESSANDO" | "ENTREGUE" | "RECUSADO"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -707,6 +856,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      resgate_status: ["PENDENTE", "PROCESSANDO", "ENTREGUE", "RECUSADO"],
     },
   },
 } as const
