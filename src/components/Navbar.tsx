@@ -20,8 +20,11 @@ export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
-  const { isAdmin } = useAdmin(session?.user ?? null);
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
+  const [twitchUserProfile, setTwitchUserProfile] = useState<any>(null);
+  
+  // Verificar se é admin usando o profile do usuário Twitch
+  const isAdmin = twitchUserProfile?.id ? useAdmin({ id: twitchUserProfile.id } as any).isAdmin : false;
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
@@ -42,6 +45,26 @@ export const Navbar = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Carregar profile do usuário Twitch para verificar admin
+  useEffect(() => {
+    const loadTwitchProfile = async () => {
+      if (!twitchUser) {
+        setTwitchUserProfile(null);
+        return;
+      }
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('twitch_username', twitchUser.login)
+        .maybeSingle();
+      
+      setTwitchUserProfile(data);
+    };
+    
+    loadTwitchProfile();
+  }, [twitchUser]);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";

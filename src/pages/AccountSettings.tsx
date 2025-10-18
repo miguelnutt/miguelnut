@@ -72,13 +72,17 @@ export default function AccountSettings() {
 
   useEffect(() => {
     if (profileUserId) {
+      console.log('useEffect disparado, carregando resgates...');
       carregarResgates();
+    } else {
+      console.log('profileUserId ainda não definido:', profileUserId);
     }
   }, [profileUserId]);
 
   const carregarSaldos = async () => {
     if (!twitchUser) return;
     
+    console.log('Carregando saldos para:', twitchUser.login);
     setLoadingSaldos(true);
     try {
       const { data: profiles } = await supabase
@@ -87,8 +91,13 @@ export default function AccountSettings() {
         .eq('twitch_username', twitchUser.login)
         .maybeSingle();
 
-      if (!profiles?.id) return;
+      console.log('Profile encontrado:', profiles);
+      if (!profiles?.id) {
+        console.log('Nenhum profile encontrado');
+        return;
+      }
       
+      console.log('Setando profileUserId:', profiles.id);
       setProfileUserId(profiles.id);
 
       // Buscar Rubini Coins
@@ -116,8 +125,12 @@ export default function AccountSettings() {
   };
 
   const carregarResgates = async () => {
-    if (!profileUserId) return;
+    if (!profileUserId) {
+      console.log('carregarResgates: profileUserId não definido');
+      return;
+    }
     
+    console.log('Carregando resgates para user_id:', profileUserId);
     setLoadingResgates(true);
     try {
       const { data, error } = await supabase
@@ -127,7 +140,11 @@ export default function AccountSettings() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      console.log('Resgates carregados:', data);
+      if (error) {
+        console.error('Erro na query de resgates:', error);
+        throw error;
+      }
       setResgates(data || []);
     } catch (error) {
       console.error('Erro ao carregar resgates:', error);
@@ -542,6 +559,13 @@ export default function AccountSettings() {
                       <Button onClick={() => setResgateDialogOpen(true)}>
                         Novo Resgate
                       </Button>
+                    </div>
+
+                    {/* Debug info */}
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>ProfileUserId: {profileUserId || 'não definido'}</p>
+                      <p>Loading: {loadingResgates ? 'sim' : 'não'}</p>
+                      <p>Resgates count: {resgates.length}</p>
                     </div>
 
                     {loadingResgates ? (
