@@ -46,6 +46,13 @@ interface ParticipacaoHoje {
   num_tentativas: number | null;
 }
 
+interface TibiaTermoWord {
+  id: string;
+  palavra: string;
+  ativa: boolean;
+  created_at: string;
+}
+
 export function TibiaTermoAdminPanel() {
   const [loading, setLoading] = useState(true);
   const [rewards, setRewards] = useState<RewardConfig[]>([]);
@@ -66,11 +73,20 @@ export function TibiaTermoAdminPanel() {
   const [exigirLogin, setExigirLogin] = useState(true);
   const [bloquearNovaPartida, setBloquearNovaPartida] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
+  
+  // Gerenciamento de palavras
+  const [words, setWords] = useState<TibiaTermoWord[]>([]);
+  const [loadingWords, setLoadingWords] = useState(false);
+  const [newWord, setNewWord] = useState("");
+  const [addingWord, setAddingWord] = useState(false);
+  const [showDeleteWordDialog, setShowDeleteWordDialog] = useState(false);
+  const [wordToDelete, setWordToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadRewards();
     loadGeneralConfig();
     loadParticipacoesHoje();
+    loadWords();
   }, []);
 
   const loadRewards = async () => {
@@ -282,6 +298,112 @@ export function TibiaTermoAdminPanel() {
     } finally {
       setResetting(false);
       setShowResetUserDialog(false);
+    }
+  };
+
+  const loadWords = async () => {
+    setLoadingWords(true);
+    try {
+      const { data, error } = await supabase
+        .from('tibiatermo_words')
+        .select('*')
+        .order('palavra');
+
+      if (error) throw error;
+      setWords(data || []);
+    } catch (error: any) {
+      console.error("Erro ao carregar palavras:", error);
+      toast.error("Erro ao carregar palavras");
+    } finally {
+      setLoadingWords(false);
+    }
+  };
+
+  const addWord = async () => {
+    if (!newWord.trim()) {
+      toast.error("Digite uma palavra");
+      return;
+    }
+
+    const palavra = newWord.trim().toUpperCase();
+    
+    if (palavra.length < 4 || palavra.length > 12) {
+      toast.error("A palavra deve ter entre 4 e 12 caracteres");
+      return;
+    }
+
+    if (!/^[A-Z]+$/.test(palavra)) {
+      toast.error("A palavra deve conter apenas letras");
+      return;
+    }
+
+    setAddingWord(true);
+    try {
+      const { error } = await supabase
+        .from('tibiatermo_words')
+        .insert({ palavra, ativa: true });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error("Esta palavra já existe no dicionário");
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      toast.success("Palavra adicionada com sucesso!");
+      setNewWord("");
+      loadWords();
+    } catch (error: any) {
+      console.error("Erro ao adicionar palavra:", error);
+      toast.error("Erro ao adicionar palavra");
+    } finally {
+      setAddingWord(false);
+    }
+  };
+
+  const toggleWordActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('tibiatermo_words')
+        .update({ ativa: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success(`Palavra ${!currentStatus ? 'ativada' : 'desativada'}`);
+      loadWords();
+    } catch (error: any) {
+      console.error("Erro ao atualizar palavra:", error);
+      toast.error("Erro ao atualizar palavra");
+    }
+  };
+
+  const confirmDeleteWord = (id: string) => {
+    setWordToDelete(id);
+    setShowDeleteWordDialog(true);
+  };
+
+  const deleteWord = async () => {
+    if (!wordToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('tibiatermo_words')
+        .delete()
+        .eq('id', wordToDelete);
+
+      if (error) throw error;
+
+      toast.success("Palavra removida com sucesso!");
+      loadWords();
+    } catch (error: any) {
+      console.error("Erro ao remover palavra:", error);
+      toast.error("Erro ao remover palavra");
+    } finally {
+      setWordToDelete(null);
+      setShowDeleteWordDialog(false);
     }
   };
 
@@ -500,6 +622,92 @@ export function TibiaTermoAdminPanel() {
         </CardContent>
       </Card>
 
+      {/* Seção D: Gerenciamento de palavras */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Gerenciar Palavras do Dicionário</CardTitle>
+          <CardDescription>
+            Adicione ou remova palavras válidas do TibiaTermo
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Digite uma palavra (4-12 letras)"
+              value={newWord}
+              onChange={(e) => setNewWord(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === 'Enter' && addWord()}
+              maxLength={12}
+            />
+            <Button onClick={addWord} disabled={addingWord || !newWord.trim()}>
+              {addingWord ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adicionando...
+                </>
+              ) : (
+                'Adicionar Palavra'
+              )}
+            </Button>
+            <Button variant="outline" onClick={loadWords} disabled={loadingWords}>
+              <RefreshCw className={`h-4 w-4 ${loadingWords ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+
+          <div className="border rounded-lg max-h-96 overflow-y-auto">
+            {loadingWords ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : words.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhuma palavra cadastrada
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Palavra</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Data de Criação</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {words.map((word) => (
+                    <TableRow key={word.id}>
+                      <TableCell className="font-medium">{word.palavra}</TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={word.ativa}
+                          onCheckedChange={() => toggleWordActive(word.id, word.ativa)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {new Date(word.created_at).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => confirmDeleteWord(word.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Total de palavras: {words.length} ({words.filter(w => w.ativa).length} ativas)
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Dialogs de confirmação */}
       <AlertDialog open={showResetGlobalDialog} onOpenChange={setShowResetGlobalDialog}>
         <AlertDialogContent>
@@ -534,6 +742,24 @@ export function TibiaTermoAdminPanel() {
             <AlertDialogAction onClick={resetUsuario} disabled={resetting}>
               {resetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirmar Reset
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteWordDialog} onOpenChange={setShowDeleteWordDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover esta palavra do dicionário?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteWord}>
+              Confirmar Exclusão
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

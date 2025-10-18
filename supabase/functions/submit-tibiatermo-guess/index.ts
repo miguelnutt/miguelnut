@@ -198,16 +198,8 @@ Deno.serve(async (req) => {
             } else {
               console.log(`Awarded ${premiacao_pontos} points to ${twitchUsername}`);
               
-              // Registrar no histórico (tabela spins)
-              await supabase
-                .from('spins')
-                .insert({
-                  user_id: profile.id,
-                  nome_usuario: twitchUsername,
-                  tipo_recompensa: 'Pontos de Loja',
-                  valor: premiacao_pontos.toString(),
-                  wheel_id: null, // TibiaTermo não tem wheel_id
-                });
+              // Não registrar pontos no histórico de spins (tabela específica de rodas)
+              console.log(`Pontos de loja concedidos: ${premiacao_pontos}`);
             }
           } catch (error) {
             console.error('Error awarding StreamElements points:', error);
@@ -242,16 +234,7 @@ Deno.serve(async (req) => {
             motivo: `TibiaTermo - Acertou em ${numTentativas} tentativa${numTentativas > 1 ? 's' : ''}`,
           });
 
-        // Registrar no histórico (tabela spins)
-        await supabase
-          .from('spins')
-          .insert({
-            user_id: profile.id,
-            nome_usuario: twitchUsername,
-            tipo_recompensa: 'Tickets',
-            valor: premiacao_tickets.toString(),
-            wheel_id: null, // TibiaTermo não tem wheel_id
-          });
+        console.log(`Tickets concedidos: ${premiacao_tickets}`);
       }
     }
 
