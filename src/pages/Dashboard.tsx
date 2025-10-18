@@ -156,24 +156,31 @@ export default function Dashboard() {
       }
       const { count: rafflesCount } = await rafflesQuery;
 
-      // Total de Rubini Coins pagos - soma APENAS recompensas de roletas e sorteios
-      let rcHistoryQuery = supabase
-        .from("rubini_coins_history")
-        .select("variacao, motivo")
-        .gt("variacao", 0);
-      if (startDate && endDate) {
-        rcHistoryQuery = rcHistoryQuery.gte("created_at", startDate).lte("created_at", endDate);
-      }
-      const { data: rcHistoryData } = await rcHistoryQuery;
+      // Total de Rubini Coins pagos - soma da aba Histórico (spins) + aba Tickets (sorteios)
       
-      // Filtrar apenas roletas e sorteios
-      const totalRC = rcHistoryData?.reduce((sum, h) => {
-        const motivo = h.motivo?.toLowerCase() || '';
-        if (motivo.includes('roleta') || motivo.includes('sorteio')) {
-          return sum + (h.variacao || 0);
-        }
-        return sum;
-      }, 0) || 0;
+      // 1. Buscar Rubini Coins da aba Histórico (spins com tipo Rubini Coins)
+      let spinsRCQuery = supabase
+        .from("spins")
+        .select("valor")
+        .eq("tipo_recompensa", "Rubini Coins");
+      if (startDate && endDate) {
+        spinsRCQuery = spinsRCQuery.gte("created_at", startDate).lte("created_at", endDate);
+      }
+      const { data: spinsRCData } = await spinsRCQuery;
+      const spinsRC = spinsRCData?.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0) || 0;
+
+      // 2. Buscar Rubini Coins da aba Tickets (sorteios com tipo Rubini Coins)
+      let rafflesRCQuery = supabase
+        .from("raffles")
+        .select("valor_premio")
+        .eq("tipo_premio", "Rubini Coins");
+      if (startDate && endDate) {
+        rafflesRCQuery = rafflesRCQuery.gte("created_at", startDate).lte("created_at", endDate);
+      }
+      const { data: rafflesRCData } = await rafflesRCQuery;
+      const rafflesRC = rafflesRCData?.reduce((sum, r) => sum + (r.valor_premio || 0), 0) || 0;
+
+      const totalRC = spinsRC + rafflesRC;
 
       setStats({
         totalSpins: spinsCount || 0,
