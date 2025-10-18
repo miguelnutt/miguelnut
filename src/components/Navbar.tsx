@@ -27,7 +27,7 @@ export const Navbar = () => {
   const { isAdmin, loading: adminLoading } = useAdmin(session?.user ?? null);
   
   // Verificar status da recompensa diária
-  const { hasRewardAvailable } = useDailyRewardStatus(session?.user?.id);
+  const { hasRewardAvailable } = useDailyRewardStatus(twitchUser?.login);
 
   // Log para debug
   useEffect(() => {

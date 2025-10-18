@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-helper";
 
-export function useDailyRewardStatus(userId: string | undefined) {
+export function useDailyRewardStatus(twitchUsername: string | undefined) {
   const [hasRewardAvailable, setHasRewardAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
+    if (!twitchUsername) {
+      console.log('[DailyReward] Sem twitchUsername, pulando verificação');
       setHasRewardAvailable(false);
       setLoading(false);
       return;
@@ -14,37 +15,39 @@ export function useDailyRewardStatus(userId: string | undefined) {
 
     checkRewardStatus();
 
-    // Atualizar quando houver mudanças na tabela de logins
-    const channel = supabase
-      .channel('daily_reward_status')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_daily_logins',
-          filter: `user_id=eq.${userId}`
-        },
-        () => {
-          checkRewardStatus();
-        }
-      )
-      .subscribe();
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(checkRewardStatus, 30000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, [userId]);
+  }, [twitchUsername]);
 
   const checkRewardStatus = async () => {
-    if (!userId) {
-      console.log('[DailyReward] Sem userId, pulando verificação');
+    if (!twitchUsername) {
+      console.log('[DailyReward] Sem twitchUsername, pulando verificação');
       return;
     }
 
-    console.log('[DailyReward] Verificando status para userId:', userId);
+    console.log('[DailyReward] Verificando status para twitchUsername:', twitchUsername);
 
     try {
+      // Buscar perfil pelo twitch_username
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("twitch_username", twitchUsername)
+        .maybeSingle();
+
+      if (!profile?.id) {
+        console.log('[DailyReward] Perfil não encontrado');
+        setHasRewardAvailable(false);
+        setLoading(false);
+        return;
+      }
+
+      console.log('[DailyReward] Perfil encontrado, userId:', profile.id);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-daily-login-status`,
         {
