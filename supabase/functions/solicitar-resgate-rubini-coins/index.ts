@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { quantidade, personagem } = await req.json();
+    const { quantidade, personagem, userId } = await req.json();
 
     // Validar quantidade (múltiplo de 25)
     if (!quantidade || quantidade <= 0 || quantidade % 25 !== 0) {
@@ -45,14 +45,25 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Usar userId do corpo da requisição (profile ID) se fornecido, senão user.id do auth
+    const targetUserId = userId || user.id;
+
     // Verificar saldo disponível
     const { data: balance, error: balanceError } = await supabase
       .from('rubini_coins_balance')
       .select('saldo')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', targetUserId)
+      .maybeSingle();
 
-    if (balanceError || !balance) {
+    if (balanceError) {
+      console.error('Erro ao buscar saldo:', balanceError);
+      return new Response(
+        JSON.stringify({ error: 'Erro ao buscar saldo' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    if (!balance) {
       return new Response(
         JSON.stringify({ error: 'Saldo não encontrado' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -70,7 +81,7 @@ Deno.serve(async (req) => {
     const { error: debitError } = await supabase
       .from('rubini_coins_balance')
       .update({ saldo: balance.saldo - quantidade })
-      .eq('user_id', user.id);
+      .eq('user_id', targetUserId);
 
     if (debitError) {
       console.error('Erro ao debitar saldo:', debitError);
@@ -81,7 +92,7 @@ Deno.serve(async (req) => {
     const { data: resgate, error: resgateError } = await supabase
       .from('rubini_coins_resgates')
       .insert({
-        user_id: user.id,
+        user_id: targetUserId,
         quantidade,
         personagem: personagem.trim(),
         status: 'PENDENTE'
@@ -94,7 +105,7 @@ Deno.serve(async (req) => {
       await supabase
         .from('rubini_coins_balance')
         .update({ saldo: balance.saldo })
-        .eq('user_id', user.id);
+        .eq('user_id', targetUserId);
       
       console.error('Erro ao criar resgate:', resgateError);
       throw new Error('Erro ao criar solicitação');
@@ -102,12 +113,12 @@ Deno.serve(async (req) => {
 
     // Registrar no histórico
     await supabase.from('rubini_coins_history').insert({
-      user_id: user.id,
+      user_id: targetUserId,
       variacao: -quantidade,
       motivo: `Resgate solicitado - ${personagem}`
     });
 
-    console.log(`Resgate criado: ${resgate.id} - ${quantidade} Rubini Coins para ${personagem}`);
+    console.log(`Resgate criado: ${resgate.id} - ${quantidade} Rubini Coins para ${personagem} (user: ${targetUserId})`);
 
     return new Response(
       JSON.stringify({ 

@@ -94,7 +94,7 @@ export function RubiniCoinsResgateDialog({
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('solicitar-resgate-rubini-coins', {
-        body: { quantidade, personagem }
+        body: { quantidade, personagem, userId }
       });
 
       if (error) throw error;
