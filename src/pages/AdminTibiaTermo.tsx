@@ -45,15 +45,32 @@ const AdminTibiaTermo = () => {
   }, []);
 
   useEffect(() => {
-    // Aguarda o carregamento completo antes de qualquer ação
-    if (adminLoading) return;
+    console.log("=== ADMIN TIBIATERMO DEBUG ===");
+    console.log("user:", user?.id);
+    console.log("isAdmin:", isAdmin);
+    console.log("adminLoading:", adminLoading);
+    
+    // NÃO FAZ NADA enquanto estiver carregando
+    if (adminLoading) {
+      console.log("Ainda carregando, aguardando...");
+      return;
+    }
+    
+    // NÃO FAZ NADA se não tem usuário ainda
+    if (!user) {
+      console.log("Sem usuário ainda, aguardando...");
+      return;
+    }
+    
+    // Agora sim, verificar se é admin
+    console.log("Verificação final - isAdmin:", isAdmin);
     
     if (isAdmin) {
-      // É admin, carregar dados
+      console.log("É admin! Carregando dados...");
       loadWords();
       loadRewardsConfig();
-    } else if (user) {
-      // Tem usuário mas não é admin
+    } else {
+      console.log("NÃO é admin, redirecionando...");
       toast.error("Acesso negado!");
       navigate("/account");
     }
