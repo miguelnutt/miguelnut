@@ -32,9 +32,18 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
   useEffect(() => {
     if (open && twitchUser) {
+      // Sempre recarregar quando o dialog for aberto
       loadData();
     }
   }, [open, twitchUser]);
+
+  // Recarregar dados quando o dialog fecha e reabre
+  useEffect(() => {
+    if (open) {
+      setLoading(true);
+      setUserLogin(null);
+    }
+  }, [open]);
 
   const loadData = async () => {
     if (!twitchUser) return;
@@ -239,7 +248,8 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
                 onClick={handleClaimReward}
                 disabled={!podeClamar() || claiming}
                 size="lg"
-                className="w-full"
+                className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                variant={!podeClamar() ? "outline" : "default"}
               >
                 {claiming ? (
                   <>
@@ -252,6 +262,11 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
                   "Já Resgatado Hoje"
                 )}
               </Button>
+              {!podeClamar() && (
+                <p className="text-xs text-muted-foreground">
+                  Volte amanhã para continuar sua sequência!
+                </p>
+              )}
             </div>
           </div>
         )}
