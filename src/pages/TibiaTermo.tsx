@@ -55,6 +55,8 @@ const TibiaTermo = () => {
     max_tentativas_bonus: 4,
   });
   const [savingRewards, setSavingRewards] = useState(false);
+  const [resetUsername, setResetUsername] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -62,15 +64,21 @@ const TibiaTermo = () => {
 
   useEffect(() => {
     if (!twitchLoading && !adminLoading) {
-      // Se não tem login Twitch e não é admin, redireciona
-      if (!twitchUser && !isAdmin) {
+      // Admin sempre pode acessar
+      if (isAdmin) {
+        if (twitchUser) {
+          loadGame();
+        }
+        return;
+      }
+      
+      // Não-admin precisa de login Twitch
+      if (!twitchUser) {
         toast.error("Você precisa estar logado com a Twitch para jogar!");
         navigate("/login");
-      } else if (twitchUser) {
-        // Se tem login Twitch, carrega o jogo
+      } else {
         loadGame();
       }
-      // Se é admin sem Twitch, só permite acesso ao painel de configuração
     }
   }, [twitchUser, twitchLoading, isAdmin, adminLoading, navigate]);
 
@@ -410,6 +418,55 @@ const TibiaTermo = () => {
     }
   };
 
+  const resetUserGame = async () => {
+    if (!resetUsername.trim()) {
+      toast.error("Digite um username");
+      return;
+    }
+
+    if (!confirm(`Deseja resetar o jogo de hoje para o usuário ${resetUsername}?`)) {
+      return;
+    }
+
+    setResetting(true);
+    try {
+      // Buscar profile do usuário
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('twitch_username', resetUsername.toLowerCase())
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      
+      if (!profile) {
+        toast.error("Usuário não encontrado");
+        return;
+      }
+
+      // Deletar o jogo de hoje desse usuário
+      const now = new Date();
+      const brasiliaDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+      const dateStr = brasiliaDate.toISOString().split('T')[0];
+
+      const { error: deleteError } = await supabase
+        .from('tibiatermo_user_games')
+        .delete()
+        .eq('user_id', profile.id)
+        .eq('data_jogo', dateStr);
+
+      if (deleteError) throw deleteError;
+
+      toast.success(`Jogo resetado para ${resetUsername}! O usuário pode jogar novamente.`);
+      setResetUsername("");
+    } catch (error: any) {
+      console.error("Error resetting game:", error);
+      toast.error("Erro ao resetar jogo");
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const activeCount = words.filter((w) => w.ativa).length;
   const inactiveCount = words.length - activeCount;
 
@@ -457,9 +514,10 @@ const TibiaTermo = () => {
                   </DialogHeader>
 
                   <Tabs defaultValue="words" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="words">Palavras</TabsTrigger>
                       <TabsTrigger value="rewards">Recompensas</TabsTrigger>
+                      <TabsTrigger value="tests">Testes</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="words" className="space-y-4">
@@ -610,6 +668,48 @@ const TibiaTermo = () => {
                         </Button>
                       </div>
                     </TabsContent>
+
+                    <TabsContent value="tests" className="space-y-4">
+                      <div className="space-y-4">
+                        <div className="p-4 bg-muted/50 rounded-lg">
+                          <h3 className="font-semibold mb-2">Resetar Jogo de Usuário</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Digite o username da Twitch do usuário para resetar o jogo de hoje. 
+                            Isso permitirá que ele jogue novamente hoje.
+                          </p>
+                          
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Username da Twitch"
+                              value={resetUsername}
+                              onChange={(e) => setResetUsername(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  resetUserGame();
+                                }
+                              }}
+                            />
+                            <Button 
+                              onClick={resetUserGame} 
+                              disabled={resetting || !resetUsername.trim()}
+                            >
+                              {resetting ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Resetando...
+                                </>
+                              ) : (
+                                "Resetar"
+                              )}
+                            </Button>
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground mt-2">
+                            ⚠️ Esta ação não pode ser desfeita. Use apenas para testes.
+                          </p>
+                        </div>
+                      </div>
+                    </TabsContent>
                   </Tabs>
                 </DialogContent>
               </Dialog>
@@ -658,9 +758,10 @@ const TibiaTermo = () => {
                   </DialogHeader>
 
                   <Tabs defaultValue="words" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="words">Palavras</TabsTrigger>
                       <TabsTrigger value="rewards">Recompensas</TabsTrigger>
+                      <TabsTrigger value="tests">Testes</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="words" className="space-y-4">
@@ -795,6 +896,48 @@ const TibiaTermo = () => {
                             "Salvar Alterações"
                           )}
                         </Button>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="tests" className="space-y-4">
+                      <div className="space-y-4">
+                        <div className="p-4 bg-muted/50 rounded-lg">
+                          <h3 className="font-semibold mb-2">Resetar Jogo de Usuário</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Digite o username da Twitch do usuário para resetar o jogo de hoje. 
+                            Isso permitirá que ele jogue novamente hoje.
+                          </p>
+                          
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Username da Twitch"
+                              value={resetUsername}
+                              onChange={(e) => setResetUsername(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  resetUserGame();
+                                }
+                              }}
+                            />
+                            <Button 
+                              onClick={resetUserGame} 
+                              disabled={resetting || !resetUsername.trim()}
+                            >
+                              {resetting ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Resetando...
+                                </>
+                              ) : (
+                                "Resetar"
+                              )}
+                            </Button>
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground mt-2">
+                            ⚠️ Esta ação não pode ser desfeita. Use apenas para testes.
+                          </p>
+                        </div>
                       </div>
                     </TabsContent>
                   </Tabs>

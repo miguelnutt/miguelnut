@@ -196,6 +196,15 @@ Deno.serve(async (req) => {
               console.error('StreamElements error:', await seResponse.text());
             } else {
               console.log(`Awarded ${premiacao_pontos} points to ${twitchUsername}`);
+              
+              // Registrar no histórico de Rubini Coins
+              await supabase
+                .from('rubini_coins_history')
+                .insert({
+                  user_id: profile.id,
+                  variacao: premiacao_pontos,
+                  motivo: `TibiaTermo - Acertou em ${numTentativas} tentativa${numTentativas > 1 ? 's' : ''}`,
+                });
             }
           } catch (error) {
             console.error('Error awarding StreamElements points:', error);
