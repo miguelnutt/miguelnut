@@ -151,31 +151,16 @@ export default function Dashboard() {
       }
       const { count: rafflesCount } = await rafflesQuery;
 
-      // Total de Rubini Coins pagos (da roleta + dos sorteios) - incluir histórico antigo
-      let rcQuery = supabase
-        .from("spins")
-        .select("valor, tipo_recompensa")
-        .or("tipo_recompensa.eq.RC,tipo_recompensa.eq.Rubini Coins")
-        .eq("pago", true);
+      // Total de Rubini Coins pagos - soma todas as variações positivas do histórico
+      let rcHistoryQuery = supabase
+        .from("rubini_coins_history")
+        .select("variacao")
+        .gt("variacao", 0);
       if (startDate && endDate) {
-        rcQuery = rcQuery.gte("created_at", startDate).lte("created_at", endDate);
+        rcHistoryQuery = rcHistoryQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
-      const { data: rcData } = await rcQuery;
-      const totalRCSpins = rcData?.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0) || 0;
-
-      // Somar Rubini Coins dos sorteios
-      let rcRafflesQuery = supabase
-        .from("raffles")
-        .select("valor_premio, tipo_premio")
-        .eq("tipo_premio", "Rubini Coins")
-        .eq("pago", true);
-      if (startDate && endDate) {
-        rcRafflesQuery = rcRafflesQuery.gte("created_at", startDate).lte("created_at", endDate);
-      }
-      const { data: rcRafflesData } = await rcRafflesQuery;
-      const totalRCRaffles = rcRafflesData?.reduce((sum, r) => sum + (r.valor_premio || 0), 0) || 0;
-
-      const totalRC = totalRCSpins + totalRCRaffles;
+      const { data: rcHistoryData } = await rcHistoryQuery;
+      const totalRC = rcHistoryData?.reduce((sum, h) => sum + (h.variacao || 0), 0) || 0;
 
       setStats({
         totalSpins: spinsCount || 0,
