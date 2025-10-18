@@ -100,9 +100,12 @@ export function WheelRanking() {
       }
 
       const { data: tibiaTermoPontosData, error: tibiaTermoPontosError } = await tibiaTermoPontosQuery;
-      if (tibiaTermoPontosError) throw tibiaTermoPontosError;
-
-      console.log('TibiaTermo pontos data:', tibiaTermoPontosData);
+      
+      if (tibiaTermoPontosError) {
+        console.error('Erro ao buscar TibiaTermo pontos:', tibiaTermoPontosError);
+      } else {
+        console.log('TibiaTermo pontos data:', tibiaTermoPontosData);
+      }
 
       // Agrupar e somar pontos por usuário (spins + tibia termo)
       const pontosMap = new Map<string, number>();
@@ -208,9 +211,12 @@ export function WheelRanking() {
       }
 
       const { data: tibiaTermoTicketsData, error: tibiaTermoTicketsError } = await tibiaTermoTicketsQuery;
-      if (tibiaTermoTicketsError) throw tibiaTermoTicketsError;
-
-      console.log('TibiaTermo tickets data:', tibiaTermoTicketsData);
+      
+      if (tibiaTermoTicketsError) {
+        console.error('Erro ao buscar TibiaTermo tickets:', tibiaTermoTicketsError);
+      } else {
+        console.log('TibiaTermo tickets data:', tibiaTermoTicketsData);
+      }
 
       // Agrupar e somar tickets por usuário (spins + tibia termo)
       const ticketsMap = new Map<string, number>();
