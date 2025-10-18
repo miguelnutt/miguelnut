@@ -23,7 +23,7 @@ export function WheelRanking() {
   useEffect(() => {
     fetchRankings();
 
-    const channel = supabase
+    const spinsChannel = supabase
       .channel("spins_ranking_changes")
       .on(
         "postgres_changes",
@@ -38,8 +38,24 @@ export function WheelRanking() {
       )
       .subscribe();
 
+    const tibiaTermoChannel = supabase
+      .channel("tibiatermo_ranking_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tibiatermo_history"
+        },
+        () => {
+          fetchRankings();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(spinsChannel);
+      supabase.removeChannel(tibiaTermoChannel);
     };
   }, [periodo]);
 
@@ -71,16 +87,37 @@ export function WheelRanking() {
       }
 
       const { data: pontosData, error: pontosError } = await pontosQuery;
-
       if (pontosError) throw pontosError;
 
-      // Agrupar e somar pontos por usuário
+      // Buscar pontos do TibiaTermo
+      let tibiaTermoPontosQuery = supabase
+        .from("tibiatermo_history")
+        .select("nome_usuario, valor, created_at")
+        .eq("tipo_recompensa", "Pontos de Loja");
+      
+      if (dataInicio) {
+        tibiaTermoPontosQuery = tibiaTermoPontosQuery.gte("created_at", dataInicio);
+      }
+
+      const { data: tibiaTermoPontosData, error: tibiaTermoPontosError } = await tibiaTermoPontosQuery;
+      if (tibiaTermoPontosError) throw tibiaTermoPontosError;
+
+      // Agrupar e somar pontos por usuário (spins + tibia termo)
       const pontosMap = new Map<string, number>();
+      
       pontosData?.forEach((spin) => {
         const valor = parseInt(spin.valor) || 0;
         pontosMap.set(
           spin.nome_usuario,
           (pontosMap.get(spin.nome_usuario) || 0) + valor
+        );
+      });
+
+      tibiaTermoPontosData?.forEach((item) => {
+        const valor = item.valor || 0;
+        pontosMap.set(
+          item.nome_usuario,
+          (pontosMap.get(item.nome_usuario) || 0) + valor
         );
       });
 
@@ -158,13 +195,35 @@ export function WheelRanking() {
       const { data: ticketsData, error: ticketsError } = await ticketsQuery;
       if (ticketsError) throw ticketsError;
 
-      // Agrupar e somar tickets por usuário
+      // Buscar tickets do TibiaTermo
+      let tibiaTermoTicketsQuery = supabase
+        .from("tibiatermo_history")
+        .select("nome_usuario, valor, created_at")
+        .eq("tipo_recompensa", "Tickets");
+      
+      if (dataInicio) {
+        tibiaTermoTicketsQuery = tibiaTermoTicketsQuery.gte("created_at", dataInicio);
+      }
+
+      const { data: tibiaTermoTicketsData, error: tibiaTermoTicketsError } = await tibiaTermoTicketsQuery;
+      if (tibiaTermoTicketsError) throw tibiaTermoTicketsError;
+
+      // Agrupar e somar tickets por usuário (spins + tibia termo)
       const ticketsMap = new Map<string, number>();
+      
       ticketsData?.forEach((spin) => {
         const valor = parseInt(spin.valor) || 0;
         ticketsMap.set(
           spin.nome_usuario,
           (ticketsMap.get(spin.nome_usuario) || 0) + valor
+        );
+      });
+
+      tibiaTermoTicketsData?.forEach((item) => {
+        const valor = item.valor || 0;
+        ticketsMap.set(
+          item.nome_usuario,
+          (ticketsMap.get(item.nome_usuario) || 0) + valor
         );
       });
 

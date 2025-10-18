@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Settings, Trash2, Plus } from "lucide-react";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { useAdmin } from "@/hooks/useAdmin";
+import { WheelRanking } from "@/components/WheelRanking";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -1020,11 +1021,14 @@ const TibiaTermo = () => {
             </div>
           </Card>
 
-          <div className="text-center text-sm text-muted-foreground space-y-1">
+          <div className="text-center text-sm text-muted-foreground space-y-1 mb-8">
             <p>🟩 = Letra correta na posição certa</p>
             <p>🟨 = Letra correta na posição errada</p>
             <p>⬜ = Letra não está na palavra</p>
           </div>
+
+          {/* Ranking de Prêmios */}
+          <WheelRanking />
         </div>
       </main>
     </div>
