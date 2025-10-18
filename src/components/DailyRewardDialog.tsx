@@ -73,30 +73,38 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
       console.log('[DailyReward] ✓ Perfil encontrado - ID:', profile.id);
       setUserId(profile.id);
 
-      // Buscar login do usuário - SEMPRE buscar dados atualizados
-      console.log('[DailyReward] Buscando dados de login para user_id:', profile.id);
+      // Buscar dados de login via edge function (bypassa RLS)
+      console.log('[DailyReward] Buscando dados de login via edge function para user_id:', profile.id);
       
-      const { data: loginData, error: loginError } = await supabase
-        .from('user_daily_logins')
-        .select('dia_atual, ultimo_login')
-        .eq('user_id', profile.id)
-        .maybeSingle();
+      const token = localStorage.getItem('twitch_token');
+      const statusResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-daily-login-status`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ userId: profile.id }),
+        }
+      );
 
-      console.log('[DailyReward] Query executada');
-      console.log('[DailyReward] loginError:', loginError);
-      console.log('[DailyReward] loginData:', loginData);
+      const statusData = await statusResponse.json();
+      console.log('[DailyReward] Resposta da edge function:', statusData);
 
-      if (loginError) {
-        console.error('[DailyReward] ❌ Erro ao buscar login:', loginError);
+      if (!statusResponse.ok) {
+        console.error('[DailyReward] ❌ Erro ao buscar status:', statusData);
         toast.error("Erro ao buscar dados de login");
         return;
       }
+
+      const loginData = statusData.loginData;
 
       if (loginData) {
         console.log('[DailyReward] ✓ Registro encontrado:');
         console.log('  - dia_atual:', loginData.dia_atual);
         console.log('  - ultimo_login:', loginData.ultimo_login);
-        console.log('  - tipo de dia_atual:', typeof loginData.dia_atual);
       } else {
         console.log('[DailyReward] ⚠️  Nenhum registro encontrado - primeira vez do usuário');
       }
