@@ -327,8 +327,10 @@ export type Database = {
       }
       promotional_bar_config: {
         Row: {
+          button1_color: string
           button1_text: string
           button1_url: string
+          button2_color: string
           button2_text: string
           button2_url: string
           created_at: string | null
@@ -336,8 +338,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          button1_color?: string
           button1_text?: string
           button1_url?: string
+          button2_color?: string
           button2_text?: string
           button2_url?: string
           created_at?: string | null
@@ -345,8 +349,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          button1_color?: string
           button1_text?: string
           button1_url?: string
+          button2_color?: string
           button2_text?: string
           button2_url?: string
           created_at?: string | null

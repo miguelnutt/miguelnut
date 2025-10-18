@@ -14,8 +14,10 @@ export function PromotionalBarConfig() {
   
   const [button1Text, setButton1Text] = useState('Crie sua conta no Rubinot');
   const [button1Url, setButton1Url] = useState('https://rubinot.site/miguelnutt');
+  const [button1Color, setButton1Color] = useState('#8B5CF6');
   const [button2Text, setButton2Text] = useState('Crie seu site com IA grátis');
   const [button2Url, setButton2Url] = useState('https://lovable.dev/invite/RNZUAZW');
+  const [button2Color, setButton2Color] = useState('#3B82F6');
 
   useEffect(() => {
     carregarConfig();
@@ -36,8 +38,10 @@ export function PromotionalBarConfig() {
         setConfigId(data.id);
         setButton1Text(data.button1_text);
         setButton1Url(data.button1_url);
+        setButton1Color(data.button1_color || '#8B5CF6');
         setButton2Text(data.button2_text);
         setButton2Url(data.button2_url);
+        setButton2Color(data.button2_color || '#3B82F6');
       }
     } catch (error: any) {
       console.error('Erro ao carregar configuração:', error);
@@ -58,8 +62,10 @@ export function PromotionalBarConfig() {
       const dados = {
         button1_text: button1Text.trim(),
         button1_url: button1Url.trim(),
+        button1_color: button1Color,
         button2_text: button2Text.trim(),
-        button2_url: button2Url.trim()
+        button2_url: button2Url.trim(),
+        button2_color: button2Color
       };
 
       if (configId) {
@@ -136,6 +142,24 @@ export function PromotionalBarConfig() {
               type="url"
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="button1-color">Cor do Botão</Label>
+            <div className="flex gap-2">
+              <Input
+                id="button1-color"
+                type="color"
+                value={button1Color}
+                onChange={(e) => setButton1Color(e.target.value)}
+                className="w-20 h-10 cursor-pointer"
+              />
+              <Input
+                value={button1Color}
+                onChange={(e) => setButton1Color(e.target.value)}
+                placeholder="#8B5CF6"
+                maxLength={7}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Botão 2 - IA */}
@@ -163,6 +187,24 @@ export function PromotionalBarConfig() {
               placeholder="https://lovable.dev/invite/RNZUAZW"
               type="url"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="button2-color">Cor do Botão</Label>
+            <div className="flex gap-2">
+              <Input
+                id="button2-color"
+                type="color"
+                value={button2Color}
+                onChange={(e) => setButton2Color(e.target.value)}
+                className="w-20 h-10 cursor-pointer"
+              />
+              <Input
+                value={button2Color}
+                onChange={(e) => setButton2Color(e.target.value)}
+                placeholder="#3B82F6"
+                maxLength={7}
+              />
+            </div>
           </div>
         </div>
 

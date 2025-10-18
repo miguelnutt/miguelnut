@@ -14,13 +14,17 @@ export function PromotionalBar() {
   const { isAdmin } = useAdmin(user);
   const [button1Text, setButton1Text] = useState("Crie sua conta no Rubinot");
   const [button1Url, setButton1Url] = useState("https://rubinot.site/miguelnutt");
+  const [button1Color, setButton1Color] = useState("#8B5CF6");
   const [button2Text, setButton2Text] = useState("Crie seu site com IA grátis");
   const [button2Url, setButton2Url] = useState("https://lovable.dev/invite/RNZUAZW");
+  const [button2Color, setButton2Color] = useState("#3B82F6");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editButton1Text, setEditButton1Text] = useState("");
   const [editButton1Url, setEditButton1Url] = useState("");
+  const [editButton1Color, setEditButton1Color] = useState("");
   const [editButton2Text, setEditButton2Text] = useState("");
   const [editButton2Url, setEditButton2Url] = useState("");
+  const [editButton2Color, setEditButton2Color] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -46,8 +50,10 @@ export function PromotionalBar() {
       if (data) {
         setButton1Text(data.button1_text);
         setButton1Url(data.button1_url);
+        setButton1Color(data.button1_color || "#8B5CF6");
         setButton2Text(data.button2_text);
         setButton2Url(data.button2_url);
+        setButton2Color(data.button2_color || "#3B82F6");
       }
     } catch (error: any) {
       console.error('Erro ao carregar configuração:', error);
@@ -57,8 +63,10 @@ export function PromotionalBar() {
   const abrirEdicao = () => {
     setEditButton1Text(button1Text);
     setEditButton1Url(button1Url);
+    setEditButton1Color(button1Color);
     setEditButton2Text(button2Text);
     setEditButton2Url(button2Url);
+    setEditButton2Color(button2Color);
     setEditDialogOpen(true);
   };
 
@@ -79,8 +87,10 @@ export function PromotionalBar() {
       const dados = {
         button1_text: editButton1Text.trim(),
         button1_url: editButton1Url.trim(),
+        button1_color: editButton1Color,
         button2_text: editButton2Text.trim(),
-        button2_url: editButton2Url.trim()
+        button2_url: editButton2Url.trim(),
+        button2_color: editButton2Color
       };
 
       if (existing) {
@@ -100,8 +110,10 @@ export function PromotionalBar() {
 
       setButton1Text(editButton1Text);
       setButton1Url(editButton1Url);
+      setButton1Color(editButton1Color);
       setButton2Text(editButton2Text);
       setButton2Url(editButton2Url);
+      setButton2Color(editButton2Color);
       
       toast.success('Barra atualizada com sucesso!');
       setEditDialogOpen(false);
@@ -121,18 +133,30 @@ export function PromotionalBar() {
             href={button1Url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/15 hover:to-primary/10 text-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md hover:scale-[1.02] w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-5 py-2 rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md hover:scale-[1.02] w-full sm:w-auto justify-center text-white"
+            style={{
+              backgroundColor: button1Color,
+              opacity: 0.9
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.9'}
           >
-            <Crown className="h-4 w-4 text-primary" />
+            <Crown className="h-4 w-4" />
             <span>{button1Text}</span>
           </a>
           <a
             href={button2Url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-accent/10 to-accent/5 hover:from-accent/15 hover:to-accent/10 text-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md hover:scale-[1.02] w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-5 py-2 rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md hover:scale-[1.02] w-full sm:w-auto justify-center text-white"
+            style={{
+              backgroundColor: button2Color,
+              opacity: 0.9
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.9'}
           >
-            <Rocket className="h-4 w-4 text-accent" />
+            <Rocket className="h-4 w-4" />
             <span>{button2Text}</span>
           </a>
           {isAdmin && (
@@ -179,6 +203,24 @@ export function PromotionalBar() {
                   type="url"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-button1-color">Cor do Botão</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-button1-color"
+                    type="color"
+                    value={editButton1Color}
+                    onChange={(e) => setEditButton1Color(e.target.value)}
+                    className="w-20 h-10 cursor-pointer"
+                  />
+                  <Input
+                    value={editButton1Color}
+                    onChange={(e) => setEditButton1Color(e.target.value)}
+                    placeholder="#8B5CF6"
+                    maxLength={7}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4 p-4 border rounded-lg bg-accent/5">
@@ -205,6 +247,24 @@ export function PromotionalBar() {
                   placeholder="https://lovable.dev/invite/RNZUAZW"
                   type="url"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-button2-color">Cor do Botão</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-button2-color"
+                    type="color"
+                    value={editButton2Color}
+                    onChange={(e) => setEditButton2Color(e.target.value)}
+                    className="w-20 h-10 cursor-pointer"
+                  />
+                  <Input
+                    value={editButton2Color}
+                    onChange={(e) => setEditButton2Color(e.target.value)}
+                    placeholder="#3B82F6"
+                    maxLength={7}
+                  />
+                </div>
               </div>
             </div>
 
