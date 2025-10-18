@@ -61,15 +61,18 @@ const TibiaTermo = () => {
   }, []);
 
   useEffect(() => {
-    if (!twitchLoading) {
-      if (!twitchUser) {
+    if (!twitchLoading && !adminLoading) {
+      // Se não tem login Twitch e não é admin, redireciona
+      if (!twitchUser && !isAdmin) {
         toast.error("Você precisa estar logado com a Twitch para jogar!");
         navigate("/login");
-      } else {
+      } else if (twitchUser) {
+        // Se tem login Twitch, carrega o jogo
         loadGame();
       }
+      // Se é admin sem Twitch, só permite acesso ao painel de configuração
     }
-  }, [twitchUser, twitchLoading, navigate]);
+  }, [twitchUser, twitchLoading, isAdmin, adminLoading, navigate]);
 
   useEffect(() => {
     if (isAdmin && showAdmin) {
@@ -421,8 +424,208 @@ const TibiaTermo = () => {
     );
   }
 
-  if (!twitchUser) {
+  if (!twitchUser && !isAdmin) {
     return null;
+  }
+
+  // Admin sem Twitch só pode ver configurações
+  if (!twitchUser && isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-4xl font-bold text-foreground">TibiaTermo</h1>
+                <p className="text-muted-foreground">
+                  Painel de administração
+                </p>
+              </div>
+              <Dialog open={showAdmin} onOpenChange={setShowAdmin}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" title="Configurações">
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Configurações do TibiaTermo</DialogTitle>
+                    <DialogDescription>
+                      Gerencie palavras e recompensas do jogo
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <Tabs defaultValue="words" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="words">Palavras</TabsTrigger>
+                      <TabsTrigger value="rewards">Recompensas</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="words" className="space-y-4">
+                      <div className="p-4 bg-muted rounded-lg">
+                        <div className="flex gap-4 text-sm">
+                          <div>
+                            <span className="font-bold">Total:</span> {words.length}
+                          </div>
+                          <div>
+                            <span className="font-bold text-green-600">Ativas:</span> {activeCount}
+                          </div>
+                          <div>
+                            <span className="font-bold text-red-600">Inativas:</span> {inactiveCount}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Nova palavra (4-8 letras)"
+                            value={newWord}
+                            onChange={(e) => setNewWord(e.target.value.toUpperCase())}
+                            maxLength={8}
+                          />
+                          <Button onClick={addWord} disabled={adding}>
+                            {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                          </Button>
+                        </div>
+
+                        <div>
+                          <Textarea
+                            placeholder="Adicionar várias palavras (uma por linha)"
+                            value={bulkWords}
+                            onChange={(e) => setBulkWords(e.target.value.toUpperCase())}
+                            rows={4}
+                          />
+                          <Button 
+                            onClick={addBulkWords} 
+                            disabled={adding}
+                            className="mt-2 w-full"
+                          >
+                            {adding ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Adicionando...
+                              </>
+                            ) : (
+                              "Adicionar em Lote"
+                            )}
+                          </Button>
+                        </div>
+
+                        <div className="border rounded-lg max-h-96 overflow-y-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Palavra</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {words.map((word) => (
+                                <TableRow key={word.id}>
+                                  <TableCell className="font-medium">{word.palavra}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <Switch
+                                        checked={word.ativa}
+                                        onCheckedChange={() => toggleWord(word.id, word.ativa)}
+                                      />
+                                      <span className={word.ativa ? "text-green-600" : "text-red-600"}>
+                                        {word.ativa ? "Ativa" : "Inativa"}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => deleteWord(word.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="rewards" className="space-y-4">
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="pontos">Pontos de Loja por acerto</Label>
+                          <Input
+                            id="pontos"
+                            type="number"
+                            value={rewardsConfig.pontos_acerto}
+                            onChange={(e) => setRewardsConfig({
+                              ...rewardsConfig,
+                              pontos_acerto: parseInt(e.target.value) || 0
+                            })}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="tickets">Tickets bônus</Label>
+                          <Input
+                            id="tickets"
+                            type="number"
+                            value={rewardsConfig.tickets_bonus}
+                            onChange={(e) => setRewardsConfig({
+                              ...rewardsConfig,
+                              tickets_bonus: parseInt(e.target.value) || 0
+                            })}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="max-tentativas">Máximo de tentativas para bônus</Label>
+                          <Input
+                            id="max-tentativas"
+                            type="number"
+                            value={rewardsConfig.max_tentativas_bonus}
+                            onChange={(e) => setRewardsConfig({
+                              ...rewardsConfig,
+                              max_tentativas_bonus: parseInt(e.target.value) || 0
+                            })}
+                          />
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Acertar em até {rewardsConfig.max_tentativas_bonus} tentativa{rewardsConfig.max_tentativas_bonus > 1 ? 's' : ''} ganha {rewardsConfig.tickets_bonus} ticket{rewardsConfig.tickets_bonus > 1 ? 's' : ''}
+                          </p>
+                        </div>
+
+                        <Button onClick={saveRewardsConfig} disabled={savingRewards}>
+                          {savingRewards ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Salvando...
+                            </>
+                          ) : (
+                            "Salvar Alterações"
+                          )}
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <Card className="p-6">
+              <p className="text-center text-muted-foreground">
+                Para jogar, faça login com sua conta da Twitch.
+                <br />
+                Como administrador, você pode configurar o jogo clicando no botão de configurações acima.
+              </p>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   const maxLength = gameData?.palavra.length || 8;
