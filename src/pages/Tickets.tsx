@@ -319,18 +319,28 @@ export default function Tickets() {
     }
   };
 
-  const deleteRaffle = async (raffleId: string) => {
+  const deleteRaffle = async (raffleId: string, raffle: Raffle) => {
     if (!confirm("Tem certeza que deseja excluir este sorteio?")) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("raffles")
-        .delete()
-        .eq("id", raffleId);
-      
-      if (error) throw error;
+      // Se for Rubini Coins, usar a edge function que ajusta o saldo
+      if (raffle.tipo_premio === 'Rubini Coins') {
+        const { error } = await supabase.functions.invoke("delete-raffle-history", {
+          body: { raffleId },
+        });
+
+        if (error) throw error;
+      } else {
+        // Para outros tipos, deletar direto
+        const { error } = await supabase
+          .from("raffles")
+          .delete()
+          .eq("id", raffleId);
+        
+        if (error) throw error;
+      }
 
       toast.success("Sorteio excluído com sucesso!");
       await fetchData();
@@ -677,7 +687,7 @@ export default function Tickets() {
                             size="icon"
                             variant="ghost"
                             className="h-6 w-6 text-destructive hover:text-destructive flex-shrink-0"
-                            onClick={() => deleteRaffle(raffle.id)}
+                            onClick={() => deleteRaffle(raffle.id, raffle)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>

@@ -111,18 +111,28 @@ export default function History() {
     setFilteredSpins(filtered);
   };
 
-  const deleteHistory = async (id: string) => {
+  const deleteHistory = async (id: string, spin: Spin) => {
     if (!confirm("Tem certeza que deseja apagar este histórico?")) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("spins")
-        .delete()
-        .eq("id", id);
+      // Se for Rubini Coins, usar a edge function que ajusta o saldo
+      if (spin.tipo_recompensa === "Rubini Coins") {
+        const { error } = await supabase.functions.invoke("delete-spin-history", {
+          body: { spinId: id },
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Para outros tipos, deletar direto
+        const { error } = await supabase
+          .from("spins")
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+      }
 
       toast.success("Histórico apagado com sucesso!");
       await fetchSpins();
@@ -236,7 +246,7 @@ export default function History() {
                                 size="icon"
                                 variant="ghost"
                                 className="text-destructive hover:text-destructive"
-                                onClick={() => deleteHistory(spin.id)}
+                                onClick={() => deleteHistory(spin.id, spin)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
