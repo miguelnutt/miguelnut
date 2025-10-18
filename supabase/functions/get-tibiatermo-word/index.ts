@@ -26,6 +26,8 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     
+    console.log('Validating Twitch token...');
+    
     // Validate Twitch token and get user
     const twitchMeResponse = await fetch(
       `${supabaseUrl}/functions/v1/twitch-auth-me`,
@@ -39,9 +41,14 @@ Deno.serve(async (req) => {
       }
     );
 
+    console.log('Twitch auth response status:', twitchMeResponse.status);
+    
     const twitchData = await twitchMeResponse.json();
+    console.log('Twitch auth data:', JSON.stringify(twitchData));
+    
     if (!twitchData.success || !twitchData.user) {
-      return new Response(JSON.stringify({ error: 'Usuário não encontrado' }), {
+      console.error('Twitch auth failed:', twitchData);
+      return new Response(JSON.stringify({ error: 'Usuário não encontrado', details: twitchData }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
