@@ -7,11 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { supabase } from "@/lib/supabase-helper";
 import { useTwitchStatus } from "@/hooks/useTwitchStatus";
 import { useAdmin } from "@/hooks/useAdmin";
-import { Loader2, Radio, Youtube, Edit } from "lucide-react";
+import { Loader2, Radio, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { StreakRanking } from "@/components/StreakRanking";
 import { SiteChat } from "@/components/SiteChat";
+import { RecentRewards } from "@/components/RecentRewards";
 
 // Vídeo padrão - última live do canal
 const DEFAULT_VIDEO_ID = "EeF3UTkCoxY";
@@ -26,42 +27,12 @@ export default function Index() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newVideoUrl, setNewVideoUrl] = useState("");
   const [saving, setSaving] = useState(false);
-  const [recentRewards, setRecentRewards] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
   }, []);
-
-  useEffect(() => {
-    fetchRecentRewards();
-  }, []);
-
-  const fetchRecentRewards = async () => {
-    try {
-      const { data: spins } = await supabase
-        .from("spins")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      const { data: raffles } = await supabase
-        .from("raffles")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      const combined = [
-        ...(spins || []).map(s => ({ ...s, type: 'spin' })),
-        ...(raffles || []).map(r => ({ ...r, type: 'raffle' }))
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
-
-      setRecentRewards(combined);
-    } catch (error) {
-      console.error("Error fetching recent rewards:", error);
-    }
-  };
 
   useEffect(() => {
     fetchSettings();
@@ -193,17 +164,21 @@ export default function Index() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-4 md:py-8">
-        {/* Layout principal: Ranking à esquerda, Vídeo e Chat à direita */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-          {/* Coluna Esquerda: Ranking de Streak */}
-          <div className="lg:col-span-1">
-            <StreakRanking />
-          </div>
+        <div className="space-y-6 max-w-7xl mx-auto">
+          {/* Últimas Recompensas - Topo */}
+          <RecentRewards />
 
-          {/* Coluna Direita: Vídeo e Chat */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Vídeo */}
-            {loading ? (
+          {/* Layout principal: Ranking à esquerda, Vídeo e Chat à direita */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Coluna Esquerda: Ranking de Streak */}
+            <div className="lg:col-span-1">
+              <StreakRanking />
+            </div>
+
+            {/* Coluna Direita: Vídeo e Chat */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Vídeo */}
+              {loading ? (
               <Card className="shadow-card">
                 <CardContent className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -271,8 +246,9 @@ export default function Index() {
               </Card>
             )}
 
-            {/* Chat */}
-            <SiteChat />
+              {/* Chat */}
+              <SiteChat />
+            </div>
           </div>
         </div>
 

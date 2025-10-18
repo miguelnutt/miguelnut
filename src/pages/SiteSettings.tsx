@@ -16,6 +16,7 @@ import { DailyRewardSpecialConfigDialog } from "@/components/DailyRewardSpecialC
 import { MaintenanceSection } from "@/components/admin/MaintenanceSection";
 import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection";
 import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
+import { ChatModerationPanel } from "@/components/ChatModerationPanel";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -244,7 +245,10 @@ export default function SiteSettings() {
             </CardContent>
           </Card>
 
-          {/* Seção 4: Manutenção e Auditoria */}
+          {/* Seção 4: Moderação do Chat */}
+          <ChatModerationPanel />
+
+          {/* Seção 5: Manutenção e Auditoria */}
           <MaintenanceSection />
 
           {/* Seção 5: Rankings e Exibição */}

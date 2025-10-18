@@ -35,9 +35,89 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_bans: {
+        Row: {
+          ban_expira_em: string | null
+          ban_permanente: boolean
+          banned_by: string | null
+          created_at: string | null
+          id: string
+          motivo: string | null
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          ban_expira_em?: string | null
+          ban_permanente?: boolean
+          banned_by?: string | null
+          created_at?: string | null
+          id?: string
+          motivo?: string | null
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          ban_expira_em?: string | null
+          ban_permanente?: boolean
+          banned_by?: string | null
+          created_at?: string | null
+          id?: string
+          motivo?: string | null
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_bans_banned_by_fkey"
+            columns: ["banned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_bans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_config: {
+        Row: {
+          chat_ativo: boolean
+          created_at: string | null
+          id: string
+          max_caracteres: number
+          permitir_links: boolean
+          permitir_simbolos: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          chat_ativo?: boolean
+          created_at?: string | null
+          id?: string
+          max_caracteres?: number
+          permitir_links?: boolean
+          permitir_simbolos?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          chat_ativo?: boolean
+          created_at?: string | null
+          id?: string
+          max_caracteres?: number
+          permitir_links?: boolean
+          permitir_simbolos?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           message: string
           user_avatar: string | null
@@ -46,6 +126,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           message: string
           user_avatar?: string | null
@@ -54,6 +136,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           message?: string
           user_avatar?: string | null
@@ -61,6 +145,13 @@ export type Database = {
           user_name?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chat_messages_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chat_messages_user_id_fkey"
             columns: ["user_id"]
