@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Trash2, Search, Edit2, Save, X } from "lucide-react";
+import { Loader2, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase-helper";
 import {
@@ -42,10 +42,6 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
   const [users, setUsers] = useState<UserLogin[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [resetting, setResetting] = useState<string | null>(null);
-  const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editDia, setEditDia] = useState<number>(1);
-  const [editData, setEditData] = useState<string>("");
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -111,47 +107,6 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
     }
   };
 
-  const startEdit = (user: UserLogin) => {
-    setEditingUser(user.id);
-    setEditDia(user.dia_atual);
-    setEditData(user.ultimo_login);
-  };
-
-  const cancelEdit = () => {
-    setEditingUser(null);
-    setEditDia(1);
-    setEditData("");
-  };
-
-  const saveEdit = async (userId: string) => {
-    if (editDia < 1) {
-      toast.error("O dia deve ser maior que 0");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('user_daily_logins')
-        .update({
-          dia_atual: editDia,
-          ultimo_login: editData
-        })
-        .eq('id', editingUser!);
-
-      if (error) throw error;
-
-      toast.success("Dados atualizados com sucesso!");
-      setEditingUser(null);
-      loadUsers();
-    } catch (error: any) {
-      console.error("Erro ao salvar:", error);
-      toast.error("Erro ao atualizar dados");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const filteredUsers = users.filter(user => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -213,87 +168,26 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
                         <TableCell>
                           {user.profiles?.twitch_username || "N/A"}
                         </TableCell>
+                        <TableCell>Dia {user.dia_atual}</TableCell>
                         <TableCell>
-                          {editingUser === user.id ? (
-                            <Input
-                              type="number"
-                              min="1"
-                              value={editDia}
-                              onChange={(e) => setEditDia(parseInt(e.target.value) || 1)}
-                              className="w-20"
-                            />
-                          ) : (
-                            `Dia ${user.dia_atual}`
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {editingUser === user.id ? (
-                            <Input
-                              type="date"
-                              value={editData}
-                              onChange={(e) => setEditData(e.target.value)}
-                              className="w-36"
-                            />
-                          ) : (
-                            new Date(user.ultimo_login).toLocaleDateString('pt-BR')
-                          )}
+                          {new Date(user.ultimo_login).toLocaleDateString('pt-BR')}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            {editingUser === user.id ? (
-                              <>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => saveEdit(user.user_id)}
-                                  disabled={saving}
-                                >
-                                  {saving ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Save className="h-4 w-4 mr-1" />
-                                      Salvar
-                                    </>
-                                  )}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={cancelEdit}
-                                  disabled={saving}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleReset(user.user_id, user.profiles?.nome || "usuário")}
+                            disabled={resetting === user.user_id}
+                          >
+                            {resetting === user.user_id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => startEdit(user)}
-                                >
-                                  <Edit2 className="h-4 w-4 mr-1" />
-                                  Editar
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleReset(user.user_id, user.profiles?.nome || "usuário")}
-                                  disabled={resetting === user.user_id}
-                                >
-                                  {resetting === user.user_id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Trash2 className="h-4 w-4 mr-1" />
-                                      Resetar
-                                    </>
-                                  )}
-                                </Button>
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Resetar
                               </>
                             )}
-                          </div>
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
