@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.solicitar-resgate-rubini-coins]
 verify_jwt = false
+
+[functions.get-tibiatermo-word]
+verify_jwt = false
+
+[functions.submit-tibiatermo-guess]
+verify_jwt = false
