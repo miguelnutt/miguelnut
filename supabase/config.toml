@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.get-daily-login-status]
 verify_jwt = false
+
+[functions.solicitar-resgate-rubini-coins]
+verify_jwt = false

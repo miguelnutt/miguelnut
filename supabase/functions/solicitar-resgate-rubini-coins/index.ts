@@ -11,32 +11,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Usar client com anon key para verificar auth do usuário
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const authHeader = req.headers.get('Authorization')!;
-    
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    // Verificar se o usuário está autenticado
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Não autenticado' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
-    console.log('Usuário autenticado:', user.id);
-
-    // Usar service role key para operações no banco
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { quantidade, personagem, userId } = await req.json();
+
+    console.log('Processando resgate:', { quantidade, personagem, userId });
 
     // Validar quantidade (múltiplo de 25)
     if (!quantidade || quantidade <= 0 || quantidade % 25 !== 0) {
@@ -54,7 +35,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // userId é obrigatório e deve corresponder ao usuário autenticado
+    // userId é obrigatório
     if (!userId) {
       return new Response(
         JSON.stringify({ error: 'userId é obrigatório' }),
@@ -62,28 +43,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verificar se o userId corresponde ao user autenticado ou se é o mesmo profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (!profile || (profile.id !== user.id && userId !== user.id)) {
-      console.error('userId não corresponde ao usuário autenticado');
-      return new Response(
-        JSON.stringify({ error: 'Acesso negado' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
-      );
-    }
-
-    const targetUserId = userId;
-
     // Verificar saldo disponível
     const { data: balance, error: balanceError } = await supabase
       .from('rubini_coins_balance')
       .select('saldo')
-      .eq('user_id', targetUserId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (balanceError) {
@@ -112,7 +76,7 @@ Deno.serve(async (req) => {
     const { error: debitError } = await supabase
       .from('rubini_coins_balance')
       .update({ saldo: balance.saldo - quantidade })
-      .eq('user_id', targetUserId);
+      .eq('user_id', userId);
 
     if (debitError) {
       console.error('Erro ao debitar saldo:', debitError);
@@ -123,7 +87,7 @@ Deno.serve(async (req) => {
     const { data: resgate, error: resgateError } = await supabase
       .from('rubini_coins_resgates')
       .insert({
-        user_id: targetUserId,
+        user_id: userId,
         quantidade,
         personagem: personagem.trim(),
         status: 'PENDENTE'
@@ -136,7 +100,7 @@ Deno.serve(async (req) => {
       await supabase
         .from('rubini_coins_balance')
         .update({ saldo: balance.saldo })
-        .eq('user_id', targetUserId);
+        .eq('user_id', userId);
       
       console.error('Erro ao criar resgate:', resgateError);
       throw new Error('Erro ao criar solicitação');
@@ -144,12 +108,12 @@ Deno.serve(async (req) => {
 
     // Registrar no histórico
     await supabase.from('rubini_coins_history').insert({
-      user_id: targetUserId,
+      user_id: userId,
       variacao: -quantidade,
       motivo: `Resgate solicitado - ${personagem}`
     });
 
-    console.log(`Resgate criado: ${resgate.id} - ${quantidade} Rubini Coins para ${personagem} (user: ${targetUserId})`);
+    console.log(`✅ Resgate criado: ${resgate.id} - ${quantidade} Rubini Coins para ${personagem} (user: ${userId})`);
 
     return new Response(
       JSON.stringify({ 
@@ -160,7 +124,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Erro:', error);
+    console.error('❌ Erro:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
       JSON.stringify({ error: errorMessage }),
