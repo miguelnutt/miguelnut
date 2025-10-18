@@ -82,10 +82,16 @@ export default function Dashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "rubini_coins_history" }, () => fetchData())
       .subscribe();
 
+    const tibiaTermoChannel = supabase
+      .channel("tibiatermo_history_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tibiatermo_history" }, () => fetchData())
+      .subscribe();
+
     return () => {
       supabase.removeChannel(spinsChannel);
       supabase.removeChannel(rafflesChannel);
       supabase.removeChannel(rcHistoryChannel);
+      supabase.removeChannel(tibiaTermoChannel);
     };
   }, [period, customStartDate, customEndDate]);
 
@@ -147,7 +153,20 @@ export default function Dashboard() {
         pointsQuery = pointsQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
       const { data: pointsData } = await pointsQuery;
-      const totalPoints = pointsData?.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0) || 0;
+      const totalPointsSpins = pointsData?.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0) || 0;
+
+      // Pontos do TibiaTermo
+      let tibiaTermoPointsQuery = supabase
+        .from("tibiatermo_history")
+        .select("valor, tipo_recompensa")
+        .eq("tipo_recompensa", "Pontos de Loja");
+      if (startDate && endDate) {
+        tibiaTermoPointsQuery = tibiaTermoPointsQuery.gte("created_at", startDate).lte("created_at", endDate);
+      }
+      const { data: tibiaTermoPointsData } = await tibiaTermoPointsQuery;
+      const totalPointsTibiaTermo = tibiaTermoPointsData?.reduce((sum, t) => sum + (t.valor || 0), 0) || 0;
+
+      const totalPoints = totalPointsSpins + totalPointsTibiaTermo;
 
       // Total de sorteios
       let rafflesQuery = supabase.from("raffles").select("*", { count: "exact", head: true });
