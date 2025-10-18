@@ -240,11 +240,12 @@ export default function Index() {
                   </div>
                   <div className="aspect-video rounded-lg overflow-hidden bg-muted">
                     <iframe
-                      src="https://player.twitch.tv/?channel=miguelnutt&parent=localhost&parent=lovable.app&parent=lovableproject.com&autoplay=true&muted=false"
+                      src={`https://player.twitch.tv/?channel=miguelnutt&parent=${window.location.hostname}&autoplay=true&muted=false`}
                       height="100%"
                       width="100%"
                       allowFullScreen
                       title="Twitch Live Stream"
+                      className="border-0"
                     />
                   </div>
                 </div>
