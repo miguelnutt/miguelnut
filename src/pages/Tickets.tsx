@@ -706,7 +706,7 @@ export default function Tickets() {
                         <div className="text-xs text-primary font-semibold">
                           Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
                         </div>
-                        {(raffle.tipo_premio === "RubiniCoin" || raffle.tipo_premio === "Rubini Coins") && (
+                        {raffle.tipo_premio === "Rubini Coins" && (
                           <div className="flex items-center">
                             {isAdmin ? (
                               <Button

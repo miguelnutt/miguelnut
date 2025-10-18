@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 
 interface Recompensa {
-  tipo: "Pontos de Loja" | "Tickets" | "RubiniCoin";
+  tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
   valor: string;
   cor: string;
 }
@@ -25,7 +25,7 @@ interface WheelDialogProps {
   } | null;
 }
 
-const tiposRecompensa = ["Pontos de Loja", "Tickets", "RubiniCoin"] as const;
+const tiposRecompensa = ["Pontos de Loja", "Tickets", "Rubini Coins"] as const;
 
 const colorThemes = {
   Red: ["#540002", "#F66262", "#B3040A", "#FFBABA"],
@@ -116,13 +116,13 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
   const updateRecompensa = (index: number, field: keyof Recompensa, value: string) => {
     const updated = [...recompensas];
     
-    // Se for RubiniCoin e estiver mudando o valor, garantir múltiplo de 25
-    if (field === "valor" && updated[index].tipo === "RubiniCoin") {
+    // Se for Rubini Coins e estiver mudando o valor, garantir múltiplo de 25
+    if (field === "valor" && updated[index].tipo === "Rubini Coins") {
       const numValue = parseInt(value) || 0;
       const roundedValue = Math.round(numValue / 25) * 25;
       updated[index] = { ...updated[index], [field]: roundedValue.toString() };
-    } else if (field === "tipo" && value === "RubiniCoin") {
-      // Se mudou para RubiniCoin, ajustar valor para múltiplo de 25
+    } else if (field === "tipo" && value === "Rubini Coins") {
+      // Se mudou para Rubini Coins, ajustar valor para múltiplo de 25
       const currentValue = parseInt(updated[index].valor) || 25;
       const roundedValue = Math.round(currentValue / 25) * 25 || 25;
       updated[index] = { ...updated[index], tipo: value as any, valor: roundedValue.toString() };
@@ -276,9 +276,9 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <Label className="text-xs">
-                          Valor {recompensa.tipo === "RubiniCoin" && "(múltiplos de 25)"}
+                          Valor {recompensa.tipo === "Rubini Coins" && "(múltiplos de 25)"}
                         </Label>
-                        {recompensa.tipo === "RubiniCoin" ? (
+                        {recompensa.tipo === "Rubini Coins" ? (
                           <div className="flex items-center gap-2">
                             <Button
                               type="button"

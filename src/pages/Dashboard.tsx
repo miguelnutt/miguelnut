@@ -150,11 +150,11 @@ export default function Dashboard() {
       }
       const { count: rafflesCount } = await rafflesQuery;
 
-      // Total de RubiniCoins pagos (da roleta + dos sorteios) - incluir histórico antigo
+      // Total de Rubini Coins pagos (da roleta + dos sorteios) - incluir histórico antigo
       let rcQuery = supabase
         .from("spins")
         .select("valor, tipo_recompensa")
-        .or("tipo_recompensa.eq.RubiniCoin,tipo_recompensa.eq.RC,tipo_recompensa.eq.Rubini Coins")
+        .or("tipo_recompensa.eq.RC,tipo_recompensa.eq.Rubini Coins")
         .eq("pago", true);
       if (startDate && endDate) {
         rcQuery = rcQuery.gte("created_at", startDate).lte("created_at", endDate);
@@ -162,11 +162,11 @@ export default function Dashboard() {
       const { data: rcData } = await rcQuery;
       const totalRCSpins = rcData?.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0) || 0;
 
-      // Somar RubiniCoin dos sorteios
+      // Somar Rubini Coins dos sorteios
       let rcRafflesQuery = supabase
         .from("raffles")
         .select("valor_premio, tipo_premio")
-        .or("tipo_premio.eq.RubiniCoin,tipo_premio.eq.Rubini Coins")
+        .eq("tipo_premio", "Rubini Coins")
         .eq("pago", true);
       if (startDate && endDate) {
         rcRafflesQuery = rcRafflesQuery.gte("created_at", startDate).lte("created_at", endDate);
@@ -385,7 +385,7 @@ export default function Dashboard() {
 
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">RubiniCoins Pagos</CardTitle>
+              <CardTitle className="text-sm font-medium">RC's Pagos</CardTitle>
               <Coins className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -456,7 +456,7 @@ export default function Dashboard() {
                         <p className="text-sm text-muted-foreground">
                           Prêmio: {raffle.valor_premio} {raffle.tipo_premio}
                         </p>
-                        {(raffle.tipo_premio === "RubiniCoin" || raffle.tipo_premio === "Rubini Coins") && (
+                        {raffle.tipo_premio === "Rubini Coins" && (
                           <div className="flex items-center">
                             {isAdmin ? (
                               <Button

@@ -14,7 +14,7 @@ import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
 
 interface Recompensa {
-  tipo: "Pontos de Loja" | "Tickets" | "RubiniCoin";
+  tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
   valor: string;
   cor: string;
 }
@@ -173,10 +173,10 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         console.log("Novo perfil criado:", profileData);
       }
 
-      // Se for RubiniCoin, usar o nome_personagem do perfil encontrado
+      // Se for Rubini Coins, usar o nome_personagem do perfil encontrado
       let personagemInfo = null;
-      if (resultado.tipo === "RubiniCoin") {
-        console.log("🎮 Verificando personagem para RubiniCoin");
+      if (resultado.tipo === "Rubini Coins") {
+        console.log("🎮 Verificando personagem para Rubini Coins");
         console.log("📋 Dados do perfil:", {
           id: profileData?.id,
           nome: profileData?.nome,
@@ -337,8 +337,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         }
       }
       
-      // Se for RubiniCoin, buscar nome do personagem
-      if (sorteada.tipo === "RubiniCoin" && !isModoTeste) {
+      // Se for Rubini Coins, buscar nome do personagem
+      if (sorteada.tipo === "Rubini Coins" && !isModoTeste) {
         try {
           console.log("🎮 Buscando personagem para:", nomeParaExibir);
           
@@ -514,7 +514,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
                   </div>
                 )}
                 
-                {resultado.tipo === "RubiniCoin" && (
+                {resultado.tipo === "Rubini Coins" && (
                   <div className="pt-4 border-t border-border">
                     <p className="text-sm text-muted-foreground">Personagem:</p>
                     {nomePersonagem && nomePersonagem !== "NÃO CADASTRADO" ? (

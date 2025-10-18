@@ -201,7 +201,8 @@ export default function History() {
                   <option value="">Todos</option>
                   <option value="Pontos de Loja">Pontos de Loja</option>
                   <option value="Tickets">Tickets</option>
-                  <option value="RubiniCoin">RubiniCoin</option>
+                  <option value="Rubini Coins">Rubini Coins</option>
+                  <option value="RC">RC</option>
                 </select>
               </div>
               <div>
@@ -248,7 +249,7 @@ export default function History() {
                             {formatDate(spin.created_at)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {(spin.tipo_recompensa === "RubiniCoin" || spin.tipo_recompensa === "Rubini Coins" || spin.tipo_recompensa === "RC") && (
+                            {(spin.tipo_recompensa === "Rubini Coins" || spin.tipo_recompensa === "RC") && (
                               isAdmin ? (
                                 <Button
                                   size="icon"
