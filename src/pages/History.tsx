@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
+import { PromotionalBar } from "@/components/PromotionalBar";
 
 interface Spin {
   id: string;
@@ -167,6 +168,7 @@ export default function History() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <PromotionalBar />
       
       <main className="container mx-auto px-4 py-4 md:py-8">
         <div className="mb-4 md:mb-8">

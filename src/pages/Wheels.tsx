@@ -11,6 +11,7 @@ import { CanvasWheel } from "@/components/CanvasWheel";
 import { WheelRanking } from "@/components/WheelRanking";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
+import { PromotionalBar } from "@/components/PromotionalBar";
 
 interface Recompensa {
   tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
@@ -326,6 +327,7 @@ export default function Wheels() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <PromotionalBar />
       
       <main className="container mx-auto px-4 py-4 md:py-8">
         <div className="mb-4 md:mb-8">

@@ -20,6 +20,7 @@ import { StreakRulesSection } from "@/components/admin/StreakRulesSection";
 import { DailyRewardSpecialConfigDialog } from "@/components/DailyRewardSpecialConfigDialog";
 import { MaintenanceSection } from "@/components/admin/MaintenanceSection";
 import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection";
+import { PromotionalBar } from "@/components/PromotionalBar";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -343,6 +344,7 @@ export default function AccountSettings() {
   return (
     <>
       <Navbar />
+      <PromotionalBar />
       <div className="container mx-auto px-4 py-4 md:py-8 max-w-4xl">
         <div className="mb-4 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold">Configurações da Conta</h1>

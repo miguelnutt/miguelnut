@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { StreakRanking } from "@/components/StreakRanking";
 import { RecentRewards } from "@/components/RecentRewards";
+import { PromotionalBar } from "@/components/PromotionalBar";
 
 // Vídeo padrão - última live do canal
 const DEFAULT_VIDEO_ID = "EeF3UTkCoxY";
@@ -161,6 +162,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <PromotionalBar />
       
       <main className="container mx-auto px-4 py-4 md:py-8">
         <div className="space-y-6 max-w-7xl mx-auto">

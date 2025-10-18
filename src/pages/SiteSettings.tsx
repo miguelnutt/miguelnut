@@ -17,6 +17,7 @@ import { MaintenanceSection } from "@/components/admin/MaintenanceSection";
 import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection";
 import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
 import { ChatModerationPanel } from "@/components/ChatModerationPanel";
+import { PromotionalBar } from "@/components/PromotionalBar";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -133,6 +134,7 @@ export default function SiteSettings() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
+        <PromotionalBar />
         <main className="container mx-auto px-4 py-8">
           <div className="text-center">Carregando...</div>
         </main>
@@ -143,6 +145,7 @@ export default function SiteSettings() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <PromotionalBar />
       
       <main className="container mx-auto px-4 py-4 md:py-8">
         <div className="mb-4 md:mb-8">

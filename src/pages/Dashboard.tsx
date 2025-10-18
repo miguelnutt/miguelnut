@@ -13,6 +13,7 @@ import { format, startOfDay, startOfWeek, startOfMonth, endOfDay } from "date-fn
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { User } from "@supabase/supabase-js";
+import { PromotionalBar } from "@/components/PromotionalBar";
 
 interface Stats {
   totalSpins: number;
@@ -266,6 +267,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <PromotionalBar />
       
       <main className="container mx-auto px-4 py-4 md:py-8">
         <div className="mb-4 md:mb-8">
