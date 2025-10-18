@@ -616,6 +616,44 @@ export type Database = {
         }
         Relationships: []
       }
+      tibiatermo_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome_usuario: string
+          num_tentativas: number
+          tipo_recompensa: string
+          user_id: string | null
+          valor: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome_usuario: string
+          num_tentativas: number
+          tipo_recompensa: string
+          user_id?: string | null
+          valor: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome_usuario?: string
+          num_tentativas?: number
+          tipo_recompensa?: string
+          user_id?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tibiatermo_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tibiatermo_rewards_by_attempt: {
         Row: {
           ativa: boolean

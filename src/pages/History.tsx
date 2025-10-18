@@ -26,6 +26,7 @@ interface Spin {
   valor: string;
   created_at: string;
   wheels: { nome: string } | null;
+  origem?: string;
 }
 
 export default function History() {
@@ -55,13 +56,19 @@ export default function History() {
   useEffect(() => {
     fetchSpins();
 
-    const channel = supabase
+    const spinsChannel = supabase
       .channel("spins_history")
       .on("postgres_changes", { event: "*", schema: "public", table: "spins" }, () => fetchSpins())
       .subscribe();
 
+    const tibiaTermoChannel = supabase
+      .channel("tibiatermo_history")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tibiatermo_history" }, () => fetchSpins())
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(spinsChannel);
+      supabase.removeChannel(tibiaTermoChannel);
     };
   }, []);
 
@@ -71,7 +78,8 @@ export default function History() {
 
   const fetchSpins = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar histórico das roletas
+      const { data: spinsData, error: spinsError } = await supabase
         .from("spins")
         .select(`
           *,
@@ -79,8 +87,31 @@ export default function History() {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setSpins(data || []);
+      if (spinsError) throw spinsError;
+
+      // Buscar histórico do TibiaTermo
+      const { data: tibiaTermoData, error: tibiaTermoError } = await supabase
+        .from("tibiatermo_history")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (tibiaTermoError) throw tibiaTermoError;
+
+      // Mesclar os dados
+      const tibiaTermoFormatted = (tibiaTermoData || []).map(item => ({
+        id: item.id,
+        nome_usuario: item.nome_usuario,
+        tipo_recompensa: item.tipo_recompensa,
+        valor: item.valor.toString(),
+        created_at: item.created_at,
+        wheels: null,
+        origem: 'TibiaTermo'
+      }));
+
+      const allHistory = [...(spinsData || []), ...tibiaTermoFormatted];
+      allHistory.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setSpins(allHistory);
     } catch (error: any) {
       console.error("Error fetching spins:", error);
       toast.error("Erro ao carregar histórico");
@@ -104,7 +135,7 @@ export default function History() {
 
     if (filters.roleta) {
       filtered = filtered.filter(s => {
-        const gameOrWheel = s.wheels?.nome || "TibiaTermo";
+        const gameOrWheel = s.origem || s.wheels?.nome || "";
         return gameOrWheel.toLowerCase().includes(filters.roleta.toLowerCase());
       });
     }
@@ -118,6 +149,19 @@ export default function History() {
     }
 
     try {
+      // Se for do TibiaTermo, deletar da tabela específica
+      if (spin.origem === 'TibiaTermo') {
+        const { error } = await supabase
+          .from("tibiatermo_history")
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+        toast.success("Histórico apagado com sucesso!");
+        await fetchSpins();
+        return;
+      }
+
       // Se for Rubini Coins ou Tickets, usar a edge function que ajusta o saldo
       if (spin.tipo_recompensa === "Rubini Coins" || spin.tipo_recompensa === "Tickets") {
         const { error } = await supabase.functions.invoke("delete-spin-history", {
@@ -235,7 +279,7 @@ export default function History() {
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
                           <TableCell className="font-medium whitespace-nowrap">{spin.nome_usuario}</TableCell>
-                          <TableCell className="whitespace-nowrap">{spin.wheels?.nome || "TibiaTermo"}</TableCell>
+                          <TableCell className="whitespace-nowrap">{spin.origem || spin.wheels?.nome || "-"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>
                           <TableCell className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
