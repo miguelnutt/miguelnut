@@ -1,25 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, cookie',
-  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const JWT_SECRET = Deno.env.get('JWT_SECRET') || 'your-super-secret-jwt-key-change-this';
-
-async function verifyJWT(token: string) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(JWT_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"]
-  );
-
-  return await verify(token, key);
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,28 +11,30 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Usar client com anon key para verificar auth do usuário
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Verificar autenticação via token no header
-    const authHeader = req.headers.get('authorization') || '';
-    const tokenMatch = authHeader.match(/Bearer (.+)/);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const authHeader = req.headers.get('Authorization')!;
     
-    if (!tokenMatch) {
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Not authenticated' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401 
-        }
+        JSON.stringify({ error: 'Não autenticado' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
 
-    const token = tokenMatch[1];
-    const payload = await verifyJWT(token);
-    
-    console.log('User authenticated:', payload);
+    console.log('Usuário autenticado:', user.id);
+
+    // Usar service role key para operações no banco
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { quantidade, personagem, userId } = await req.json();
 
@@ -68,11 +54,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Usar userId do corpo da requisição (profile ID) - obrigatório
+    // userId é obrigatório e deve corresponder ao usuário autenticado
     if (!userId) {
       return new Response(
         JSON.stringify({ error: 'userId é obrigatório' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Verificar se o userId corresponde ao user autenticado ou se é o mesmo profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (!profile || (profile.id !== user.id && userId !== user.id)) {
+      console.error('userId não corresponde ao usuário autenticado');
+      return new Response(
+        JSON.stringify({ error: 'Acesso negado' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
       );
     }
 
