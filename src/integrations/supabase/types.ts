@@ -592,6 +592,80 @@ export type Database = {
         }
         Relationships: []
       }
+      tibiadle_user_games: {
+        Row: {
+          acertou: boolean | null
+          created_at: string | null
+          data_jogo: string
+          id: string
+          num_tentativas: number | null
+          palavra_dia: string
+          premiacao_pontos: number | null
+          premiacao_tickets: number | null
+          tentativas: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          acertou?: boolean | null
+          created_at?: string | null
+          data_jogo: string
+          id?: string
+          num_tentativas?: number | null
+          palavra_dia: string
+          premiacao_pontos?: number | null
+          premiacao_tickets?: number | null
+          tentativas?: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          acertou?: boolean | null
+          created_at?: string | null
+          data_jogo?: string
+          id?: string
+          num_tentativas?: number | null
+          palavra_dia?: string
+          premiacao_pontos?: number | null
+          premiacao_tickets?: number | null
+          tentativas?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tibiadle_user_games_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tibiadle_words: {
+        Row: {
+          ativa: boolean
+          created_at: string | null
+          id: string
+          palavra: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativa?: boolean
+          created_at?: string | null
+          id?: string
+          palavra: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativa?: boolean
+          created_at?: string | null
+          id?: string
+          palavra?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ticket_ledger: {
         Row: {
           created_at: string

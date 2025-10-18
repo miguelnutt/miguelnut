@@ -116,10 +116,10 @@ export const Navbar = () => {
               Dashboard
             </Link>
             <Link
-              to="/wheels"
+              to="/games"
               className="text-sm font-medium transition-colors hover:text-primary"
             >
-              Roletas
+              Jogos
             </Link>
             <Link
               to="/history"
@@ -252,11 +252,11 @@ export const Navbar = () => {
                 Dashboard
               </Link>
               <Link
-                to="/wheels"
+                to="/games"
                 className="text-sm font-medium transition-colors hover:text-primary px-2 py-1"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Roletas
+                Jogos
               </Link>
               <Link
                 to="/history"
