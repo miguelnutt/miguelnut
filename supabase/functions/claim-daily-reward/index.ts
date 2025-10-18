@@ -50,16 +50,13 @@ serve(async (req) => {
     }
 
     let diaAtual = 1;
-    let podeResgatar = true;
 
+    // VALIDAÇÃO CRÍTICA: Verificar se já resgatou hoje
     if (loginData) {
-      const ultimoLogin = new Date(loginData.ultimo_login);
-      const hojeDat = new Date(hoje);
-      const diffTime = hojeDat.getTime() - ultimoLogin.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) {
-        // Já resgatou hoje
+      const ultimoLogin = loginData.ultimo_login; // já está em formato YYYY-MM-DD
+      
+      // Se já resgatou hoje, bloquear
+      if (ultimoLogin === hoje) {
         return new Response(
           JSON.stringify({ 
             error: 'Você já resgatou a recompensa de hoje',
@@ -68,11 +65,19 @@ serve(async (req) => {
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-      } else if (diffDays === 1) {
-        // Login consecutivo
-        diaAtual = loginData.dia_atual === 30 ? 1 : loginData.dia_atual + 1;
+      }
+
+      // Calcular diferença de dias
+      const ultimoLoginDate = new Date(ultimoLogin + 'T00:00:00-03:00'); // Forçar timezone Brasília
+      const hojeDate = new Date(hoje + 'T00:00:00-03:00');
+      const diffTime = hojeDate.getTime() - ultimoLoginDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        // Login consecutivo - avançar dia
+        diaAtual = loginData.dia_atual >= 30 ? 1 : loginData.dia_atual + 1;
       } else {
-        // Perdeu o consecutivo, volta ao dia 1
+        // Perdeu consecutivo - resetar para dia 1
         diaAtual = 1;
       }
     }
@@ -88,16 +93,22 @@ serve(async (req) => {
 
     const pontos = rewardConfig.pontos;
 
-    // Atualizar ou inserir registro de login
+    // Atualizar ou inserir registro de login com validação adicional
     const { error: upsertError } = await supabase
       .from('user_daily_logins')
       .upsert({
         user_id: userId,
         dia_atual: diaAtual,
         ultimo_login: hoje,
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
       });
 
-    if (upsertError) throw upsertError;
+    if (upsertError) {
+      console.error('Erro ao atualizar login:', upsertError);
+      throw upsertError;
+    }
 
     // Registrar no histórico
     const { error: historyError } = await supabase
