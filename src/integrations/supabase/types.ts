@@ -592,6 +592,60 @@ export type Database = {
         }
         Relationships: []
       }
+      tibiatermo_general_config: {
+        Row: {
+          bloquear_nova_partida: boolean
+          created_at: string | null
+          exigir_login: boolean
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          bloquear_nova_partida?: boolean
+          created_at?: string | null
+          exigir_login?: boolean
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          bloquear_nova_partida?: boolean
+          created_at?: string | null
+          exigir_login?: boolean
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tibiatermo_rewards_by_attempt: {
+        Row: {
+          ativa: boolean
+          created_at: string | null
+          id: string
+          pontos_loja: number
+          tentativa: number
+          tickets: number
+          updated_at: string | null
+        }
+        Insert: {
+          ativa?: boolean
+          created_at?: string | null
+          id?: string
+          pontos_loja?: number
+          tentativa: number
+          tickets?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ativa?: boolean
+          created_at?: string | null
+          id?: string
+          pontos_loja?: number
+          tentativa?: number
+          tickets?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tibiatermo_rewards_config: {
         Row: {
           created_at: string | null

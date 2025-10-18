@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, Gamepad2 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import QRCode from "qrcode";
@@ -25,6 +25,12 @@ import { RubiniCoinsResgateDialog } from "@/components/RubiniCoinsResgateDialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Ticket } from "lucide-react";
 import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
+import { TibiaTermoAdminPanel } from "@/components/admin/TibiaTermoAdminPanel";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -58,6 +64,7 @@ export default function AccountSettings() {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [resgates, setResgates] = useState<any[]>([]);
   const [loadingResgates, setLoadingResgates] = useState(false);
+  const [showTibiaTermoConfig, setShowTibiaTermoConfig] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -896,13 +903,29 @@ export default function AccountSettings() {
                   >
                     Adicionar/Remover Pontos
                   </Button>
-                  <Button 
-                    onClick={() => navigate('/admin/tibiatermo')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Configurar TibiaTermo
-                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* TibiaTermo Admin Panel - Inline */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl">TibiaTermo</CardTitle>
+                  <CardDescription className="text-sm">
+                    Configure palavras, recompensas e participações do jogo
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Collapsible open={showTibiaTermoConfig} onOpenChange={setShowTibiaTermoConfig}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        <Gamepad2 className="mr-2 h-4 w-4" />
+                        {showTibiaTermoConfig ? 'Ocultar' : 'Configurar'} TibiaTermo
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-4">
+                      <TibiaTermoAdminPanel />
+                    </CollapsibleContent>
+                  </Collapsible>
                 </CardContent>
               </Card>
             </>

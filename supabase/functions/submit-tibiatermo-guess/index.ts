@@ -128,22 +128,23 @@ Deno.serve(async (req) => {
     let premiacao_pontos = 0;
     let premiacao_tickets = 0;
 
-    // Get rewards config
-    const { data: rewardsConfig } = await supabase
-      .from('tibiatermo_rewards_config')
-      .select('*')
-      .limit(1)
-      .maybeSingle();
-
-    const pontosAcerto = rewardsConfig?.pontos_acerto || 25;
-    const ticketsBonus = rewardsConfig?.tickets_bonus || 1;
-    const maxTentativasBonus = rewardsConfig?.max_tentativas_bonus || 4;
-
-    // Award prizes if won
+    // Award prizes if won - buscar configuração por tentativa
     if (acertou) {
-      premiacao_pontos = pontosAcerto;
-      if (numTentativas <= maxTentativasBonus) {
-        premiacao_tickets = ticketsBonus;
+      const { data: rewardConfig, error: rewardError } = await supabase
+        .from('tibiatermo_rewards_by_attempt')
+        .select('*')
+        .eq('tentativa', numTentativas)
+        .eq('ativa', true)
+        .maybeSingle();
+
+      if (rewardError) {
+        console.error('Error fetching reward config:', rewardError);
+      } else if (rewardConfig) {
+        premiacao_pontos = rewardConfig.pontos_loja;
+        premiacao_tickets = rewardConfig.tickets;
+        console.log(`Recompensas para ${numTentativas} tentativas: ${premiacao_pontos} pontos, ${premiacao_tickets} tickets`);
+      } else {
+        console.log(`Nenhuma recompensa configurada para ${numTentativas} tentativas`);
       }
     }
 
