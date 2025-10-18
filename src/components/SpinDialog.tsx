@@ -14,7 +14,7 @@ import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
 
 interface Recompensa {
-  tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
+  tipo: "Pontos de Loja" | "Tickets" | "RubiniCoin";
   valor: string;
   cor: string;
 }
@@ -173,10 +173,10 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         console.log("Novo perfil criado:", profileData);
       }
 
-      // Se for Rubini Coins, usar o nome_personagem do perfil encontrado
+      // Se for RubiniCoin, usar o nome_personagem do perfil encontrado
       let personagemInfo = null;
-      if (resultado.tipo === "Rubini Coins") {
-        console.log("🎮 Verificando personagem para Rubini Coins");
+      if (resultado.tipo === "RubiniCoin") {
+        console.log("🎮 Verificando personagem para RubiniCoin");
         console.log("📋 Dados do perfil:", {
           id: profileData?.id,
           nome: profileData?.nome,
@@ -197,8 +197,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         }
       }
 
-      // Salvar o spin com tipo correto para RC
-      const tipoParaSalvar = resultado.tipo === "Rubini Coins" ? "RC" : resultado.tipo;
+      // Salvar o spin com tipo padronizado
+      const tipoParaSalvar = resultado.tipo;
       const { error: spinError } = await supabase
         .from("spins")
         .insert({
@@ -347,8 +347,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         }
       }
       
-      // Se for Rubini Coins, buscar nome do personagem
-      if (sorteada.tipo === "Rubini Coins" && !isModoTeste) {
+      // Se for RubiniCoin, buscar nome do personagem
+      if (sorteada.tipo === "RubiniCoin" && !isModoTeste) {
         try {
           console.log("🎮 Buscando personagem para:", nomeParaExibir);
           
@@ -524,7 +524,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
                   </div>
                 )}
                 
-                {resultado.tipo === "Rubini Coins" && (
+                {resultado.tipo === "RubiniCoin" && (
                   <div className="pt-4 border-t border-border">
                     <p className="text-sm text-muted-foreground">Personagem:</p>
                     {nomePersonagem && nomePersonagem !== "NÃO CADASTRADO" ? (

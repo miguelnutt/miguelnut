@@ -1,8 +1,14 @@
 import { Award, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-helper";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { useRef } from "react";
 
 interface RewardItem {
   id: string;
@@ -17,6 +23,9 @@ export function RecentRewards() {
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const plugin = useRef(
+    Autoplay({ delay: 3000, stopOnInteraction: false, stopOnMouseEnter: true })
+  );
 
   useEffect(() => {
     loadRewards();
@@ -82,43 +91,54 @@ export function RecentRewards() {
   }
 
   return (
-    <div className="bg-card border rounded-lg p-4 shadow-card">
-      <div className="flex items-center justify-between gap-4">
+    <div className="bg-card border-b-4 border-b-primary rounded-lg p-3 shadow-card">
+      <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 flex-shrink-0">
           <Trophy className="h-5 w-5 text-primary" />
-          <span className="font-semibold">Últimas Recompensas:</span>
+          <span className="font-semibold text-sm">Últimas Recompensas:</span>
         </div>
         
-        <div className="flex items-center gap-3 flex-1 overflow-x-auto">
+        <div className="flex-1 overflow-hidden">
           {rewards.length === 0 ? (
             <span className="text-sm text-muted-foreground">Nenhuma recompensa ainda</span>
           ) : (
-            rewards.map((reward, index) => (
-              <div key={reward.id} className="flex items-center gap-2 flex-shrink-0">
-                {index > 0 && <span className="text-muted-foreground">•</span>}
-                <div className="flex items-center gap-1.5">
-                  {reward.type === 'spin' ? (
-                    <Award className="h-4 w-4 text-primary" />
-                  ) : (
-                    <Trophy className="h-4 w-4 text-primary" />
-                  )}
-                  <span className="text-sm font-medium">{reward.nome_usuario}</span>
-                  <span className="text-sm text-muted-foreground">
-                    ({reward.tipo_recompensa}: {reward.valor})
-                  </span>
-                </div>
-              </div>
-            ))
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[plugin.current]}
+              className="w-full"
+              onMouseEnter={plugin.current.stop}
+              onMouseLeave={plugin.current.reset}
+            >
+              <CarouselContent>
+                {rewards.map((reward) => (
+                  <CarouselItem key={reward.id} className="basis-auto">
+                    <div className="flex items-center gap-1.5 pr-4">
+                      {reward.type === 'spin' ? (
+                        <Award className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Trophy className="h-4 w-4 text-primary" />
+                      )}
+                      <span className="text-sm font-medium">{reward.nome_usuario}</span>
+                      <span className="text-sm text-muted-foreground">
+                        ({reward.tipo_recompensa}: {reward.valor})
+                      </span>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
           )}
         </div>
-
-        <Button 
+        
+        <button
           onClick={() => navigate('/dashboard')}
-          className="flex-shrink-0"
-          size="sm"
+          className="text-sm text-primary hover:text-primary/80 font-medium flex-shrink-0 underline"
         >
-          Ir para o Dashboard
-        </Button>
+          Ver Dashboard
+        </button>
       </div>
     </div>
   );

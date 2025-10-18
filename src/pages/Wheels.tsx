@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 
 interface Recompensa {
-  tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
+  tipo: "Pontos de Loja" | "Tickets" | "RubiniCoin";
   valor: string;
   cor: string;
 }

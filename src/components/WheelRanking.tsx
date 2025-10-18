@@ -91,11 +91,11 @@ export function WheelRanking() {
 
       setPontosLojaRanking(pontosRanking);
 
-      // Ranking de Rubini Coins (incluindo RC e sorteios)
+      // Ranking de RubiniCoin (incluindo variações antigas)
       let rubiniQuery = supabase
         .from("spins")
         .select("nome_usuario, valor, created_at, tipo_recompensa")
-        .or("tipo_recompensa.eq.Rubini Coins,tipo_recompensa.eq.RC");
+        .or("tipo_recompensa.eq.RubiniCoin,tipo_recompensa.eq.Rubini Coins,tipo_recompensa.eq.RC");
       
       if (dataInicio) {
         rubiniQuery = rubiniQuery.gte("created_at", dataInicio);
@@ -104,11 +104,11 @@ export function WheelRanking() {
       const { data: rubiniData, error: rubiniError } = await rubiniQuery;
       if (rubiniError) throw rubiniError;
 
-      // Buscar Rubini Coins de sorteios
+      // Buscar RubiniCoin de sorteios
       let raffleQuery = supabase
         .from("raffles")
         .select("nome_vencedor, valor_premio, created_at")
-        .eq("tipo_premio", "Rubini Coins");
+        .or("tipo_premio.eq.RubiniCoin,tipo_premio.eq.Rubini Coins");
       
       if (dataInicio) {
         raffleQuery = raffleQuery.gte("created_at", dataInicio);
@@ -120,7 +120,7 @@ export function WheelRanking() {
       // Agrupar e somar coins por usuário
       const rubiniMap = new Map<string, number>();
       
-      // Adicionar RC das roletas
+      // Adicionar RubiniCoin das roletas
       rubiniData?.forEach((spin) => {
         const valor = parseInt(spin.valor) || 0;
         rubiniMap.set(
@@ -129,7 +129,7 @@ export function WheelRanking() {
         );
       });
 
-      // Adicionar RC dos sorteios
+      // Adicionar RubiniCoin dos sorteios
       raffleData?.forEach((raffle) => {
         const valor = raffle.valor_premio || 0;
         rubiniMap.set(
@@ -205,7 +205,7 @@ export function WheelRanking() {
             <TableHead className="w-16">#</TableHead>
             <TableHead>Usuário</TableHead>
             <TableHead className="text-right">
-              {type === "pontos" ? "Pontos" : type === "rubini" ? "Rubini Coins" : "Tickets"}
+              {type === "pontos" ? "Pontos" : type === "rubini" ? "RubiniCoin" : "Tickets"}
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -259,7 +259,7 @@ export function WheelRanking() {
             </TabsTrigger>
             <TabsTrigger value="rubini" className="flex items-center gap-2">
               <Coins className="h-4 w-4" />
-              Rubini Coins
+              RubiniCoin
             </TabsTrigger>
             <TabsTrigger value="tickets" className="flex items-center gap-2">
               <Trophy className="h-4 w-4" />

@@ -409,7 +409,7 @@ export default function AccountSettings() {
                 Nome do Personagem
               </CardTitle>
               <CardDescription className="text-sm">
-                Cadastre o nome do seu personagem no jogo para receber Rubini Coins mais rápido
+                Cadastre o nome do seu personagem no jogo para receber RubiniCoins mais rápido
               </CardDescription>
             </CardHeader>
             <CardContent>

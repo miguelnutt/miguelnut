@@ -24,7 +24,7 @@ interface RaffleDialogProps {
   onSuccess: () => void;
 }
 
-type TipoPremio = "Pontos de Loja" | "Rubini Coins";
+type TipoPremio = "Pontos de Loja" | "RubiniCoin";
 
 const raffleSchema = z.object({
   observacoes: z.string().trim().max(1000, "Observações muito longas (máximo 1000 caracteres)").optional()
@@ -38,7 +38,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
   const [vencedor, setVencedor] = useState<Participante | null>(null);
   const [observacoes, setObservacoes] = useState("");
   const [isModoTeste, setIsModoTeste] = useState(false);
-  const [tipoPremio, setTipoPremio] = useState<TipoPremio>("Rubini Coins");
+  const [tipoPremio, setTipoPremio] = useState<TipoPremio>("RubiniCoin");
   const [valorPremio, setValorPremio] = useState<number>(25);
   const [pontosAtuaisVencedor, setPontosAtuaisVencedor] = useState<number | null>(null);
   const [carregandoPontos, setCarregandoPontos] = useState(false);
@@ -63,7 +63,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       fetchParticipantes();
       setVencedor(null);
       setIsModoTeste(false);
-      setTipoPremio("Rubini Coins");
+      setTipoPremio("RubiniCoin");
       setValorPremio(25);
       setShowResultDialog(false);
       setAwaitingConfirmation(false);
@@ -368,8 +368,8 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                   onChange={(e) => {
                     const newTipo = e.target.value as TipoPremio;
                     setTipoPremio(newTipo);
-                    // Se mudou para Rubini Coins, ajustar para múltiplo de 25
-                    if (newTipo === "Rubini Coins") {
+                    // Se mudou para RubiniCoin, ajustar para múltiplo de 25
+                    if (newTipo === "RubiniCoin") {
                       const rounded = Math.round(valorPremio / 25) * 25 || 25;
                       setValorPremio(rounded);
                     }
@@ -378,22 +378,22 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                   className="w-full px-3 py-2 border rounded-md bg-background"
                 >
                   <option value="Pontos de Loja">Pontos de Loja</option>
-                  <option value="Rubini Coins">Rubini Coins</option>
+                  <option value="RubiniCoin">RubiniCoin</option>
                 </select>
               </div>
               <div>
                 <Label htmlFor="valorPremio" className="text-sm">
-                  Valor {tipoPremio === "Rubini Coins" && "(múltiplos de 25)"}
+                  Valor {tipoPremio === "RubiniCoin" && "(múltiplos de 25)"}
                 </Label>
                 <Input
                   id="valorPremio"
                   type="number"
-                  min={tipoPremio === "Rubini Coins" ? 25 : 1}
-                  step={tipoPremio === "Rubini Coins" ? 25 : 1}
+                  min={tipoPremio === "RubiniCoin" ? 25 : 1}
+                  step={tipoPremio === "RubiniCoin" ? 25 : 1}
                   value={valorPremio}
                   onChange={(e) => {
                     const value = parseInt(e.target.value) || 0;
-                    if (tipoPremio === "Rubini Coins") {
+                    if (tipoPremio === "RubiniCoin") {
                       const rounded = Math.round(value / 25) * 25 || 25;
                       setValorPremio(rounded);
                     } else {
@@ -403,7 +403,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                   disabled={drawing}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {tipoPremio === "Rubini Coins" 
+                  {tipoPremio === "RubiniCoin"
                     ? "Somente múltiplos de 25 são permitidos" 
                     : "Digite a quantidade de pontos"}
                 </p>
@@ -550,7 +550,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                   </div>
                 )}
                 
-                {tipoPremio === "Rubini Coins" && (
+                {tipoPremio === "RubiniCoin" && (
                   <div className="pt-4 border-t border-border">
                     <p className="text-sm text-muted-foreground">Personagem:</p>
                     {vencedor.nome_personagem ? (
