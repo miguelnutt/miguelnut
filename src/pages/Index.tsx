@@ -42,13 +42,13 @@ export default function Index() {
         .from("spins")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(3);
+        .limit(10);
 
       const { data: raffles } = await supabase
         .from("raffles")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(3);
+        .limit(10);
 
       const combined = [
         ...(spins || []).map(s => ({ ...s, type: 'spin' })),

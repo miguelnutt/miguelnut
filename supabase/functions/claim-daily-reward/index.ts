@@ -29,7 +29,14 @@ serve(async (req) => {
       );
     }
 
-    const hoje = new Date().toISOString().split('T')[0];
+    // Pegar data atual no horário de Brasília (UTC-3)
+    const agora = new Date();
+    const brasiliaOffset = -3 * 60; // UTC-3 em minutos
+    const offsetAtual = agora.getTimezoneOffset();
+    const diffMinutos = offsetAtual - brasiliaOffset;
+    
+    const horarioBrasilia = new Date(agora.getTime() + diffMinutos * 60000);
+    const hoje = horarioBrasilia.toISOString().split('T')[0];
 
     // Buscar registro de login do usuário
     const { data: loginData, error: loginError } = await supabase
