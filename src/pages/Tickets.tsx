@@ -325,15 +325,15 @@ export default function Tickets() {
     }
 
     try {
-      // Se for Rubini Coins, usar a edge function que ajusta o saldo
-      if (raffle.tipo_premio === 'Rubini Coins') {
+      // Se for Rubini Coins ou Tickets, usar a edge function que ajusta o saldo
+      if (raffle.tipo_premio === 'Rubini Coins' || raffle.tipo_premio === 'Tickets') {
         const { error } = await supabase.functions.invoke("delete-raffle-history", {
           body: { raffleId },
         });
 
         if (error) throw error;
       } else {
-        // Para outros tipos, deletar direto
+        // Para Pontos de Loja, deletar direto (não podemos deduzir do StreamElements)
         const { error } = await supabase
           .from("raffles")
           .delete()

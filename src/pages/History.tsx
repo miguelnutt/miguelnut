@@ -117,15 +117,15 @@ export default function History() {
     }
 
     try {
-      // Se for Rubini Coins, usar a edge function que ajusta o saldo
-      if (spin.tipo_recompensa === "Rubini Coins") {
+      // Se for Rubini Coins ou Tickets, usar a edge function que ajusta o saldo
+      if (spin.tipo_recompensa === "Rubini Coins" || spin.tipo_recompensa === "Tickets") {
         const { error } = await supabase.functions.invoke("delete-spin-history", {
           body: { spinId: id },
         });
 
         if (error) throw error;
       } else {
-        // Para outros tipos, deletar direto
+        // Para Pontos de Loja, deletar direto (não podemos deduzir do StreamElements)
         const { error } = await supabase
           .from("spins")
           .delete()

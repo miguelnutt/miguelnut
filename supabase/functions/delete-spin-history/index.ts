@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
         // Não permitir saldo negativo
         if (novoSaldo < 0) {
           return new Response(
-            JSON.stringify({ error: 'Exclusão resultaria em saldo negativo' }),
+            JSON.stringify({ error: 'Exclusão resultaria em saldo negativo de Rubini Coins' }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
           );
         }
@@ -77,14 +77,63 @@ Deno.serve(async (req) => {
           .eq('user_id', spinRecord.user_id);
 
         if (updateError) {
-          console.error('Erro ao atualizar saldo:', updateError);
+          console.error('Erro ao atualizar saldo de Rubini Coins:', updateError);
           return new Response(
             JSON.stringify({ error: 'Erro ao atualizar saldo' }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
           );
         }
 
-        console.log(`Saldo ajustado: user ${spinRecord.user_id}, redução: -${rubiniCoins}, novo saldo: ${novoSaldo}`);
+        console.log(`Saldo de Rubini Coins ajustado: user ${spinRecord.user_id}, redução: -${rubiniCoins}, novo saldo: ${novoSaldo}`);
+      }
+    }
+
+    // Se o spin é de Tickets e tem user_id, ajustar o saldo
+    if (spinRecord.tipo_recompensa === 'Tickets' && spinRecord.user_id) {
+      const tickets = parseInt(spinRecord.valor) || 0;
+      
+      // Buscar saldo atual de tickets
+      const { data: ticketsBalance } = await supabase
+        .from('tickets')
+        .select('tickets_atual')
+        .eq('user_id', spinRecord.user_id)
+        .maybeSingle();
+
+      if (ticketsBalance) {
+        const novoSaldo = ticketsBalance.tickets_atual - tickets;
+        
+        // Não permitir saldo negativo
+        if (novoSaldo < 0) {
+          return new Response(
+            JSON.stringify({ error: 'Exclusão resultaria em saldo negativo de Tickets' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+
+        // Atualizar saldo de tickets
+        const { error: updateError } = await supabase
+          .from('tickets')
+          .update({ tickets_atual: novoSaldo })
+          .eq('user_id', spinRecord.user_id);
+
+        if (updateError) {
+          console.error('Erro ao atualizar saldo de tickets:', updateError);
+          return new Response(
+            JSON.stringify({ error: 'Erro ao atualizar saldo de tickets' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+          );
+        }
+
+        // Adicionar entrada negativa no ledger
+        await supabase
+          .from('ticket_ledger')
+          .insert({
+            user_id: spinRecord.user_id,
+            variacao: -tickets,
+            motivo: `Histórico deletado: -${tickets} ticket(s)`
+          });
+
+        console.log(`Saldo de tickets ajustado: user ${spinRecord.user_id}, redução: -${tickets}, novo saldo: ${novoSaldo}`);
       }
     }
 
