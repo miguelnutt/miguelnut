@@ -15,11 +15,11 @@ const Games = () => {
       route: "/wheels",
     },
     {
-      id: "tibiadle",
-      name: "TibiaDle",
+      id: "tibiatermo",
+      name: "TibiaTermo",
       description: "Descubra a palavra do dia do universo de Tibia!",
       icon: Gamepad2,
-      route: "/tibiadle",
+      route: "/tibiatermo",
     },
   ];
 

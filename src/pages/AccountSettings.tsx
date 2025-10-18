@@ -25,7 +25,6 @@ import { RubiniCoinsResgateDialog } from "@/components/RubiniCoinsResgateDialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Ticket } from "lucide-react";
 import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
-import { TibiaDleWordsSection } from "@/components/admin/TibiaDleWordsSection";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -873,9 +872,6 @@ export default function AccountSettings() {
 
               {/* Seção 6: Gerenciar Saldos de Rubini Coins */}
               <AdminManageRubiniCoins />
-
-              {/* Seção 7: TibiaDle - Palavras */}
-              <TibiaDleWordsSection />
 
               {/* Gerenciar Progresso dos Usuários */}
               <Card>

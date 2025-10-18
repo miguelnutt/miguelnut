@@ -8,7 +8,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Games from "./pages/Games";
 import Wheels from "./pages/Wheels";
-import TibiaDle from "./pages/TibiaDle";
+import TibiaTermo from "./pages/TibiaTermo";
 import History from "./pages/History";
 import Tickets from "./pages/Tickets";
 import Login from "./pages/Login";
@@ -32,7 +32,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/games" element={<Games />} />
             <Route path="/wheels" element={<Wheels />} />
-            <Route path="/tibiadle" element={<TibiaDle />} />
+            <Route path="/tibiatermo" element={<TibiaTermo />} />
+            <Route path="/tibiadle" element={<TibiaTermo />} /> {/* Redirect antigo */}
             <Route path="/history" element={<History />} />
             <Route path="/tickets" element={<Tickets />} />
             <Route path="/login" element={<Login />} />

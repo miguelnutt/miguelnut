@@ -592,7 +592,34 @@ export type Database = {
         }
         Relationships: []
       }
-      tibiadle_user_games: {
+      tibiatermo_rewards_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          max_tentativas_bonus: number
+          pontos_acerto: number
+          tickets_bonus: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          max_tentativas_bonus?: number
+          pontos_acerto?: number
+          tickets_bonus?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          max_tentativas_bonus?: number
+          pontos_acerto?: number
+          tickets_bonus?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tibiatermo_user_games: {
         Row: {
           acertou: boolean | null
           created_at: string | null
@@ -642,7 +669,7 @@ export type Database = {
           },
         ]
       }
-      tibiadle_words: {
+      tibiatermo_words: {
         Row: {
           ativa: boolean
           created_at: string | null

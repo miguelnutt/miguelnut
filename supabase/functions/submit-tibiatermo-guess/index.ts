@@ -24,11 +24,39 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    // Validate Twitch token
+    const twitchMeResponse = await fetch(
+      `${supabaseUrl}/functions/v1/twitch-auth-me`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': supabaseKey,
+        },
+      }
+    );
 
-    if (userError || !user) {
+    const twitchData = await twitchMeResponse.json();
+    if (!twitchData.success || !twitchData.user) {
       return new Response(JSON.stringify({ error: 'Usuário não encontrado' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const twitchUsername = twitchData.user.login;
+
+    // Get profile ID
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('twitch_username', twitchUsername)
+      .single();
+
+    if (!profile) {
+      return new Response(JSON.stringify({ error: 'Perfil não encontrado' }), {
+        status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -37,10 +65,10 @@ Deno.serve(async (req) => {
 
     // Get current game
     const { data: game, error: gameError } = await supabase
-      .from('tibiadle_user_games')
+      .from('tibiatermo_user_games')
       .select('*')
       .eq('id', jogo_id)
-      .eq('user_id', user.id)
+      .eq('user_id', profile.id)
       .single();
 
     if (gameError || !game) {
@@ -65,6 +93,24 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validate word exists in dictionary
+    const { data: validWord } = await supabase
+      .from('tibiatermo_words')
+      .select('palavra')
+      .eq('palavra', tentativa.toUpperCase())
+      .eq('ativa', true)
+      .maybeSingle();
+
+    if (!validWord) {
+      return new Response(JSON.stringify({ 
+        error: 'Palavra inválida',
+        invalid_word: true
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Add new attempt
     const novasTentativas = [...tentativasAtuais, tentativa.toUpperCase()];
     const acertou = tentativa.toUpperCase() === game.palavra_dia;
@@ -74,11 +120,22 @@ Deno.serve(async (req) => {
     let premiacao_pontos = 0;
     let premiacao_tickets = 0;
 
+    // Get rewards config
+    const { data: rewardsConfig } = await supabase
+      .from('tibiatermo_rewards_config')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    const pontosAcerto = rewardsConfig?.pontos_acerto || 25;
+    const ticketsBonus = rewardsConfig?.tickets_bonus || 1;
+    const maxTentativasBonus = rewardsConfig?.max_tentativas_bonus || 4;
+
     // Award prizes if won
     if (acertou) {
-      premiacao_pontos = 25;
-      if (numTentativas <= 4) {
-        premiacao_tickets = 1;
+      premiacao_pontos = pontosAcerto;
+      if (numTentativas <= maxTentativasBonus) {
+        premiacao_tickets = ticketsBonus;
       }
     }
 
@@ -95,7 +152,7 @@ Deno.serve(async (req) => {
     }
 
     const { error: updateError } = await supabase
-      .from('tibiadle_user_games')
+      .from('tibiatermo_user_games')
       .update(updateData)
       .eq('id', jogo_id);
 
@@ -109,22 +166,15 @@ Deno.serve(async (req) => {
 
     // Award prizes if game is won
     if (acertou) {
-      // Get user's Twitch username
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('twitch_username')
-        .eq('id', user.id)
-        .single();
-
       // Award store points via StreamElements
-      if (premiacao_pontos > 0 && profile?.twitch_username) {
+      if (premiacao_pontos > 0) {
         const streamElementsJwt = Deno.env.get('STREAMELEMENTS_JWT_TOKEN');
         const channelId = Deno.env.get('STREAMELEMENTS_CHANNEL_ID');
 
         if (streamElementsJwt && channelId) {
           try {
             const seResponse = await fetch(
-              `https://api.streamelements.com/kappa/v2/points/${channelId}/${profile.twitch_username}/${premiacao_pontos}`,
+              `https://api.streamelements.com/kappa/v2/points/${channelId}/${twitchUsername}/${premiacao_pontos}`,
               {
                 method: 'PUT',
                 headers: {
@@ -137,7 +187,7 @@ Deno.serve(async (req) => {
             if (!seResponse.ok) {
               console.error('StreamElements error:', await seResponse.text());
             } else {
-              console.log(`Awarded ${premiacao_pontos} points to ${profile.twitch_username}`);
+              console.log(`Awarded ${premiacao_pontos} points to ${twitchUsername}`);
             }
           } catch (error) {
             console.error('Error awarding StreamElements points:', error);
@@ -150,26 +200,26 @@ Deno.serve(async (req) => {
         const { data: currentTickets } = await supabase
           .from('tickets')
           .select('tickets_atual')
-          .eq('user_id', user.id)
+          .eq('user_id', profile.id)
           .maybeSingle();
 
         if (currentTickets) {
           await supabase
             .from('tickets')
             .update({ tickets_atual: currentTickets.tickets_atual + premiacao_tickets })
-            .eq('user_id', user.id);
+            .eq('user_id', profile.id);
         } else {
           await supabase
             .from('tickets')
-            .insert({ user_id: user.id, tickets_atual: premiacao_tickets });
+            .insert({ user_id: profile.id, tickets_atual: premiacao_tickets });
         }
 
         await supabase
           .from('ticket_ledger')
           .insert({
-            user_id: user.id,
+            user_id: profile.id,
             variacao: premiacao_tickets,
-            motivo: 'TibiaDle - Acertou em 4 tentativas ou menos',
+            motivo: `TibiaTermo - Acertou em ${numTentativas} tentativa${numTentativas > 1 ? 's' : ''}`,
           });
       }
     }
@@ -187,7 +237,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error('Error in submit-tibiadle-guess:', error);
+    console.error('Error in submit-tibiatermo-guess:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
