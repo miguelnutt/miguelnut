@@ -156,13 +156,12 @@ export default function Dashboard() {
       }
       const { count: rafflesCount } = await rafflesQuery;
 
-      // Total de Rubini Coins pagos - soma apenas recompensas automáticas (exclui operações manuais do admin e estornos)
+      // Total de Rubini Coins pagos - soma APENAS recompensas de roletas e sorteios
       let rcHistoryQuery = supabase
         .from("rubini_coins_history")
         .select("variacao, motivo")
         .gt("variacao", 0)
-        .not("motivo", "like", "%Operação manual%")
-        .not("motivo", "like", "%Estorno%");
+        .or("motivo.ilike.%roleta%,motivo.ilike.%sorteio%");
       if (startDate && endDate) {
         rcHistoryQuery = rcHistoryQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
