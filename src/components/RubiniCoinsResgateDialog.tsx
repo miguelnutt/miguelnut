@@ -204,8 +204,8 @@ export function RubiniCoinsResgateDialog({
           </div>
 
           {/* Histórico de resgates */}
-          <div className="space-y-3">
-            <h3 className="font-semibold">Histórico de Resgates</h3>
+          <div className="space-y-3 pt-4 border-t">
+            <h3 className="font-semibold text-lg">Histórico de Resgates</h3>
             {loadingResgates ? (
               <p className="text-sm text-muted-foreground">Carregando...</p>
             ) : resgates.length === 0 ? (
@@ -215,27 +215,25 @@ export function RubiniCoinsResgateDialog({
                 {resgates.map((resgate) => (
                   <div 
                     key={resgate.id} 
-                    className="border rounded-lg p-3 space-y-2"
+                    className="border rounded-lg p-3 bg-card/50 hover:bg-card transition-colors"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(resgate.status)}
-                          <span className="font-medium">{getStatusText(resgate.status)}</span>
-                        </div>
-                        <p className="text-sm">
-                          <span className="font-semibold">{resgate.quantidade}</span> Rubini Coins
-                          {' → '} 
-                          <span className="text-muted-foreground">{resgate.personagem}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(resgate.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      {getStatusIcon(resgate.status)}
+                      <span className="font-semibold">{getStatusText(resgate.status)}</span>
+                    </div>
+                    <div className="text-sm space-y-1">
+                      <p>
+                        <span className="font-bold text-primary">{resgate.quantidade}</span> Rubini Coins
+                        {' → '} 
+                        <span className="font-medium">{resgate.personagem}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(resgate.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </p>
                     </div>
                     {resgate.status === 'RECUSADO' && resgate.motivo_recusa && (
-                      <div className="bg-destructive/10 text-destructive rounded p-2 text-sm">
-                        <strong>Motivo da recusa:</strong> {resgate.motivo_recusa}
+                      <div className="bg-destructive/10 text-destructive rounded p-2 text-sm mt-2">
+                        <strong>Motivo:</strong> {resgate.motivo_recusa}
                       </div>
                     )}
                   </div>

@@ -24,7 +24,6 @@ import { PromotionalBar } from "@/components/PromotionalBar";
 import { RubiniCoinsResgateDialog } from "@/components/RubiniCoinsResgateDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Ticket } from "lucide-react";
-import { AdminRubiniCoinsResgates } from "@/components/admin/AdminRubiniCoinsResgates";
 import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
 
 export default function AccountSettings() {
@@ -786,10 +785,7 @@ export default function AccountSettings() {
               {/* Seção 5: Rankings e Exibição */}
               <RankingDisplaySection />
 
-              {/* Seção 6: Resgates de Rubini Coins */}
-              <AdminRubiniCoinsResgates />
-
-              {/* Seção 7: Gerenciar Saldos de Rubini Coins */}
+              {/* Seção 6: Gerenciar Saldos de Rubini Coins */}
               <AdminManageRubiniCoins />
 
               {/* Gerenciar Progresso dos Usuários */}

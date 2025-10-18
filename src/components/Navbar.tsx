@@ -11,6 +11,7 @@ import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
 import { TwitchLoginButton } from "@/components/TwitchLoginButton";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
+import { AdminRubiniCoinsResgatesButton } from "@/components/admin/AdminRubiniCoinsResgatesButton";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -141,6 +142,7 @@ export const Navbar = () => {
               ) : twitchUser ? (
                 <>
                   <UserBadge user={twitchUser} onLogout={twitchLogout} />
+                  {isAdmin && <AdminRubiniCoinsResgatesButton />}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -260,9 +262,14 @@ export const Navbar = () => {
               <div className="border-t border-border pt-4 flex flex-col gap-2">
                 {twitchLoading ? (
                   <UserBadgeLoading />
-                ) : twitchUser ? (
+                 ) : twitchUser ? (
                   <div className="flex flex-col gap-2">
                     <UserBadge user={twitchUser} onLogout={twitchLogout} />
+                    {isAdmin && (
+                      <div className="w-full">
+                        <AdminRubiniCoinsResgatesButton />
+                      </div>
+                    )}
                     <Button
                       variant="outline"
                       onClick={() => {
