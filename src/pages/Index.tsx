@@ -11,7 +11,6 @@ import { Loader2, Radio, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { StreakRanking } from "@/components/StreakRanking";
-import { SiteChat } from "@/components/SiteChat";
 import { RecentRewards } from "@/components/RecentRewards";
 
 // Vídeo padrão - última live do canal
@@ -168,15 +167,15 @@ export default function Index() {
           {/* Últimas Recompensas - Topo */}
           <RecentRewards />
 
-          {/* Layout principal: Ranking à esquerda, Vídeo e Chat à direita */}
+          {/* Layout principal: Ranking à esquerda, Vídeo à direita */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Coluna Esquerda: Ranking de Streak */}
             <div className="lg:col-span-1">
               <StreakRanking />
             </div>
 
-            {/* Coluna Direita: Vídeo e Chat */}
-            <div className="lg:col-span-2 space-y-6">
+            {/* Coluna Direita: Vídeo */}
+            <div className="lg:col-span-2">
               {/* Vídeo */}
               {loading ? (
               <Card className="shadow-card">
@@ -245,9 +244,6 @@ export default function Index() {
                 </CardContent>
               </Card>
             )}
-
-              {/* Chat */}
-              <SiteChat />
             </div>
           </div>
         </div>

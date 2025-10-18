@@ -1,7 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Award, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-helper";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface RewardItem {
   id: string;
@@ -10,14 +11,12 @@ interface RewardItem {
   valor: string;
   created_at: string;
   type: 'spin' | 'raffle';
-  tipo_premio?: string;
-  valor_premio?: number;
-  nome_vencedor?: string;
 }
 
 export function RecentRewards() {
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadRewards();
@@ -39,13 +38,13 @@ export function RecentRewards() {
         .from("spins")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
 
       const { data: raffles } = await supabase
         .from("raffles")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
 
       const combined = [
         ...(spins || []).map(s => ({ ...s, type: 'spin' as const })),
@@ -68,69 +67,59 @@ export function RecentRewards() {
     }
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return 'Agora mesmo';
-    if (minutes < 60) return `${minutes}m atrás`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h atrás`;
-    const days = Math.floor(hours / 24);
-    return `${days}d atrás`;
-  };
+  if (loading) {
+    return (
+      <div className="bg-card border rounded-lg p-4 shadow-card">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" />
+            <span className="font-semibold">Últimas Recompensas</span>
+          </div>
+          <span className="text-sm text-muted-foreground">Carregando...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Card className="shadow-card">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
+    <div className="bg-card border rounded-lg p-4 shadow-card">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Trophy className="h-5 w-5 text-primary" />
-          Últimas Recompensas
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="text-center py-4 text-muted-foreground text-sm">
-            Carregando...
-          </div>
-        ) : rewards.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground text-sm">
-            Nenhuma recompensa ainda
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {rewards.map((reward) => (
-              <div 
-                key={reward.id} 
-                className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="flex-shrink-0">
-                    {reward.type === 'spin' ? (
-                      <Award className="h-5 w-5 text-primary" />
-                    ) : (
-                      <Trophy className="h-5 w-5 text-primary" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">
-                      {reward.nome_usuario}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {reward.tipo_recompensa} • {reward.valor}
-                    </p>
-                  </div>
+          <span className="font-semibold">Últimas Recompensas:</span>
+        </div>
+        
+        <div className="flex items-center gap-3 flex-1 overflow-x-auto">
+          {rewards.length === 0 ? (
+            <span className="text-sm text-muted-foreground">Nenhuma recompensa ainda</span>
+          ) : (
+            rewards.map((reward, index) => (
+              <div key={reward.id} className="flex items-center gap-2 flex-shrink-0">
+                {index > 0 && <span className="text-muted-foreground">•</span>}
+                <div className="flex items-center gap-1.5">
+                  {reward.type === 'spin' ? (
+                    <Award className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Trophy className="h-4 w-4 text-primary" />
+                  )}
+                  <span className="text-sm font-medium">{reward.nome_usuario}</span>
+                  <span className="text-sm text-muted-foreground">
+                    ({reward.tipo_recompensa}: {reward.valor})
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                  {formatTime(reward.created_at)}
-                </span>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            ))
+          )}
+        </div>
+
+        <Button 
+          onClick={() => navigate('/dashboard')}
+          className="flex-shrink-0"
+          size="sm"
+        >
+          Ir para o Dashboard
+        </Button>
+      </div>
+    </div>
   );
 }
