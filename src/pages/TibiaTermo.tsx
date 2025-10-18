@@ -470,7 +470,7 @@ const TibiaTermo = () => {
   const activeCount = words.filter((w) => w.ativa).length;
   const inactiveCount = words.length - activeCount;
 
-  if (twitchLoading || loadingGame || adminLoading) {
+  if (twitchLoading || adminLoading || loadingGame) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -481,7 +481,8 @@ const TibiaTermo = () => {
     );
   }
 
-  if (!twitchUser && !isAdmin) {
+  // Se não é admin e não tem Twitch, redireciona
+  if (!isAdmin && !twitchUser) {
     return null;
   }
 

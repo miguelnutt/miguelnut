@@ -102,10 +102,11 @@ export default function History() {
       filtered = filtered.filter(s => s.tipo_recompensa === filters.tipo);
     }
 
-    if (filters.roleta && filtered[0]?.wheels) {
-      filtered = filtered.filter(s => 
-        s.wheels?.nome.toLowerCase().includes(filters.roleta.toLowerCase())
-      );
+    if (filters.roleta) {
+      filtered = filtered.filter(s => {
+        const gameOrWheel = s.wheels?.nome || "TibiaTermo";
+        return gameOrWheel.toLowerCase().includes(filters.roleta.toLowerCase());
+      });
     }
 
     setFilteredSpins(filtered);
@@ -199,10 +200,10 @@ export default function History() {
                 </select>
               </div>
               <div>
-                <Label htmlFor="roleta">Roleta</Label>
+                <Label htmlFor="roleta">Jogo/Roleta</Label>
                 <Input
                   id="roleta"
-                  placeholder="Nome da roleta"
+                  placeholder="Nome do jogo ou roleta"
                   value={filters.roleta}
                   onChange={(e) => setFilters({ ...filters, roleta: e.target.value })}
                 />
@@ -223,7 +224,7 @@ export default function History() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="whitespace-nowrap">Usuário</TableHead>
-                        <TableHead className="whitespace-nowrap">Roleta</TableHead>
+                        <TableHead className="whitespace-nowrap">Jogo/Roleta</TableHead>
                         <TableHead className="whitespace-nowrap">Tipo</TableHead>
                         <TableHead className="whitespace-nowrap">Valor</TableHead>
                         <TableHead className="whitespace-nowrap">Data/Hora</TableHead>
@@ -234,7 +235,7 @@ export default function History() {
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
                           <TableCell className="font-medium whitespace-nowrap">{spin.nome_usuario}</TableCell>
-                          <TableCell className="whitespace-nowrap">{spin.wheels?.nome || "N/A"}</TableCell>
+                          <TableCell className="whitespace-nowrap">{spin.wheels?.nome || "TibiaTermo"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>
                           <TableCell className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">

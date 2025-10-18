@@ -197,13 +197,15 @@ Deno.serve(async (req) => {
             } else {
               console.log(`Awarded ${premiacao_pontos} points to ${twitchUsername}`);
               
-              // Registrar no histórico de Rubini Coins
+              // Registrar no histórico (tabela spins)
               await supabase
-                .from('rubini_coins_history')
+                .from('spins')
                 .insert({
                   user_id: profile.id,
-                  variacao: premiacao_pontos,
-                  motivo: `TibiaTermo - Acertou em ${numTentativas} tentativa${numTentativas > 1 ? 's' : ''}`,
+                  nome_usuario: twitchUsername,
+                  tipo_recompensa: 'Pontos de Loja',
+                  valor: premiacao_pontos.toString(),
+                  wheel_id: null, // TibiaTermo não tem wheel_id
                 });
             }
           } catch (error) {
@@ -237,6 +239,17 @@ Deno.serve(async (req) => {
             user_id: profile.id,
             variacao: premiacao_tickets,
             motivo: `TibiaTermo - Acertou em ${numTentativas} tentativa${numTentativas > 1 ? 's' : ''}`,
+          });
+
+        // Registrar no histórico (tabela spins)
+        await supabase
+          .from('spins')
+          .insert({
+            user_id: profile.id,
+            nome_usuario: twitchUsername,
+            tipo_recompensa: 'Tickets',
+            valor: premiacao_tickets.toString(),
+            wheel_id: null, // TibiaTermo não tem wheel_id
           });
       }
     }
