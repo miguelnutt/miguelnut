@@ -12,6 +12,7 @@ import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
 import { TwitchLoginButton } from "@/components/TwitchLoginButton";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { AdminRubiniCoinsResgatesButton } from "@/components/admin/AdminRubiniCoinsResgatesButton";
+import { useDailyRewardStatus } from "@/hooks/useDailyRewardStatus";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -24,6 +25,9 @@ export const Navbar = () => {
   
   // Sempre chamar useAdmin, mas passar user correto
   const { isAdmin, loading: adminLoading } = useAdmin(session?.user ?? null);
+  
+  // Verificar status da recompensa diária
+  const { hasRewardAvailable } = useDailyRewardStatus(session?.user?.id);
 
   // Log para debug
   useEffect(() => {
@@ -158,10 +162,15 @@ export const Navbar = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => setDailyRewardOpen(true)}
-                    className="rounded-full"
+                    className="rounded-full relative"
                     title="Recompensa Diária"
                   >
                     <Gift className="h-5 w-5" />
+                    {hasRewardAvailable && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                        1
+                      </span>
+                    )}
                   </Button>
                   <Button
                     variant="ghost"
@@ -290,10 +299,15 @@ export const Navbar = () => {
                         setDailyRewardOpen(true);
                         setMobileMenuOpen(false);
                       }}
-                      className="w-full justify-start"
+                      className="w-full justify-start relative"
                     >
                       <Gift className="mr-2 h-4 w-4" />
                       Recompensa Diária
+                      {hasRewardAvailable && (
+                        <span className="ml-auto h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                          1
+                        </span>
+                      )}
                     </Button>
                     <Button
                       variant="outline"
