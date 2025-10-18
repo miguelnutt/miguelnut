@@ -44,6 +44,9 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
       return;
     }
 
+    console.log('[DailyReward] ========== CARREGANDO DADOS ==========');
+    console.log('[DailyReward] Twitch User:', twitchUser.login);
+    
     setLoading(true);
     try {
       console.log('[DailyReward] Buscando perfil para:', twitchUser.login);
@@ -67,23 +70,37 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
         return;
       }
 
-      console.log('[DailyReward] Perfil encontrado:', profile.id);
+      console.log('[DailyReward] ✓ Perfil encontrado - ID:', profile.id);
       setUserId(profile.id);
 
-      // Buscar login do usuário
+      // Buscar login do usuário - SEMPRE buscar dados atualizados
+      console.log('[DailyReward] Buscando dados de login para user_id:', profile.id);
+      
       const { data: loginData, error: loginError } = await supabase
         .from('user_daily_logins')
-        .select('*')
+        .select('dia_atual, ultimo_login')
         .eq('user_id', profile.id)
         .maybeSingle();
 
+      console.log('[DailyReward] Query executada');
+      console.log('[DailyReward] loginError:', loginError);
+      console.log('[DailyReward] loginData:', loginData);
+
       if (loginError) {
-        console.error('[DailyReward] Erro ao buscar login:', loginError);
+        console.error('[DailyReward] ❌ Erro ao buscar login:', loginError);
         toast.error("Erro ao buscar dados de login");
         return;
       }
 
-      console.log('[DailyReward] Dados de login:', loginData);
+      if (loginData) {
+        console.log('[DailyReward] ✓ Registro encontrado:');
+        console.log('  - dia_atual:', loginData.dia_atual);
+        console.log('  - ultimo_login:', loginData.ultimo_login);
+        console.log('  - tipo de dia_atual:', typeof loginData.dia_atual);
+      } else {
+        console.log('[DailyReward] ⚠️  Nenhum registro encontrado - primeira vez do usuário');
+      }
+      
       setUserLogin(loginData);
 
       // Calcular próxima recompensa
