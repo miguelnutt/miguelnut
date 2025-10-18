@@ -325,6 +325,36 @@ export type Database = {
         }
         Relationships: []
       }
+      promotional_bar_config: {
+        Row: {
+          button1_text: string
+          button1_url: string
+          button2_text: string
+          button2_url: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          button1_text?: string
+          button1_url?: string
+          button2_text?: string
+          button2_url?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          button1_text?: string
+          button1_url?: string
+          button2_text?: string
+          button2_url?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       raffles: {
         Row: {
           created_at: string

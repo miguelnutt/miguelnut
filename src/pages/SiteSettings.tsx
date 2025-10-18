@@ -19,6 +19,7 @@ import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog"
 import { ChatModerationPanel } from "@/components/ChatModerationPanel";
 import { PromotionalBar } from "@/components/PromotionalBar";
 import { AdminRubiniCoinsResgates } from "@/components/admin/AdminRubiniCoinsResgates";
+import { PromotionalBarConfig } from "@/components/admin/PromotionalBarConfig";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -260,6 +261,9 @@ export default function SiteSettings() {
 
           {/* Seção 6: Resgates de Rubini Coins */}
           <AdminRubiniCoinsResgates />
+
+          {/* Seção 7: Configuração da Barra Promocional */}
+          <PromotionalBarConfig />
 
           {/* Gerenciar Progresso dos Usuários */}
           <Card className="shadow-card">
