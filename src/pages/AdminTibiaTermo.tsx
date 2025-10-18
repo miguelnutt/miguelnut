@@ -45,14 +45,16 @@ const AdminTibiaTermo = () => {
   }, []);
 
   useEffect(() => {
-    if (!adminLoading) {
-      if (!isAdmin) {
-        toast.error("Acesso negado!");
-        navigate("/games");
-      } else {
-        loadWords();
-        loadRewardsConfig();
-      }
+    // Só verifica acesso depois que terminou de carregar
+    if (!adminLoading && isAdmin) {
+      loadWords();
+      loadRewardsConfig();
+    }
+    
+    // Só bloqueia se terminou de carregar E não é admin
+    if (!adminLoading && !isAdmin) {
+      toast.error("Acesso negado!");
+      navigate("/games");
     }
   }, [isAdmin, adminLoading, navigate]);
 
