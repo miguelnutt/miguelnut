@@ -1,25 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, cookie',
-  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const JWT_SECRET = Deno.env.get('JWT_SECRET') || 'your-super-secret-jwt-key-change-this';
-
-async function verifyJWT(token: string) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(JWT_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"]
-  );
-
-  return await verify(token, key);
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,44 +11,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verificar autenticação via token customizado Twitch
-    const authHeader = req.headers.get('authorization') || '';
-    const tokenMatch = authHeader.match(/Bearer (.+)/);
-    
-    if (!tokenMatch) {
-      return new Response(
-        JSON.stringify({ error: 'Token de autenticação não fornecido' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401 
-        }
-      );
-    }
-
-    const token = tokenMatch[1];
-    let payload;
-    
-    try {
-      payload = await verifyJWT(token);
-      console.log('✅ Usuário autenticado via Twitch JWT');
-    } catch (error) {
-      console.error('❌ Erro ao verificar JWT:', error);
-      return new Response(
-        JSON.stringify({ error: 'Token inválido ou expirado' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401 
-        }
-      );
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { quantidade, personagem, userId } = await req.json();
 
-    console.log('📝 Processando resgate:', { quantidade, personagem, userId });
+    console.log('📝 Processando resgate para userId:', userId);
 
     // Validar quantidade (múltiplo de 25)
     if (!quantidade || quantidade <= 0 || quantidade % 25 !== 0) {
@@ -106,6 +59,7 @@ Deno.serve(async (req) => {
     }
 
     if (!balance) {
+      console.log('❌ Saldo não encontrado para userId:', userId);
       return new Response(
         JSON.stringify({ error: 'Saldo não encontrado' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -160,7 +114,7 @@ Deno.serve(async (req) => {
       motivo: `Resgate solicitado - ${personagem}`
     });
 
-    console.log(`✅ Resgate criado: ${resgate.id} - ${quantidade} Rubini Coins para ${personagem} (user: ${userId})`);
+    console.log(`✅ Resgate criado com sucesso: ${resgate.id} - ${quantidade} RC para ${personagem}`);
 
     return new Response(
       JSON.stringify({ 
