@@ -37,7 +37,12 @@ export function useDailyRewardStatus(userId: string | undefined) {
   }, [userId]);
 
   const checkRewardStatus = async () => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('[DailyReward] Sem userId, pulando verificação');
+      return;
+    }
+
+    console.log('[DailyReward] Verificando status para userId:', userId);
 
     try {
       const response = await fetch(
@@ -49,13 +54,22 @@ export function useDailyRewardStatus(userId: string | undefined) {
         }
       );
 
+      console.log('[DailyReward] Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('[DailyReward] Resposta da API:', data);
+        console.log('[DailyReward] pode_resgatar:', data.pode_resgatar);
+        
         // Se pode resgatar, mostrar notificação
-        setHasRewardAvailable(data.pode_resgatar === true);
+        const hasReward = data.pode_resgatar === true;
+        console.log('[DailyReward] hasRewardAvailable será:', hasReward);
+        setHasRewardAvailable(hasReward);
+      } else {
+        console.error('[DailyReward] Erro na resposta:', await response.text());
       }
     } catch (error) {
-      console.error("Erro ao verificar status da recompensa:", error);
+      console.error("[DailyReward] Erro ao verificar status da recompensa:", error);
     } finally {
       setLoading(false);
     }
