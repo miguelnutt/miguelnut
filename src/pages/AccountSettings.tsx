@@ -54,6 +54,7 @@ export default function AccountSettings() {
   const [tickets, setTickets] = useState<number>(0);
   const [loadingSaldos, setLoadingSaldos] = useState(false);
   const [resgateDialogOpen, setResgateDialogOpen] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -78,6 +79,8 @@ export default function AccountSettings() {
         .maybeSingle();
 
       if (!profiles?.id) return;
+      
+      setProfileUserId(profiles.id);
 
       // Buscar Rubini Coins
       const { data: rubiniData } = await supabase
@@ -819,11 +822,11 @@ export default function AccountSettings() {
         onOpenChange={setShowSpecialDialog}
       />
       
-      {resgateDialogOpen && twitchUser && (
+      {resgateDialogOpen && twitchUser && profileUserId && (
         <RubiniCoinsResgateDialog
           open={resgateDialogOpen}
           onOpenChange={setResgateDialogOpen}
-          userId={twitchUser.id}
+          userId={profileUserId}
           saldoAtual={rubiniCoins}
           onResgateSuccess={carregarSaldos}
         />
