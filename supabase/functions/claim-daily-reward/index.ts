@@ -176,50 +176,57 @@ serve(async (req) => {
       );
     }
 
-    // Creditar pontos na StreamElements
-    const seToken = Deno.env.get('STREAMELEMENTS_JWT_TOKEN');
-    const seChannelId = Deno.env.get('STREAMELEMENTS_CHANNEL_ID');
+    // Creditar pontos na StreamElements usando função centralizada
+    console.log(`Creditando ${pontos} pontos para ${profile.twitch_username} via sync`);
 
-    if (!seToken || !seChannelId) {
-      console.error('StreamElements não configurado');
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          diaAtual,
-          pontos,
-          warning: 'Recompensa registrada mas StreamElements não configurado'
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    try {
+      const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
+        body: {
+          username: profile.twitch_username,
+          points: pontos,
+          tipo_operacao: 'daily_reward',
+          referencia_id: userId,
+          user_id: userId
+        }
+      });
 
-    console.log(`Creditando ${pontos} pontos para ${profile.twitch_username}`);
-
-    const seResponse = await fetch(
-      `https://api.streamelements.com/kappa/v2/points/${seChannelId}/${profile.twitch_username}/${pontos}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${seToken}`,
-          'Content-Type': 'application/json',
-        },
+      if (syncError) {
+        console.error('Erro ao sincronizar com StreamElements:', syncError);
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            diaAtual,
+            pontos,
+            warning: 'Recompensa registrada mas erro ao creditar pontos'
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    );
 
-    if (!seResponse.ok) {
-      console.error(`StreamElements API error: ${seResponse.status}`);
+      console.log('Pontos creditados e verificados com sucesso:', syncData);
+
       return new Response(
         JSON.stringify({ 
           success: true, 
           diaAtual,
           pontos,
-          warning: 'Recompensa registrada mas erro ao creditar pontos'
+          message: `${pontos} pontos creditados com sucesso!`,
+          syncResult: syncData
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (seError: any) {
+      console.error('Erro crítico ao sincronizar pontos:', seError);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          diaAtual,
+          pontos,
+          warning: 'Recompensa registrada mas falha na sincronização'
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('Pontos creditados com sucesso na StreamElements');
 
     return new Response(
       JSON.stringify({ 

@@ -257,7 +257,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       }
 
       // Salvar sorteio com prêmio
-      const { error: raffleError } = await supabase
+      const { data: raffleData, error: raffleError } = await supabase
         .from("raffles")
         .insert({
           vencedor_id: vencedor.user_id,
@@ -269,22 +269,28 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
             nome: p.nome,
             tickets: p.tickets
           }))
-        });
+        })
+        .select()
+        .single();
 
       if (raffleError) throw raffleError;
 
       // Se for Pontos de Loja, sincronizar com StreamElements
-      if (tipoPremio === "Pontos de Loja") {
+      if (tipoPremio === "Pontos de Loja" && raffleData) {
         try {
           await supabase.functions.invoke('sync-streamelements-points', {
             body: {
               username: vencedor.nome,
-              points: valorPremio
+              points: valorPremio,
+              tipo_operacao: 'raffle',
+              referencia_id: raffleData.id,
+              user_id: vencedor.user_id
             }
           });
-          console.log(`StreamElements sync: ${vencedor.nome} ganhou ${valorPremio} pontos de loja`);
+          console.log(`StreamElements sync com logs: ${vencedor.nome} ganhou ${valorPremio} pontos de loja`);
         } catch (seError: any) {
           console.error("StreamElements sync error:", seError);
+          toast.error("Erro ao sincronizar pontos com StreamElements");
         }
       }
 
