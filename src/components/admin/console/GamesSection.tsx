@@ -5,7 +5,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TibiaTermoAdminPanel } from "@/components/admin/TibiaTermoAdminPanel";
+import { TibiaTermoAdminPanel } from "../TibiaTermoAdminPanel";
 import { Gamepad2 } from "lucide-react";
 
 export function GamesSection() {

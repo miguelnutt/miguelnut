@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase-helper";
 import { 
@@ -8,22 +9,24 @@ import {
   XCircle, 
   Clock, 
   TrendingUp, 
-  AlertCircle,
+  Coins,
+  Gamepad2,
   RefreshCw,
-  Radio
+  AlertTriangle
 } from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
+
+interface Stats {
+  twitchLogin: { status: string; lastCheck: string };
+  streamElements: { sent: number; confirmed: number; pending: number; failed: number };
+  dailyRewards: { collected: number; failed: number };
+  resgates: { pending: number; processing: number; delivered: number; rejected: number };
+  tibiaTermo: { participants: number; hitRate: number };
+}
 
 export function OverviewSection() {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    twitchStatus: "OK" as "OK" | "Degradado" | "Falha",
-    seSync: { pendentes: 0, falhos: 0, confirmados: 0 },
-    dailyToday: { coletas: 0, falhas: 0 },
-    resgates: { pendentes: 0, processando: 0, entregues: 0, recusados: 0 },
-    tibiaTermo: { participantes: 0, taxaAcerto: 0 }
-  });
+  const [stats, setStats] = useState<Stats | null>(null);
   const [alerts, setAlerts] = useState<string[]>([]);
 
   useEffect(() => {
@@ -33,86 +36,72 @@ export function OverviewSection() {
   const loadStats = async () => {
     setLoading(true);
     try {
-      // Data de hoje (Brasília)
-      const now = new Date();
-      const brasiliaDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-      const dateStr = brasiliaDate.toISOString().split('T')[0];
-      const dataLimite = new Date();
-      dataLimite.setHours(dataLimite.getHours() - 24);
-
-      // StreamElements Sync
-      const { data: seLogs } = await supabase
+      const today = new Date().toISOString().split('T')[0];
+      
+      // StreamElements stats
+      const { data: seData } = await supabase
         .from('streamelements_sync_logs')
-        .select('*')
-        .gte('created_at', dataLimite.toISOString());
-
+        .select('status')
+        .gte('created_at', today);
+      
       const seStats = {
-        pendentes: seLogs?.filter(l => l.requer_reprocessamento).length || 0,
-        falhos: seLogs?.filter(l => !l.success || !l.saldo_verificado).length || 0,
-        confirmados: seLogs?.filter(l => l.success && l.saldo_verificado).length || 0
+        sent: seData?.length || 0,
+        confirmed: seData?.filter(s => s.status === 'confirmed').length || 0,
+        pending: seData?.filter(s => s.status === 'pending').length || 0,
+        failed: seData?.filter(s => s.status === 'failed').length || 0,
       };
 
-      // Diária hoje
-      const { data: dailyLogs } = await supabase
+      // Daily rewards stats
+      const { data: drData } = await supabase
         .from('daily_rewards_history')
-        .select('*')
-        .gte('created_at', `${dateStr}T00:00:00`)
-        .lt('created_at', `${dateStr}T23:59:59`);
-
-      const dailyStats = {
-        coletas: dailyLogs?.length || 0,
-        falhas: 0 // TODO: implement failure tracking
+        .select('success')
+        .gte('claimed_at', today);
+      
+      const drStats = {
+        collected: drData?.filter(d => d.success).length || 0,
+        failed: drData?.filter(d => !d.success).length || 0,
       };
 
-      // Resgates
-      const { data: resgates } = await supabase
+      // Resgates stats
+      const { data: resgatesData } = await supabase
         .from('rubini_coins_resgates')
         .select('status');
-
+      
       const resgatesStats = {
-        pendentes: resgates?.filter(r => r.status === 'PENDENTE').length || 0,
-        processando: resgates?.filter(r => r.status === 'PROCESSANDO').length || 0,
-        entregues: resgates?.filter(r => r.status === 'ENTREGUE').length || 0,
-        recusados: resgates?.filter(r => r.status === 'RECUSADO').length || 0
+        pending: resgatesData?.filter(r => r.status === 'pendente').length || 0,
+        processing: resgatesData?.filter(r => r.status === 'processando').length || 0,
+        delivered: resgatesData?.filter(r => r.status === 'entregue').length || 0,
+        rejected: resgatesData?.filter(r => r.status === 'recusado').length || 0,
       };
 
-      // TibiaTermo
-      const { data: tibiaGames } = await supabase
+      // TibiaTermo stats
+      const { data: ttData } = await supabase
         .from('tibiatermo_user_games')
-        .select('acertou')
-        .eq('data_jogo', dateStr);
-
-      const tibiaStats = {
-        participantes: tibiaGames?.length || 0,
-        taxaAcerto: tibiaGames?.length 
-          ? Math.round((tibiaGames.filter(g => g.acertou).length / tibiaGames.length) * 100)
-          : 0
+        .select('guesses_count, won')
+        .gte('created_at', today);
+      
+      const ttStats = {
+        participants: ttData?.length || 0,
+        hitRate: ttData?.length ? (ttData.filter(t => t.won).length / ttData.length) * 100 : 0,
       };
 
       setStats({
-        twitchStatus: "OK",
-        seSync: seStats,
-        dailyToday: dailyStats,
+        twitchLogin: { status: 'OK', lastCheck: new Date().toLocaleString('pt-BR') },
+        streamElements: seStats,
+        dailyRewards: drStats,
         resgates: resgatesStats,
-        tibiaTermo: tibiaStats
+        tibiaTermo: ttStats,
       });
 
-      // Gerar alertas
+      // Generate alerts
       const newAlerts: string[] = [];
-      if (seStats.pendentes > 10) {
-        newAlerts.push(`StreamElements: ${seStats.pendentes} eventos pendentes na fila`);
-      }
-      if (seStats.falhos > 5) {
-        newAlerts.push(`StreamElements: ${seStats.falhos} falhas de sincronização`);
-      }
-      if (resgatesStats.pendentes > 5) {
-        newAlerts.push(`${resgatesStats.pendentes} resgates aguardando processamento`);
-      }
+      if (seStats.failed > 10) newAlerts.push(`${seStats.failed} falhas no StreamElements hoje`);
+      if (resgatesStats.pending > 5) newAlerts.push(`${resgatesStats.pending} resgates pendentes`);
       setAlerts(newAlerts);
 
-    } catch (error: any) {
-      console.error("Erro ao carregar estatísticas:", error);
-      toast.error("Erro ao carregar dados da visão geral");
+    } catch (error) {
+      console.error('Erro ao carregar stats:', error);
+      toast({ title: "Erro ao carregar estatísticas", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -120,155 +109,160 @@ export function OverviewSection() {
 
   const handleReconciliarSE = async () => {
     try {
-      const { error } = await supabase.functions.invoke('reconciliar-streamelements');
-      if (error) throw error;
-      toast.success("Reconciliação iniciada com sucesso");
+      toast({ title: "Reconciliando StreamElements..." });
+      await supabase.functions.invoke('reconciliar-streamelements');
+      toast({ title: "Reconciliação concluída!" });
       loadStats();
-    } catch (error: any) {
-      toast.error("Erro ao reconciliar: " + error.message);
+    } catch (error) {
+      toast({ title: "Erro na reconciliação", variant: "destructive" });
     }
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-40" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>Erro ao carregar estatísticas</AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Alertas */}
       {alerts.length > 0 && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <div className="space-y-1">
-              {alerts.map((alert, i) => (
-                <div key={i}>• {alert}</div>
-              ))}
-            </div>
+            {alerts.map((alert, i) => (
+              <div key={i}>{alert}</div>
+            ))}
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Botões rápidos */}
-      <div className="flex gap-2 flex-wrap">
-        <Button onClick={handleReconciliarSE} variant="outline">
-          <RefreshCw className="mr-2 h-4 w-4" />
+      <div className="flex gap-2">
+        <Button onClick={handleReconciliarSE} size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
           Reconciliar SE agora
         </Button>
-        <Button onClick={loadStats} variant="outline">
-          <RefreshCw className="mr-2 h-4 w-4" />
+        <Button onClick={loadStats} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
           Atualizar dados
         </Button>
       </div>
 
-      {/* Cards de status */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Status Login Twitch */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Twitch Login */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status Login Twitch</CardTitle>
-            <Radio className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              Login Twitch
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center space-x-2">
-              <Badge variant={stats.twitchStatus === "OK" ? "default" : "destructive"}>
-                {stats.twitchStatus}
-              </Badge>
-              {stats.twitchStatus === "OK" && (
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Sistema de autenticação operacional
+            <p className="text-2xl font-bold text-green-600">{stats.twitchLogin.status}</p>
+            <p className="text-xs text-muted-foreground">Última verificação: {stats.twitchLogin.lastCheck}</p>
+          </CardContent>
+        </Card>
+
+        {/* StreamElements - Confirmados */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              SE: Confirmados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{stats.streamElements.confirmed}</p>
+            <p className="text-xs text-muted-foreground">de {stats.streamElements.sent} enviados hoje</p>
+          </CardContent>
+        </Card>
+
+        {/* StreamElements - Pendentes */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Clock className="h-4 w-4 text-yellow-500" />
+              SE: Pendentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-yellow-600">{stats.streamElements.pending}</p>
+            <p className="text-xs text-muted-foreground">aguardando confirmação</p>
+          </CardContent>
+        </Card>
+
+        {/* StreamElements - Falhos */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-red-500" />
+              SE: Falhas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-red-600">{stats.streamElements.failed}</p>
+            <p className="text-xs text-muted-foreground">erros hoje</p>
+          </CardContent>
+        </Card>
+
+        {/* Daily Rewards */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-blue-500" />
+              Diária (Hoje)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{stats.dailyRewards.collected}</p>
+            <p className="text-xs text-muted-foreground">{stats.dailyRewards.failed} falhas</p>
+          </CardContent>
+        </Card>
+
+        {/* Resgates - Pendentes */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Coins className="h-4 w-4 text-yellow-500" />
+              Resgates Pendentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-yellow-600">{stats.resgates.pending}</p>
+            <p className="text-xs text-muted-foreground">
+              {stats.resgates.processing} processando | {stats.resgates.delivered} entregues
             </p>
-          </CardContent>
-        </Card>
-
-        {/* StreamElements Sync */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">StreamElements Sync</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Confirmados hoje:</span>
-                <span className="font-bold text-green-600">{stats.seSync.confirmados}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Pendentes:</span>
-                <span className="font-bold text-yellow-600">{stats.seSync.pendentes}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Falhos:</span>
-                <span className="font-bold text-red-600">{stats.seSync.falhos}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Diária hoje */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Diária Hoje</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Total de coletas:</span>
-                <span className="font-bold">{stats.dailyToday.coletas}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Falhas:</span>
-                <span className="font-bold text-red-600">{stats.dailyToday.falhas}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Resgates Rubini Coins */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resgates Rubini Coins</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Pendentes:</span>
-                <span className="font-bold text-yellow-600">{stats.resgates.pendentes}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Processando:</span>
-                <span className="font-bold text-blue-600">{stats.resgates.processando}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Entregues:</span>
-                <span className="font-bold text-green-600">{stats.resgates.entregues}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Recusados:</span>
-                <span className="font-bold text-red-600">{stats.resgates.recusados}</span>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
         {/* TibiaTermo */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">TibiaTermo Hoje</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Gamepad2 className="h-4 w-4 text-purple-500" />
+              TibiaTermo (Hoje)
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Participantes:</span>
-                <span className="font-bold">{stats.tibiaTermo.participantes}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Taxa de acerto:</span>
-                <span className="font-bold text-green-600">{stats.tibiaTermo.taxaAcerto}%</span>
-              </div>
-            </div>
+            <p className="text-2xl font-bold">{stats.tibiaTermo.participants}</p>
+            <p className="text-xs text-muted-foreground">
+              Taxa de acerto: {stats.tibiaTermo.hitRate.toFixed(1)}%
+            </p>
           </CardContent>
         </Card>
       </div>

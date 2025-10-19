@@ -253,7 +253,7 @@ export const Navbar = () => {
               Console de Administração
             </DialogTitle>
           </DialogHeader>
-          <AdminConsolePanel />
+          <AdminConsolePanel open={showAdminPanel} onOpenChange={setShowAdminPanel} />
         </DialogContent>
       </Dialog>
 

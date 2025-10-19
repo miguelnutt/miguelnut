@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download } from "lucide-react";
 
 export function LogsSection() {
@@ -17,69 +11,73 @@ export function LogsSection() {
   const [userFilter, setUserFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
 
+  const handleExportCSV = () => {
+    // Implementar exportação de logs
+    console.log("Exportando logs...", { dateFilter, userFilter, typeFilter });
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Filtros de Auditoria</CardTitle>
-          <CardDescription>
-            Filtre logs por data, usuário e tipo de ação
-          </CardDescription>
+          <CardTitle>Filtros de Logs</CardTitle>
+          <CardDescription>Filtre e exporte logs de auditoria</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Data (Brasília)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="date-filter">Data (Brasília)</Label>
               <Input
+                id="date-filter"
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
               />
             </div>
-            <div>
-              <Label>Usuário</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="user-filter">Usuário</Label>
               <Input
-                placeholder="Nome do usuário..."
+                id="user-filter"
+                placeholder="Nome ou ID..."
                 value={userFilter}
                 onChange={(e) => setUserFilter(e.target.value)}
               />
             </div>
-            <div>
-              <Label>Tipo de Ação</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="type-filter">Tipo de Ação</Label>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
+                <SelectTrigger id="type-filter">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
                   <SelectItem value="login">Login</SelectItem>
-                  <SelectItem value="daily">Diária</SelectItem>
+                  <SelectItem value="diaria">Diária</SelectItem>
                   <SelectItem value="resgate">Resgate</SelectItem>
                   <SelectItem value="se">StreamElements</SelectItem>
-                  <SelectItem value="game">Jogo</SelectItem>
+                  <SelectItem value="jogo">Jogo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar CSV
-            </Button>
-          </div>
+
+          <Button onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Logs de Auditoria</CardTitle>
-          <CardDescription>
-            Registros de ações administrativas e do sistema
-          </CardDescription>
+          <CardDescription>Visualização detalhada em desenvolvimento</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Visualização detalhada de logs em desenvolvimento.
+            A tabela de logs será exibida aqui com paginação e detalhes de cada ação
           </p>
         </CardContent>
       </Card>

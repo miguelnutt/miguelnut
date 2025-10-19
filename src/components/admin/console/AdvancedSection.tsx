@@ -1,8 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MaintenanceSection } from "@/components/admin/MaintenanceSection";
-import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection";
-import { PromotionalBarConfig } from "@/components/admin/PromotionalBarConfig";
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -20,19 +16,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { MaintenanceSection } from "../MaintenanceSection";
+import { RankingDisplaySection } from "../RankingDisplaySection";
+import { PromotionalBarConfig } from "../PromotionalBarConfig";
+import { Settings, AlertTriangle } from "lucide-react";
 
 export function AdvancedSection() {
+  const [confirmText, setConfirmText] = useState("");
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
-            <CardTitle>Operações Avançadas</CardTitle>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Operações Avançadas
+          </CardTitle>
           <CardDescription>
-            Configurações e ações que devem ser usadas com cuidado
+            Configurações e operações que requerem atenção especial
           </CardDescription>
         </CardHeader>
       </Card>
@@ -65,42 +68,43 @@ export function AdvancedSection() {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="dangerous">
+        <AccordionItem value="critical">
           <AccordionTrigger className="text-lg font-semibold text-red-600">
-            Operações Críticas
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Operações Críticas
+            </div>
           </AccordionTrigger>
           <AccordionContent>
-            <Card>
+            <Card className="border-red-500">
               <CardHeader>
-                <CardTitle>Ações Irreversíveis</CardTitle>
+                <CardTitle className="text-red-600">⚠️ Zona de Perigo</CardTitle>
                 <CardDescription>
-                  Estas ações não podem ser desfeitas. Use com extremo cuidado.
+                  Estas operações são irreversíveis e podem afetar dados de produção
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive">
-                      Limpar Todo Histórico
+                      Limpar Todo Histórico (IRREVERSÍVEL)
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esta ação irá APAGAR PERMANENTEMENTE todo o histórico do sistema.
-                        Esta operação não pode ser desfeita.
-                        <br /><br />
-                        Digite <strong>CONFIRMAR</strong> para prosseguir.
+                        Esta ação NÃO pode ser desfeita. Isso irá permanentemente deletar
+                        todo o histórico e remover os dados dos servidores.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() => {/* Implementar com confirmação dupla */}}
+                        className="bg-red-600"
+                        disabled={confirmText !== "CONFIRMAR"}
                       >
-                        Executar
+                        Confirmar Exclusão
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

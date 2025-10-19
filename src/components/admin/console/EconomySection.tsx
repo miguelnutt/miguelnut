@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AdminRubiniCoinsResgates } from "@/components/admin/AdminRubiniCoinsResgates";
-import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
-import { AdminRubiniCoinsHistory } from "@/components/admin/AdminRubiniCoinsHistory";
+import { AdminRubiniCoinsResgates } from "../AdminRubiniCoinsResgates";
+import { AdminManageRubiniCoins } from "../AdminManageRubiniCoins";
+import { AdminRubiniCoinsHistory } from "../AdminRubiniCoinsHistory";
 
 export function EconomySection() {
   return (

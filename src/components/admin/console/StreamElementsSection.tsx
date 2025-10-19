@@ -1,14 +1,15 @@
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { StreamElementsMonitor } from "@/components/admin/StreamElementsMonitor";
-import { StreamElementsLogsDialog } from "@/components/admin/StreamElementsLogsDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { StreamElementsMonitor } from "../StreamElementsMonitor";
+import { StreamElementsLogsDialog } from "../StreamElementsLogsDialog";
+import { Radio, FileText } from "lucide-react";
 
 export function StreamElementsSection() {
   const [showLogsDialog, setShowLogsDialog] = useState(false);
@@ -18,7 +19,10 @@ export function StreamElementsSection() {
       <Accordion type="single" collapsible className="w-full" defaultValue="monitor">
         <AccordionItem value="monitor">
           <AccordionTrigger className="text-lg font-semibold">
-            Monitor de Sincronização
+            <div className="flex items-center gap-2">
+              <Radio className="h-5 w-5" />
+              Monitor de Sincronização
+            </div>
           </AccordionTrigger>
           <AccordionContent>
             <StreamElementsMonitor />
@@ -27,32 +31,32 @@ export function StreamElementsSection() {
 
         <AccordionItem value="config">
           <AccordionTrigger className="text-lg font-semibold">
-            Configuração e Status
+            <div className="flex items-center gap-2">
+              <Radio className="h-5 w-5" />
+              Configuração e Status
+            </div>
           </AccordionTrigger>
           <AccordionContent>
             <Card>
               <CardHeader>
-                <CardTitle>Configuração StreamElements</CardTitle>
+                <CardTitle>Status da Integração</CardTitle>
                 <CardDescription>
-                  Informações sobre a integração com StreamElements
+                  Informações sobre a conexão com StreamElements
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium">Status da Integração</p>
-                    <p className="text-sm text-muted-foreground">Operacional</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Última Verificação</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date().toLocaleString('pt-BR')}
-                    </p>
-                  </div>
-                  <Button onClick={() => setShowLogsDialog(true)} variant="outline">
-                    Ver Logs Detalhados
-                  </Button>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Status: <span className="text-green-600 font-semibold">Conectado</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Última verificação: {new Date().toLocaleString('pt-BR')}
+                  </p>
                 </div>
+                <Button onClick={() => setShowLogsDialog(true)}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Ver Logs Completos
+                </Button>
               </CardContent>
             </Card>
           </AccordionContent>
@@ -60,19 +64,22 @@ export function StreamElementsSection() {
 
         <AccordionItem value="test">
           <AccordionTrigger className="text-lg font-semibold">
-            Teste Rápido
+            <div className="flex items-center gap-2">
+              <Radio className="h-5 w-5" />
+              Teste Rápido
+            </div>
           </AccordionTrigger>
           <AccordionContent>
             <Card>
               <CardHeader>
-                <CardTitle>Teste de Sincronização</CardTitle>
+                <CardTitle>Teste de Integração</CardTitle>
                 <CardDescription>
-                  Simule um crédito de teste para verificar a integração
+                  Execute testes rápidos de conectividade
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Em desenvolvimento. Em breve você poderá testar o fluxo completo de crédito.
+                  Funcionalidade em desenvolvimento
                 </p>
               </CardContent>
             </Card>
@@ -80,7 +87,7 @@ export function StreamElementsSection() {
         </AccordionItem>
       </Accordion>
 
-      <StreamElementsLogsDialog
+      <StreamElementsLogsDialog 
         open={showLogsDialog}
         onOpenChange={setShowLogsDialog}
       />
