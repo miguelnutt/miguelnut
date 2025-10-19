@@ -39,9 +39,9 @@ export function OverviewSection() {
     try {
       const { start, end } = getTodayRangeBrasilia();
       
-      // StreamElements stats
+      // StreamElements stats - usar VIEW normalizada
       const { data: seData, error: seError } = await supabase
-        .from('streamelements_sync_logs')
+        .from('se_sync_logs_v')
         .select('status')
         .gte('created_at', start)
         .lt('created_at', end);
