@@ -186,8 +186,17 @@ export function StreamElementsLogsDialog({ open, onOpenChange }: StreamElementsL
               <TableBody>
                 {logs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">
-                      Nenhum log encontrado para esta data
+                    <TableCell colSpan={9} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <AlertCircle className="h-8 w-8" />
+                        <p className="font-medium">Nenhum log encontrado para esta data</p>
+                        <p className="text-sm">
+                          O sistema de logs foi implementado recentemente e só registra operações feitas após sua ativação.
+                        </p>
+                        <p className="text-xs">
+                          Tente selecionar a data de hoje ou verifique se houve operações de pontos nesta data.
+                        </p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
