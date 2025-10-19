@@ -86,10 +86,12 @@ Deno.serve(async (req) => {
 
       console.log('Perfil atualizado:', existingProfile.id);
     } else {
-      // Criar novo perfil
+      // Criar novo perfil com UUID gerado
+      const newId = crypto.randomUUID();
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
+          id: newId,
           nome: (twitchUser.display_name as string) || (twitchUser.login as string),
           twitch_username: twitchUser.login as string,
           nome_personagem: nome_personagem.trim()
