@@ -28,6 +28,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
   const [claiming, setClaiming] = useState(false);
   const [userLogin, setUserLogin] = useState<UserDailyLogin | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [twitchUsername, setTwitchUsername] = useState<string | null>(null);
   const [nextReward, setNextReward] = useState<number>(25);
   const [streakPerdida, setStreakPerdida] = useState(false);
   const [diasPerdidos, setDiasPerdidos] = useState(0);
@@ -37,49 +38,67 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
   // Único useEffect - recarregar sempre que abrir
   useEffect(() => {
-    if (open && twitchUser) {
+    if (open) {
       console.log('[DailyReward] Dialog aberto, carregando dados...');
       loadData();
     }
-  }, [open, twitchUser]);
+  }, [open]);
 
   const loadData = async () => {
-    if (!twitchUser) {
-      console.log('[DailyReward] Usuário Twitch não encontrado');
-      return;
-    }
-
     console.log('[DailyReward] ========== CARREGANDO DADOS ==========');
-    console.log('[DailyReward] Twitch User:', twitchUser.login);
     
     setLoading(true);
     try {
-      console.log('[DailyReward] Buscando perfil para:', twitchUser.login);
-      
-      // Buscar perfil do usuário
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('twitch_username', twitchUser.login)
-        .maybeSingle();
+      let profileId: string | null = null;
+      let username: string | null = null;
 
-      if (profileError) {
-        console.error('[DailyReward] Erro ao buscar perfil:', profileError);
-        toast.error("Erro ao buscar perfil");
-        return;
+      // Tentar usar twitch user primeiro
+      if (twitchUser?.login) {
+        console.log('[DailyReward] Usando Twitch User:', twitchUser.login);
+        
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('twitch_username', twitchUser.login)
+          .maybeSingle();
+
+        if (profile) {
+          profileId = profile.id;
+          username = twitchUser.login;
+        }
       }
 
-      if (!profile) {
-        console.error('[DailyReward] Perfil não encontrado para:', twitchUser.login);
-        toast.error("Perfil não encontrado");
-        return;
+      // Se não encontrou, tentar pela sessão
+      if (!profileId) {
+        console.log('[DailyReward] Twitch user não disponível, buscando pela sessão...');
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) {
+          toast.error("Você precisa estar logado");
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, twitch_username')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (!profile) {
+          toast.error("Perfil não encontrado");
+          return;
+        }
+
+        profileId = profile.id;
+        username = profile.twitch_username || null;
       }
 
-      console.log('[DailyReward] ✓ Perfil encontrado - ID:', profile.id);
-      setUserId(profile.id);
+      console.log('[DailyReward] ✓ Perfil encontrado - ID:', profileId, 'Username:', username);
+      setUserId(profileId);
+      setTwitchUsername(username);
 
       // Buscar dados de login via edge function (bypassa RLS)
-      console.log('[DailyReward] Buscando dados de login via edge function para user_id:', profile.id);
+      console.log('[DailyReward] Buscando dados de login via edge function para user_id:', profileId);
       
       const token = localStorage.getItem('twitch_token');
       const statusResponse = await fetch(
@@ -91,7 +110,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
             'Authorization': `Bearer ${token}`,
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ userId: profile.id }),
+          body: JSON.stringify({ userId: profileId }),
         }
       );
 
@@ -126,23 +145,25 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
           setDiasPerdidos(diasPerdidos);
           setCustoRestauracao(custo);
           
-          // Buscar pontos disponíveis do usuário
-          const pontosResponse = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-streamelements-points`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              },
-              body: JSON.stringify({ username: twitchUser.login }),
-            }
-          );
+          // Buscar pontos disponíveis do usuário (só se tiver username)
+          if (username) {
+            const pontosResponse = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-streamelements-points`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                },
+                body: JSON.stringify({ username }),
+              }
+            );
           
-          if (pontosResponse.ok) {
-            const pontosData = await pontosResponse.json();
-            setPontosDisponiveis(pontosData.points || 0);
+            if (pontosResponse.ok) {
+              const pontosData = await pontosResponse.json();
+              setPontosDisponiveis(pontosData.points || 0);
+            }
           }
         } else {
           setStreakPerdida(false);
@@ -256,7 +277,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
   };
 
   const handleRestaurarSequencia = async () => {
-    if (!userId || !twitchUser) {
+    if (!userId || !twitchUsername) {
       toast.error("Usuário não identificado");
       return;
     }
@@ -281,7 +302,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            username: twitchUser.login,
+            username: twitchUsername,
             amount: -custoRestauracao,
             reason: `Restauração de sequência (${diasPerdidos} dias perdidos)`
           }),

@@ -4,10 +4,25 @@ import { supabase } from "@/lib/supabase-helper";
 export function useDailyRewardStatus(twitchUsername: string | undefined) {
   const [hasRewardAvailable, setHasRewardAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userIdFromSession, setUserIdFromSession] = useState<string | null>(null);
+
+  // Buscar userId da sessão se não tiver twitchUsername
+  useEffect(() => {
+    const getUserIdFromSession = async () => {
+      if (twitchUsername) return;
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setUserIdFromSession(session.user.id);
+      }
+    };
+    
+    getUserIdFromSession();
+  }, [twitchUsername]);
 
   useEffect(() => {
-    if (!twitchUsername) {
-      console.log('[DailyReward] Sem twitchUsername, pulando verificação');
+    // Só verificar se tiver twitchUsername OU userId da sessão
+    if (!twitchUsername && !userIdFromSession) {
       setHasRewardAvailable(false);
       setLoading(false);
       return;
@@ -39,32 +54,45 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [twitchUsername]);
+  }, [twitchUsername, userIdFromSession]);
 
   const checkRewardStatus = async () => {
-    if (!twitchUsername) {
-      console.log('[DailyReward] Sem twitchUsername, pulando verificação');
-      return;
-    }
-
-    console.log('[DailyReward] Verificando status para twitchUsername:', twitchUsername);
-
     try {
-      // Buscar perfil pelo twitch_username
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("twitch_username", twitchUsername)
-        .maybeSingle();
+      let userId: string | null = null;
 
-      if (!profile?.id) {
-        console.log('[DailyReward] Perfil não encontrado');
+      // Tentar buscar perfil por twitch_username primeiro
+      if (twitchUsername) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("twitch_username", twitchUsername)
+          .maybeSingle();
+        
+        if (profile) {
+          userId = profile.id;
+        }
+      }
+
+      // Se não encontrou por twitchUsername, usar userId da sessão
+      if (!userId && userIdFromSession) {
+        userId = userIdFromSession;
+      }
+
+      // Se ainda não tem userId, não fazer nada
+      if (!userId) {
         setHasRewardAvailable(false);
         setLoading(false);
         return;
       }
 
-      console.log('[DailyReward] Perfil encontrado, userId:', profile.id);
+      console.log('[DailyReward] Verificando recompensa para userId:', userId);
+
+      const token = localStorage.getItem('twitch_token');
+      if (!token) {
+        setHasRewardAvailable(false);
+        setLoading(false);
+        return;
+      }
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-daily-login-status`,
@@ -72,9 +100,10 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ userId: profile.id }),
+          body: JSON.stringify({ userId }),
         }
       );
 
