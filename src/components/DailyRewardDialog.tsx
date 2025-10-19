@@ -38,10 +38,13 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
   // Único useEffect - recarregar sempre que abrir E quando twitchAuth terminar de carregar
   useEffect(() => {
-    if (open && !twitchLoading) {
-      console.log('[DailyReward] Dialog aberto e auth carregado, carregando dados...');
-      loadData();
+    // Guard: só executar quando não estiver loading e dialog estiver aberto
+    if (!open || twitchLoading) {
+      return;
     }
+    
+    console.log('[DailyReward] Dialog aberto e auth carregado, carregando dados...');
+    loadData();
   }, [open, twitchLoading]);
 
   const loadData = async () => {

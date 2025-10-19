@@ -38,8 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('[AuthContext] Iniciando hydrate...');
     
     try {
-      // 1. Buscar sessão do Supabase (admin via email)
-      const { data: { user: sessionUser }, error: sessionError } = await supabase.auth.getUser();
+      // 1. Buscar sessão do Supabase (admin via email) - usar getSession ao invés de getUser
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error('[AuthContext] Erro ao buscar sessão:', sessionError);
@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const sessionUser = session?.user || null;
       const sessionUserId = sessionUser?.id || null;
       console.log('[AuthContext] Session user ID:', sessionUserId);
 

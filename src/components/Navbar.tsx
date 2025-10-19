@@ -35,15 +35,6 @@ export const Navbar = () => {
     !twitchLoading ? twitchUser?.login : undefined
   );
 
-  // Log para debug
-  useEffect(() => {
-    console.log('=== NAVBAR DEBUG ===');
-    console.log('Session user ID:', session?.user?.id);
-    console.log('isAdmin:', isAdmin);
-    console.log('adminLoading:', adminLoading);
-    console.log('twitchUser:', twitchUser?.login);
-  }, [session, isAdmin, adminLoading, twitchUser]);
-
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
     if (savedTheme) {

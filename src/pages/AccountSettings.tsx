@@ -22,6 +22,7 @@ export default function AccountSettings() {
   const { user: twitchUser, loading: twitchLoading } = useTwitchAuth();
   const [loading, setLoading] = useState(true);
   const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [qrCode, setQrCode] = useState<string>("");
   const [totpSecret, setTotpSecret] = useState<string>("");
@@ -52,11 +53,11 @@ export default function AccountSettings() {
 
   useEffect(() => {
     // Só carregar quando twitchAuth terminar de carregar E tiver usuário
-    if (!twitchLoading && twitchUser) {
+    if (!twitchLoading && authReady && twitchUser) {
       loadTwitchUserProfile();
       carregarSaldos();
     }
-  }, [twitchUser, twitchLoading]);
+  }, [twitchUser, twitchLoading, authReady]);
 
   useEffect(() => {
     if (profileUserId) {
@@ -126,16 +127,17 @@ export default function AccountSettings() {
 
   const checkUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
       
-      if (user) {
+      if (session?.user) {
         await checkMfaStatus();
       }
     } catch (error) {
       console.error("Error checking user:", error);
     } finally {
       setLoading(false);
+      setAuthReady(true);
     }
   };
 
