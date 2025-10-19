@@ -101,25 +101,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate word exists in dictionary
-    const { data: validWord } = await supabase
-      .from('tibiatermo_words')
-      .select('palavra')
-      .eq('palavra', tentativa.toUpperCase())
-      .eq('ativa', true)
-      .maybeSingle();
-
-    if (!validWord) {
-      return new Response(JSON.stringify({ 
-        error: 'Palavra inválida',
-        invalid_word: true
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Add new attempt
+    // Add new attempt (aceita qualquer palavra)
     const novasTentativas = [...tentativasAtuais, tentativa.toUpperCase()];
     const acertou = tentativa.toUpperCase() === game.palavra_dia;
     const numTentativas = novasTentativas.length;
