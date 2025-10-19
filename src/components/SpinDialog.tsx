@@ -255,7 +255,10 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
             body: {
               username: nomeParaUsar,
-              points: pontosGanhos
+              points: pontosGanhos,
+              tipo_operacao: 'spin',
+              referencia_id: wheel.id,
+              user_id: userId
             }
           });
           

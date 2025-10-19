@@ -598,6 +598,62 @@ export type Database = {
         }
         Relationships: []
       }
+      streamelements_sync_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          points_added: number
+          referencia_id: string | null
+          saldo_antes: number | null
+          saldo_depois: number | null
+          saldo_verificado: boolean
+          success: boolean
+          tipo_operacao: string
+          user_id: string | null
+          username: string
+          verificado_em: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          points_added: number
+          referencia_id?: string | null
+          saldo_antes?: number | null
+          saldo_depois?: number | null
+          saldo_verificado?: boolean
+          success?: boolean
+          tipo_operacao: string
+          user_id?: string | null
+          username: string
+          verificado_em?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          points_added?: number
+          referencia_id?: string | null
+          saldo_antes?: number | null
+          saldo_depois?: number | null
+          saldo_verificado?: boolean
+          success?: boolean
+          tipo_operacao?: string
+          user_id?: string | null
+          username?: string
+          verificado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streamelements_sync_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tibiatermo_general_config: {
         Row: {
           bloquear_nova_partida: boolean

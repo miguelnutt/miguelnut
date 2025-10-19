@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Youtube } from "lucide-react";
+import { Youtube, FileText } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ import { AdminRubiniCoinsResgates } from "@/components/admin/AdminRubiniCoinsRes
 import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
 import { AdminRubiniCoinsHistory } from "@/components/admin/AdminRubiniCoinsHistory";
 import { PromotionalBarConfig } from "@/components/admin/PromotionalBarConfig";
+import { StreamElementsLogsDialog } from "@/components/admin/StreamElementsLogsDialog";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ export default function SiteSettings() {
   const [saving, setSaving] = useState(false);
   const [showSpecialDialog, setShowSpecialDialog] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [seLogsDialogOpen, setSeLogsDialogOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -273,7 +275,25 @@ export default function SiteSettings() {
             </CardContent>
           </Card>
 
-          {/* Seção 7: Configuração da Barra Promocional */}
+          {/* Seção 7: Logs StreamElements */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Logs de Sincronização StreamElements
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Acompanhe todos os pontos de loja enviados ao StreamElements com verificação automática de saldo.
+              </p>
+              <Button onClick={() => setSeLogsDialogOpen(true)}>
+                Ver Log Diário
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Seção 8: Configuração da Barra Promocional */}
           <PromotionalBarConfig />
 
           {/* Gerenciar Progresso dos Usuários */}
@@ -296,12 +316,16 @@ export default function SiteSettings() {
 
       {/* Dialogs de Gerenciamento */}
       <DailyRewardSpecialConfigDialog 
-        open={showSpecialDialog} 
+        open={showSpecialDialog}
         onOpenChange={setShowSpecialDialog}
       />
-      <ManageDailyRewardsDialog 
-        open={manageDialogOpen} 
+      <ManageDailyRewardsDialog
+        open={manageDialogOpen}
         onOpenChange={setManageDialogOpen}
+      />
+      <StreamElementsLogsDialog
+        open={seLogsDialogOpen}
+        onOpenChange={setSeLogsDialogOpen}
       />
     </div>
   );
