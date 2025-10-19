@@ -13,6 +13,7 @@ import History from "./pages/History";
 import Tickets from "./pages/Tickets";
 import Login from "./pages/Login";
 import AccountSettings from "./pages/AccountSettings";
+import AdminConsole from "./pages/AdminConsole";
 import TwitchCallback from "./pages/TwitchCallback";
 import SiteSettings from "./pages/SiteSettings";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/tickets" element={<Tickets />} />
             <Route path="/login" element={<Login />} />
             <Route path="/account" element={<AccountSettings />} />
+            <Route path="/admin" element={<AdminConsole />} />
             <Route path="/settings" element={<SiteSettings />} />
             <Route path="/auth/twitch/callback" element={<TwitchCallback />} />
             <Route path="*" element={<NotFound />} />
