@@ -10,9 +10,10 @@ import { TwitchLoginButton } from "@/components/TwitchLoginButton";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { AdminRubiniCoinsResgatesButton } from "@/components/admin/AdminRubiniCoinsResgatesButton";
 import { useDailyRewardStatus } from "@/hooks/useDailyRewardStatus";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AdminConsolePanel } from "@/components/AdminConsolePanel";
 import { Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -55,6 +56,17 @@ export const Navbar = () => {
     if (!isAdmin) {
       return; // Só admin pode abrir
     }
+    
+    // Verificar se está na rota raiz
+    if (window.location.pathname !== '/') {
+      toast({
+        title: "Console Admin indisponível",
+        description: "O Console de Administração só pode ser aberto a partir da página inicial.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setAdminPanelOpen(true);
   };
 
@@ -246,12 +258,19 @@ export const Navbar = () => {
 
       {/* Admin Panel Dialog */}
       <Dialog open={adminPanelOpen} onOpenChange={setAdminPanelOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="max-w-6xl max-h-[90vh] overflow-y-auto"
+          aria-labelledby="admin-console-title"
+          aria-describedby="admin-console-description"
+        >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle id="admin-console-title" className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-purple-600" />
               Console de Administração
             </DialogTitle>
+            <DialogDescription id="admin-console-description">
+              Gerencie todas as configurações do sistema
+            </DialogDescription>
           </DialogHeader>
           <AdminConsolePanel open={adminPanelOpen} onOpenChange={setAdminPanelOpen} />
         </DialogContent>

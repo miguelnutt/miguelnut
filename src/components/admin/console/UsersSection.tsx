@@ -36,7 +36,7 @@ export function UsersSection() {
     setSearching(true);
     try {
       const { data, error } = await supabase
-        .from('twitch_profiles')
+        .from('profiles')
         .select('id, nome, twitch_username, created_at')
         .or(`twitch_username.ilike.%${searchTerm}%,nome.ilike.%${searchTerm}%`)
         .limit(1)
@@ -63,16 +63,16 @@ export function UsersSection() {
       // Rubini Coins
       const { data: rubiniData } = await supabase
         .from('rubini_coins_balance')
-        .select('balance')
+        .select('saldo')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       // Tickets
       const { data: ticketsData } = await supabase
         .from('tickets')
-        .select('amount')
+        .select('tickets_atual')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       // StreamElements Points
       const { data: seData } = await supabase.functions.invoke('get-streamelements-points', {
@@ -80,8 +80,8 @@ export function UsersSection() {
       });
 
       setBalances({
-        rubiniCoins: rubiniData?.balance || 0,
-        tickets: ticketsData?.amount || 0,
+        rubiniCoins: rubiniData?.saldo || 0,
+        tickets: ticketsData?.tickets_atual || 0,
         sePoints: seData?.data?.points || 0,
       });
     } catch (error) {

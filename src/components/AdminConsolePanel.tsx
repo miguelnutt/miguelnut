@@ -1,5 +1,4 @@
 import { useState, Suspense, lazy } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LayoutDashboard, Users, Wallet, Calendar, Gamepad2, Radio, FileText, Settings } from "lucide-react";
@@ -55,40 +54,27 @@ export function AdminConsolePanel({ open, onOpenChange }: AdminConsolePanelProps
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-6xl max-h-[90vh] overflow-y-auto"
-        aria-labelledby="admin-console-title"
-        aria-describedby="admin-console-description"
-      >
-        <DialogTitle id="admin-console-title">Console de Administração</DialogTitle>
-        <DialogDescription id="admin-console-description">
-          Gerencie todas as configurações do sistema
-        </DialogDescription>
+    <div className="space-y-6">
+      {/* Menu de navegação */}
+      <div className="flex gap-2 flex-wrap">
+        {menuItems.map((item) => (
+          <Button
+            key={item.id}
+            variant={activeSection === item.id ? "default" : "outline"}
+            onClick={() => setActiveSection(item.id)}
+            className="flex items-center gap-2"
+            size="sm"
+          >
+            <item.icon className="h-4 w-4" />
+            {item.title}
+          </Button>
+        ))}
+      </div>
 
-        <div className="space-y-6">
-          {/* Menu de navegação */}
-          <div className="flex gap-2 flex-wrap">
-            {menuItems.map((item) => (
-              <Button
-                key={item.id}
-                variant={activeSection === item.id ? "default" : "outline"}
-                onClick={() => setActiveSection(item.id)}
-                className="flex items-center gap-2"
-                size="sm"
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </Button>
-            ))}
-          </div>
-
-          {/* Conteúdo com Suspense */}
-          <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-            {renderSection()}
-          </Suspense>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Conteúdo com Suspense */}
+      <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+        {renderSection()}
+      </Suspense>
+    </div>
   );
 }
