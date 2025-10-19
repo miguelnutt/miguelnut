@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, ShoppingCart, Gem, Ticket } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
@@ -424,8 +424,7 @@ export default function AccountSettings() {
           {twitchUser && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                <Coins className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg md:text-xl text-center">
                 Seus Saldos
               </CardTitle>
             </CardHeader>
@@ -436,74 +435,94 @@ export default function AccountSettings() {
                   <TabsTrigger value="resgates">Resgates de Rubini Coins</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="saldos" className="space-y-4">
-                  {/* Pontos de Loja */}
-                  <div className="flex items-center justify-between p-4 bg-gradient-card rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pontos de Loja</p>
-                      <p className="text-2xl font-bold text-yellow-500">
-                        {loadingPontos ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          pontosStreamElements?.toLocaleString() || "0"
-                        )}
-                      </p>
+                <TabsContent value="saldos" className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Pontos de Loja */}
+                    <div className="flex flex-col items-center justify-between p-6 bg-gradient-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-blue-500/10 rounded-full">
+                          <ShoppingCart className="h-6 w-6 text-blue-500" />
+                        </div>
+                      </div>
+                      <div className="text-center space-y-2 flex-1">
+                        <p className="text-sm text-muted-foreground font-medium">Pontos de Loja</p>
+                        <p className="text-3xl font-bold text-blue-500">
+                          {loadingPontos ? (
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                          ) : (
+                            pontosStreamElements?.toLocaleString() || "0"
+                          )}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={fetchStreamElementsPoints}
+                        disabled={loadingPontos}
+                        className="mt-4 w-full"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${loadingPontos ? 'animate-spin' : ''}`} />
+                        Atualizar
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={fetchStreamElementsPoints}
-                      disabled={loadingPontos}
-                      title="Atualizar"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${loadingPontos ? 'animate-spin' : ''}`} />
-                    </Button>
-                  </div>
 
-                  {/* Rubini Coins */}
-                  <div className="flex items-center justify-between p-4 bg-gradient-card rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Rubini Coins</p>
-                      <p className="text-2xl font-bold text-primary">
-                        {loadingSaldos ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          rubiniCoins.toLocaleString()
-                        )}
-                      </p>
+                    {/* Rubini Coins */}
+                    <div className="flex flex-col items-center justify-between p-6 bg-gradient-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-purple-500/10 rounded-full">
+                          <Gem className="h-6 w-6 text-purple-500" />
+                        </div>
+                      </div>
+                      <div className="text-center space-y-2 flex-1">
+                        <p className="text-sm text-muted-foreground font-medium">Rubini Coins</p>
+                        <p className="text-3xl font-bold text-purple-500">
+                          {loadingSaldos ? (
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                          ) : (
+                            rubiniCoins.toLocaleString()
+                          )}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={carregarSaldos}
+                        disabled={loadingSaldos}
+                        className="mt-4 w-full"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${loadingSaldos ? 'animate-spin' : ''}`} />
+                        Atualizar
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={carregarSaldos}
-                      disabled={loadingSaldos}
-                      title="Atualizar"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${loadingSaldos ? 'animate-spin' : ''}`} />
-                    </Button>
-                  </div>
 
-                  {/* Tickets */}
-                  <div className="flex items-center justify-between p-4 bg-gradient-card rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tickets</p>
-                      <p className="text-2xl font-bold text-accent">
-                        {loadingSaldos ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          tickets.toLocaleString()
-                        )}
-                      </p>
+                    {/* Tickets */}
+                    <div className="flex flex-col items-center justify-between p-6 bg-gradient-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-yellow-500/10 rounded-full">
+                          <Ticket className="h-6 w-6 text-yellow-500" />
+                        </div>
+                      </div>
+                      <div className="text-center space-y-2 flex-1">
+                        <p className="text-sm text-muted-foreground font-medium">Tickets</p>
+                        <p className="text-3xl font-bold text-yellow-500">
+                          {loadingSaldos ? (
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                          ) : (
+                            tickets.toLocaleString()
+                          )}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={carregarSaldos}
+                        disabled={loadingSaldos}
+                        className="mt-4 w-full"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${loadingSaldos ? 'animate-spin' : ''}`} />
+                        Atualizar
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={carregarSaldos}
-                      disabled={loadingSaldos}
-                      title="Atualizar"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${loadingSaldos ? 'animate-spin' : ''}`} />
-                    </Button>
                   </div>
 
                   <div className="pt-2">
