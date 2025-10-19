@@ -178,6 +178,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
 
       // Salvar o spin com tipo padronizado
       const tipoParaSalvar = resultado.tipo;
+      console.log("💾 Salvando spin:", {
+        tipo: tipoParaSalvar,
+        valor: resultado.valor,
+        nome: nomeParaUsar,
+        userId
+      });
+      
       const { error: spinError } = await supabase
         .from("spins")
         .insert({
@@ -188,7 +195,12 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           valor: resultado.valor
         });
 
-      if (spinError) throw spinError;
+      if (spinError) {
+        console.error("❌ Erro ao salvar spin:", spinError);
+        throw spinError;
+      }
+      
+      console.log("✅ Spin salvo com sucesso");
 
       // Se ganhou ticket, atualizar
       if (resultado.tipo === "Tickets" && userId) {
@@ -228,18 +240,26 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       }
 
       // Se ganhou Pontos de Loja, sincronizar com StreamElements
+      console.log("🔍 Verificando tipo de recompensa:", resultado.tipo);
+      
       if (resultado.tipo === "Pontos de Loja") {
         const pontosGanhos = parseInt(resultado.valor) || 0;
         
+        console.log(`🎯 INICIANDO sincronização de Pontos de Loja:`, {
+          pontosGanhos,
+          nomeParaUsar,
+          tipo: resultado.tipo
+        });
+        
         try {
-          console.log(`🎯 Sincronizando ${pontosGanhos} pontos de loja para ${nomeParaUsar}`);
-          
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
             body: {
               username: nomeParaUsar,
               points: pontosGanhos
             }
           });
+          
+          console.log("📡 Resposta da sincronização:", { syncData, syncError });
           
           if (syncError) {
             console.error("❌ Erro ao sincronizar pontos com StreamElements:", syncError);
