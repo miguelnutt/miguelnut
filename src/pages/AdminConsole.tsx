@@ -4,27 +4,9 @@ import { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Loader2, LayoutDashboard, Users, Wallet, Calendar, Gamepad2, Radio, FileText, Settings } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { OverviewSection } from "@/components/admin/console/OverviewSection";
-import { UsersSection } from "@/components/admin/console/UsersSection";
-import { EconomySection } from "@/components/admin/console/EconomySection";
-import { DailyRewardsSection } from "@/components/admin/console/DailyRewardsSection";
-import { GamesSection } from "@/components/admin/console/GamesSection";
-import { StreamElementsSection } from "@/components/admin/console/StreamElementsSection";
-import { LogsSection } from "@/components/admin/console/LogsSection";
-import { AdvancedSection } from "@/components/admin/console/AdvancedSection";
 
 const menuItems = [
   { id: "overview", title: "Visão Geral", icon: LayoutDashboard },
@@ -78,75 +60,49 @@ export default function AdminConsole() {
     return null;
   }
 
-  const renderSection = () => {
-    switch (activeSection) {
-      case "overview":
-        return <OverviewSection />;
-      case "users":
-        return <UsersSection />;
-      case "economy":
-        return <EconomySection />;
-      case "daily":
-        return <DailyRewardsSection />;
-      case "games":
-        return <GamesSection />;
-      case "streamelements":
-        return <StreamElementsSection />;
-      case "logs":
-        return <LogsSection />;
-      case "advanced":
-        return <AdvancedSection />;
-      default:
-        return <OverviewSection />;
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       
-      <SidebarProvider>
-        <div className="flex min-h-[calc(100vh-64px)] w-full">
-          <Sidebar className="border-r">
-            <SidebarContent>
-              <SidebarGroup>
-                <SidebarGroupLabel className="text-lg font-bold px-4 py-4">
-                  Console Admin
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {menuItems.map((item) => (
-                      <SidebarMenuItem key={item.id}>
-                        <SidebarMenuButton
-                          onClick={() => setActiveSection(item.id)}
-                          isActive={activeSection === item.id}
-                          className="w-full"
-                        >
-                          <item.icon className="mr-2 h-4 w-4" />
-                          <span>{item.title}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </SidebarContent>
-          </Sidebar>
-
-          <main className="flex-1 overflow-auto">
-            <div className="container mx-auto p-6">
-              <div className="mb-6 flex items-center justify-between">
-                <SidebarTrigger className="lg:hidden" />
-                <h1 className="text-3xl font-bold">
-                  {menuItems.find(item => item.id === activeSection)?.title}
-                </h1>
-              </div>
-              
-              {renderSection()}
-            </div>
-          </main>
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">Console de Administração</h1>
+          <p className="text-muted-foreground">Gerencie todas as configurações do sistema</p>
         </div>
-      </SidebarProvider>
+
+        {/* Menu de navegação */}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {menuItems.map((item) => (
+            <Button
+              key={item.id}
+              variant={activeSection === item.id ? "default" : "outline"}
+              onClick={() => setActiveSection(item.id)}
+              className="flex items-center gap-2"
+            >
+              <item.icon className="h-4 w-4" />
+              {item.title}
+            </Button>
+          ))}
+        </div>
+
+        {/* Conteúdo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{menuItems.find(m => m.id === activeSection)?.title}</CardTitle>
+            <CardDescription>
+              Seção de {menuItems.find(m => m.id === activeSection)?.title.toLowerCase()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Conteúdo da seção "{activeSection}" em desenvolvimento.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Esta é a nova Console de Administração com layout modular e organizado.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
