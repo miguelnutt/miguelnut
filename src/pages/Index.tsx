@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase-helper";
-import { useTwitchStatus } from "@/hooks/useTwitchStatus";
+import { useTwitchStatus } from "@/contexts/TwitchStatusContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Loader2, Radio, Edit } from "lucide-react";
 import { toast } from "sonner";
@@ -202,6 +202,10 @@ export default function Index() {
                           allowFullScreen
                           title="Twitch Live Stream"
                           className="border-0"
+                          style={{
+                            visibility: 'visible',
+                            display: 'block'
+                          }}
                         />
                       </div>
                     </div>
@@ -227,8 +231,12 @@ export default function Index() {
                           src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=0${videoStartTime > 0 ? `&start=${videoStartTime}` : ''}`}
                           title="Última Live do YouTube"
                           frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                           allowFullScreen
+                          style={{
+                            visibility: 'visible',
+                            display: 'block'
+                          }}
                         />
                       </div>
                       <div className="text-center">

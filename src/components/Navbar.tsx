@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
 import profileImage from "@/assets/profile-miguelnut.png";
-import { useTwitchStatus } from "@/hooks/useTwitchStatus";
+import { useTwitchStatus } from "@/contexts/TwitchStatusContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
