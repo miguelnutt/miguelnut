@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,6 +149,9 @@ export function RubiniCoinsResgateDialog({
             <Coins className="h-5 w-5 text-primary" />
             Resgatar Rubini Coins
           </DialogTitle>
+          <DialogDescription>
+            Informe a quantidade (múltiplos de 25) e confirme seu personagem para concluir o resgate.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
