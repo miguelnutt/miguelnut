@@ -128,13 +128,15 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
+    let profileId = null;
+    
     if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       try {
         const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
         // Usar função de banco de dados para buscar ou mesclar perfil automaticamente
-        const { data: profileId, error: profileError } = await supabase
+        const { data: mergedProfileId, error: profileError } = await supabase
           .rpc('get_or_merge_profile', {
             p_twitch_username: twitchUser.login,
             p_nome: twitchUser.display_name,
@@ -144,7 +146,69 @@ serve(async (req) => {
         if (profileError) {
           console.error('❌ Erro ao buscar/mesclar perfil:', profileError);
         } else {
+          profileId = mergedProfileId;
           console.log(`✅ Perfil ID (mesclado automaticamente se necessário): ${profileId}`);
+          
+          // 🔥 APLICAR CRÉDITOS PROVISÓRIOS AUTOMATICAMENTE
+          console.log('🔄 Verificando créditos provisórios...');
+          const { data: creditos } = await supabase
+            .from('creditos_provisorios')
+            .select('*')
+            .eq('twitch_username', twitchUser.login)
+            .eq('aplicado', false);
+
+          if (creditos && creditos.length > 0) {
+            console.log(`📦 Encontrados ${creditos.length} créditos provisórios. Aplicando...`);
+            
+            for (const credito of creditos) {
+              try {
+                if (credito.tipo_credito === 'rubini_coins') {
+                  const { data: balance } = await supabase
+                    .from('rubini_coins_balance')
+                    .select('saldo')
+                    .eq('user_id', profileId)
+                    .single();
+
+                  await supabase.from('rubini_coins_balance').upsert({
+                    user_id: profileId,
+                    saldo: (balance?.saldo || 0) + credito.valor
+                  });
+
+                  await supabase.from('rubini_coins_history').insert({
+                    user_id: profileId,
+                    variacao: credito.valor,
+                    motivo: `Crédito provisório aplicado - ${credito.motivo}`
+                  });
+                } else if (credito.tipo_credito === 'tickets') {
+                  const { data: ticketBalance } = await supabase
+                    .from('tickets')
+                    .select('tickets_atual')
+                    .eq('user_id', profileId)
+                    .single();
+
+                  await supabase.from('tickets').upsert({
+                    user_id: profileId,
+                    tickets_atual: (ticketBalance?.tickets_atual || 0) + credito.valor
+                  });
+
+                  await supabase.from('ticket_ledger').insert({
+                    user_id: profileId,
+                    variacao: credito.valor,
+                    motivo: `Crédito provisório aplicado - ${credito.motivo}`
+                  });
+                }
+
+                await supabase
+                  .from('creditos_provisorios')
+                  .update({ aplicado: true, aplicado_em: new Date().toISOString() })
+                  .eq('id', credito.id);
+                  
+                console.log(`✅ Crédito aplicado: ${credito.valor} ${credito.tipo_credito}`);
+              } catch (creditoError) {
+                console.error(`❌ Erro ao aplicar crédito ${credito.id}:`, creditoError);
+              }
+            }
+          }
         }
       } catch (error) {
         console.error('Error managing profile:', error);

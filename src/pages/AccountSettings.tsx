@@ -27,6 +27,7 @@ import { Ticket } from "lucide-react";
 import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
 import { TibiaTermoAdminPanel } from "@/components/admin/TibiaTermoAdminPanel";
 import { StreamElementsLogsDialog } from "@/components/admin/StreamElementsLogsDialog";
+import { StreamElementsMonitor } from "@/components/admin/StreamElementsMonitor";
 import {
   Collapsible,
   CollapsibleContent,
@@ -58,6 +59,8 @@ export default function AccountSettings() {
   const [manageRewardsOpen, setManageRewardsOpen] = useState(false);
   const [managePointsOpen, setManagePointsOpen] = useState(false);
   const [showSpecialDialog, setShowSpecialDialog] = useState(false);
+  const [showTibiaTermoConfig, setShowTibiaTermoConfig] = useState(false);
+  const [showStreamElementsMonitor, setShowStreamElementsMonitor] = useState(false);
   const [rubiniCoins, setRubiniCoins] = useState<number>(0);
   const [tickets, setTickets] = useState<number>(0);
   const [loadingSaldos, setLoadingSaldos] = useState(false);
@@ -65,7 +68,6 @@ export default function AccountSettings() {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [resgates, setResgates] = useState<any[]>([]);
   const [loadingResgates, setLoadingResgates] = useState(false);
-  const [showTibiaTermoConfig, setShowTibiaTermoConfig] = useState(false);
   const [seLogsOpen, setSeLogsOpen] = useState(false);
 
   useEffect(() => {
@@ -946,6 +948,29 @@ export default function AccountSettings() {
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-4">
                       <TibiaTermoAdminPanel />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </CardContent>
+              </Card>
+
+              {/* StreamElements Monitor */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl">StreamElements Monitor</CardTitle>
+                  <CardDescription className="text-sm">
+                    Monitore sincronizações, reconcilie falhas e exporte relatórios
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Collapsible open={showStreamElementsMonitor} onOpenChange={setShowStreamElementsMonitor}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {showStreamElementsMonitor ? 'Ocultar' : 'Visualizar'} Monitor
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-4">
+                      <StreamElementsMonitor />
                     </CollapsibleContent>
                   </Collapsible>
                 </CardContent>
