@@ -23,7 +23,7 @@ interface DailyRewardDialogProps {
 }
 
 export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps) {
-  const { user: twitchUser } = useTwitchAuth();
+  const { user: twitchUser, loading: twitchLoading } = useTwitchAuth();
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
   const [userLogin, setUserLogin] = useState<UserDailyLogin | null>(null);
@@ -36,13 +36,13 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
   const [pontosDisponiveis, setPontosDisponiveis] = useState(0);
   const [restaurando, setRestaurando] = useState(false);
 
-  // Único useEffect - recarregar sempre que abrir
+  // Único useEffect - recarregar sempre que abrir E quando twitchAuth terminar de carregar
   useEffect(() => {
-    if (open) {
-      console.log('[DailyReward] Dialog aberto, carregando dados...');
+    if (open && !twitchLoading) {
+      console.log('[DailyReward] Dialog aberto e auth carregado, carregando dados...');
       loadData();
     }
-  }, [open]);
+  }, [open, twitchLoading]);
 
   const loadData = async () => {
     console.log('[DailyReward] ========== CARREGANDO DADOS ==========');

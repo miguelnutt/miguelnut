@@ -73,11 +73,12 @@ export default function AccountSettings() {
   }, []);
 
   useEffect(() => {
-    if (twitchUser) {
+    // Só carregar quando twitchAuth terminar de carregar E tiver usuário
+    if (!twitchLoading && twitchUser) {
       loadTwitchUserProfile();
       carregarSaldos();
     }
-  }, [twitchUser]);
+  }, [twitchUser, twitchLoading]);
 
   useEffect(() => {
     if (profileUserId) {
