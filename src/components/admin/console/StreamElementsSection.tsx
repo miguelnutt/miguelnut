@@ -9,10 +9,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { StreamElementsMonitor } from "../StreamElementsMonitor";
 import { StreamElementsLogsDialog } from "../StreamElementsLogsDialog";
-import { Radio, FileText } from "lucide-react";
+import { Radio, FileText, Database } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function StreamElementsSection() {
   const [showLogsDialog, setShowLogsDialog] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
+
+  const handleBackfill = async () => {
+    setBackfilling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-tibiatermo-logs');
+      
+      if (error) throw error;
+
+      toast.success(
+        `Backfill concluído: ${data.processados} eventos processados, ${data.duplicados} já existiam`
+      );
+      
+      // Recarregar o monitor
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Erro no backfill:', error);
+      toast.error('Erro ao processar backfill: ' + error.message);
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -53,10 +77,20 @@ export function StreamElementsSection() {
                     Última verificação: {new Date().toLocaleString('pt-BR')}
                   </p>
                 </div>
-                <Button onClick={() => setShowLogsDialog(true)}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Ver Logs Completos
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={() => setShowLogsDialog(true)}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Ver Logs Completos
+                  </Button>
+                  <Button 
+                    onClick={handleBackfill} 
+                    disabled={backfilling}
+                    variant="outline"
+                  >
+                    <Database className={`h-4 w-4 mr-2 ${backfilling ? 'animate-spin' : ''}`} />
+                    Backfill TibiaTermo Hoje
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </AccordionContent>
