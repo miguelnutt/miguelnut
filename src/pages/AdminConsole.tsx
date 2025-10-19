@@ -30,16 +30,23 @@ export default function AdminConsole() {
     checkUser();
   }, []);
 
+  // Só redireciona se tiver certeza que NÃO é admin (depois de carregar)
   useEffect(() => {
-    if (!adminLoading && !isAdmin && !loading) {
+    if (!loading && !adminLoading && !isAdmin && user) {
+      console.log("[AdminConsole] Não é admin, redirecionando...");
       navigate("/");
     }
-  }, [isAdmin, adminLoading, loading, navigate]);
+  }, [isAdmin, adminLoading, loading, user, navigate]);
 
   const checkUser = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log("[AdminConsole] User carregado:", user?.id);
       setUser(user);
+      
+      if (!user) {
+        navigate("/login");
+      }
     } catch (error) {
       console.error("Error checking user:", error);
       navigate("/login");
@@ -48,6 +55,7 @@ export default function AdminConsole() {
     }
   };
 
+  // Mostrar loading enquanto verifica QUALQUER coisa
   if (loading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -56,9 +64,17 @@ export default function AdminConsole() {
     );
   }
 
+  // Se terminou de carregar e não é admin, não renderiza nada (vai redirecionar)
   if (!isAdmin) {
-    return null;
+    console.log("[AdminConsole] Não é admin após carregar");
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
+
+  console.log("[AdminConsole] É admin! Renderizando console...");
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
