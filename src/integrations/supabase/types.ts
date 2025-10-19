@@ -942,6 +942,14 @@ export type Database = {
         Args: { p_nome: string }
         Returns: string
       }
+      get_or_merge_profile: {
+        Args: {
+          p_nome?: string
+          p_nome_personagem?: string
+          p_twitch_username?: string
+        }
+        Returns: string
+      }
       has_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -952,6 +960,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      merge_duplicate_profiles: {
+        Args: { p_keep_profile_id: string; p_remove_profile_id: string }
+        Returns: undefined
       }
     }
     Enums: {

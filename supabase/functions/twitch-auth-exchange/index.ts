@@ -133,55 +133,18 @@ serve(async (req) => {
         const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-        // 1. Primeiro, verificar se já existe perfil com este twitch_username
-        const { data: existingProfileByTwitch } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('twitch_username', twitchUser.login)
-          .maybeSingle();
+        // Usar função de banco de dados para buscar ou mesclar perfil automaticamente
+        const { data: profileId, error: profileError } = await supabase
+          .rpc('get_or_merge_profile', {
+            p_twitch_username: twitchUser.login,
+            p_nome: twitchUser.display_name,
+            p_nome_personagem: null
+          });
 
-        if (existingProfileByTwitch) {
-          console.log(`✅ Perfil encontrado via twitch_username: ${existingProfileByTwitch.id}`);
+        if (profileError) {
+          console.error('❌ Erro ao buscar/mesclar perfil:', profileError);
         } else {
-          // 2. Verificar se existe perfil com o mesmo nome (case-insensitive)
-          const { data: existingProfileByName } = await supabase
-            .from('profiles')
-            .select('id, twitch_username')
-            .ilike('nome', twitchUser.display_name)
-            .maybeSingle();
-
-          if (existingProfileByName) {
-            // Perfil existe pelo nome - atualizar com twitch_username
-            console.log(`🔄 Mesclando perfil existente: ${existingProfileByName.id} com twitch_username: ${twitchUser.login}`);
-            
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({ twitch_username: twitchUser.login })
-              .eq('id', existingProfileByName.id);
-
-            if (updateError) {
-              console.error('❌ Erro ao atualizar perfil:', updateError);
-            } else {
-              console.log(`✅ Perfil mesclado com sucesso!`);
-            }
-          } else {
-            // 3. Criar novo perfil (não existe nem por nome nem por twitch_username)
-            console.log(`➕ Criando novo perfil para: ${twitchUser.display_name}`);
-            
-            const { error: profileError } = await supabase
-              .from('profiles')
-              .insert({
-                id: crypto.randomUUID(),
-                nome: twitchUser.display_name,
-                twitch_username: twitchUser.login,
-              });
-
-            if (profileError) {
-              console.error('❌ Erro ao criar perfil:', profileError);
-            } else {
-              console.log(`✅ Novo perfil criado!`);
-            }
-          }
+          console.log(`✅ Perfil ID (mesclado automaticamente se necessário): ${profileId}`);
         }
       } catch (error) {
         console.error('Error managing profile:', error);
