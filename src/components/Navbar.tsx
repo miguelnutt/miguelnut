@@ -159,7 +159,20 @@ export const Navbar = () => {
               ) : twitchUser ? (
                 <>
                   <UserBadge user={twitchUser} onLogout={twitchLogout} />
-                  {isAdmin && <AdminRubiniCoinsResgatesButton />}
+                  {isAdmin && (
+                    <>
+                      <AdminRubiniCoinsResgatesButton />
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => navigate("/admin")}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                        title="Console de Administração"
+                      >
+                        Console Admin
+                      </Button>
+                    </>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -186,7 +199,20 @@ export const Navbar = () => {
                 </>
               ) : session ? (
                 <>
-                  {isAdmin && <AdminRubiniCoinsResgatesButton />}
+                  {isAdmin && (
+                    <>
+                      <AdminRubiniCoinsResgatesButton />
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => navigate("/admin")}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                        title="Console de Administração"
+                      >
+                        Console Admin
+                      </Button>
+                    </>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -287,13 +313,26 @@ export const Navbar = () => {
               <div className="border-t border-border pt-4 flex flex-col gap-2">
                 {twitchLoading ? (
                   <UserBadgeLoading />
-                 ) : twitchUser ? (
+                  ) : twitchUser ? (
                   <div className="flex flex-col gap-2">
                     <UserBadge user={twitchUser} onLogout={twitchLogout} />
                     {isAdmin && (
-                      <div className="w-full">
-                        <AdminRubiniCoinsResgatesButton />
-                      </div>
+                      <>
+                        <div className="w-full">
+                          <AdminRubiniCoinsResgatesButton />
+                        </div>
+                        <Button
+                          variant="default"
+                          onClick={() => {
+                            navigate("/admin");
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                        >
+                          <SettingsIcon className="mr-2 h-4 w-4" />
+                          Console Admin
+                        </Button>
+                      </>
                     )}
                     <Button
                       variant="outline"
@@ -324,17 +363,37 @@ export const Navbar = () => {
                     </Button>
                   </div>
                 ) : session ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      navigate("/account");
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full justify-start"
-                  >
-                    <SettingsIcon className="mr-2 h-4 w-4" />
-                    Configurações da Conta
-                  </Button>
+                  <>
+                    {isAdmin && (
+                      <>
+                        <div className="w-full">
+                          <AdminRubiniCoinsResgatesButton />
+                        </div>
+                        <Button
+                          variant="default"
+                          onClick={() => {
+                            navigate("/admin");
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                        >
+                          <SettingsIcon className="mr-2 h-4 w-4" />
+                          Console Admin
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        navigate("/account");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full justify-start"
+                    >
+                      <SettingsIcon className="mr-2 h-4 w-4" />
+                      Configurações da Conta
+                    </Button>
+                  </>
                 ) : (
                   <Button 
                     onClick={() => {
