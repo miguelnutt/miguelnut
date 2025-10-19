@@ -605,10 +605,14 @@ export type Database = {
           id: string
           points_added: number
           referencia_id: string | null
+          reprocessado_em: string | null
+          reprocessado_por: string | null
+          requer_reprocessamento: boolean | null
           saldo_antes: number | null
           saldo_depois: number | null
           saldo_verificado: boolean
           success: boolean
+          tentativas_verificacao: number | null
           tipo_operacao: string
           user_id: string | null
           username: string
@@ -620,10 +624,14 @@ export type Database = {
           id?: string
           points_added: number
           referencia_id?: string | null
+          reprocessado_em?: string | null
+          reprocessado_por?: string | null
+          requer_reprocessamento?: boolean | null
           saldo_antes?: number | null
           saldo_depois?: number | null
           saldo_verificado?: boolean
           success?: boolean
+          tentativas_verificacao?: number | null
           tipo_operacao: string
           user_id?: string | null
           username: string
@@ -635,10 +643,14 @@ export type Database = {
           id?: string
           points_added?: number
           referencia_id?: string | null
+          reprocessado_em?: string | null
+          reprocessado_por?: string | null
+          requer_reprocessamento?: boolean | null
           saldo_antes?: number | null
           saldo_depois?: number | null
           saldo_verificado?: boolean
           success?: boolean
+          tentativas_verificacao?: number | null
           tipo_operacao?: string
           user_id?: string | null
           username?: string

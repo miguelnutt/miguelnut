@@ -35,7 +35,6 @@ serve(async (req) => {
     if (!STREAMELEMENTS_JWT || !CHANNEL_ID) {
       console.error('❌ StreamElements credentials not configured');
       
-      // Registrar falha no log
       await supabase.from('streamelements_sync_logs').insert({
         username,
         points_added: points,
@@ -43,139 +42,141 @@ serve(async (req) => {
         error_message: 'StreamElements credentials not configured',
         tipo_operacao,
         referencia_id,
-        user_id
+        user_id,
+        requer_reprocessamento: true
       });
       
       return new Response(
         JSON.stringify({ error: 'StreamElements credentials not configured' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 1️⃣ PRIMEIRA VERIFICAÇÃO: Buscar saldo ANTES da operação
+    const MAX_TENTATIVAS = 3;
+    let tentativaAtual = 0;
     let saldoAntes: number | null = null;
-    try {
-      const saldoResponse = await fetch(
-        `https://api.streamelements.com/kappa/v2/points/${CHANNEL_ID}/${username}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${STREAMELEMENTS_JWT}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      
-      if (saldoResponse.ok) {
-        const saldoData = await saldoResponse.json();
-        saldoAntes = saldoData.points || 0;
-        console.log(`💰 Saldo ANTES: ${saldoAntes} pontos`);
-      }
-    } catch (error) {
-      console.error('⚠️ Erro ao buscar saldo inicial:', error);
-    }
-
-    // 2️⃣ ADICIONAR PONTOS no StreamElements
-    const addResponse = await fetch(
-      `https://api.streamelements.com/kappa/v2/points/${CHANNEL_ID}/${username}/${points}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${STREAMELEMENTS_JWT}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (!addResponse.ok) {
-      const errorText = await addResponse.text();
-      console.error('❌ StreamElements API error:', errorText);
-      
-      // Registrar falha no log
-      await supabase.from('streamelements_sync_logs').insert({
-        username,
-        points_added: points,
-        success: false,
-        error_message: `API error ${addResponse.status}: ${errorText}`,
-        saldo_antes: saldoAntes,
-        tipo_operacao,
-        referencia_id,
-        user_id
-      });
-      
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to sync with StreamElements',
-          details: errorText 
-        }),
-        { 
-          status: addResponse.status, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    const addData = await addResponse.json();
-    console.log('✅ Pontos adicionados:', addData);
-
-    // 3️⃣ SEGUNDA VERIFICAÇÃO: Buscar saldo DEPOIS e validar
     let saldoDepois: number | null = null;
     let saldoVerificado = false;
-    
-    try {
-      // Pequeno delay para garantir que o SE processou
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const verificacaoResponse = await fetch(
-        `https://api.streamelements.com/kappa/v2/points/${CHANNEL_ID}/${username}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${STREAMELEMENTS_JWT}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      
-      if (verificacaoResponse.ok) {
-        const verificacaoData = await verificacaoResponse.json();
-        saldoDepois = verificacaoData.points || 0;
+    let ultimoErro: string | null = null;
+
+    while (tentativaAtual < MAX_TENTATIVAS && !saldoVerificado) {
+      tentativaAtual++;
+      console.log(`\n🔄 Tentativa ${tentativaAtual}/${MAX_TENTATIVAS}`);
+
+      try {
+        // 1️⃣ BUSCAR SALDO ANTES
+        const saldoAntesResponse = await fetch(
+          `https://api.streamelements.com/kappa/v2/points/${CHANNEL_ID}/${username}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${STREAMELEMENTS_JWT}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
         
-        // Verificar se o saldo aumentou corretamente
-        if (saldoAntes !== null) {
-          const diferencaEsperada = points;
-          const diferencaReal = saldoDepois - saldoAntes;
-          saldoVerificado = diferencaReal === diferencaEsperada;
+        if (saldoAntesResponse.ok) {
+          const saldoAntesData = await saldoAntesResponse.json();
+          saldoAntes = saldoAntesData.points || 0;
+          console.log(`💰 Saldo ANTES (tentativa ${tentativaAtual}): ${saldoAntes} pontos`);
+        }
+
+        // 2️⃣ ADICIONAR PONTOS
+        const addResponse = await fetch(
+          `https://api.streamelements.com/kappa/v2/points/${CHANNEL_ID}/${username}/${points}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${STREAMELEMENTS_JWT}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (!addResponse.ok) {
+          ultimoErro = `API error ${addResponse.status}: ${await addResponse.text()}`;
+          console.error(`❌ Tentativa ${tentativaAtual} falhou:`, ultimoErro);
           
-          console.log(`🔍 Verificação: Esperado +${diferencaEsperada}, Real +${diferencaReal}, Verificado: ${saldoVerificado}`);
-        } else {
-          // Se não conseguimos o saldo inicial, apenas confirma que o saldo final existe
-          saldoVerificado = true;
+          if (tentativaAtual < MAX_TENTATIVAS) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * tentativaAtual));
+            continue;
+          }
+          break;
         }
+
+        const addData = await addResponse.json();
+        console.log(`✅ Pontos adicionados (tentativa ${tentativaAtual}):`, addData);
+
+        // 3️⃣ AGUARDAR E VERIFICAR SALDO DEPOIS
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        console.log(`💰 Saldo DEPOIS: ${saldoDepois} pontos`);
+        const verificacaoResponse = await fetch(
+          `https://api.streamelements.com/kappa/v2/points/${CHANNEL_ID}/${username}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${STREAMELEMENTS_JWT}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        
+        if (verificacaoResponse.ok) {
+          const verificacaoData = await verificacaoResponse.json();
+          saldoDepois = verificacaoData.points || 0;
+          
+          // 4️⃣ VALIDAR VERIFICAÇÃO
+          if (saldoAntes !== null && saldoDepois !== null) {
+            const diferencaEsperada = points;
+            const diferencaReal = saldoDepois - saldoAntes;
+            saldoVerificado = diferencaReal === diferencaEsperada;
+            
+            console.log(`🔍 Verificação (tentativa ${tentativaAtual}): Esperado +${diferencaEsperada}, Real +${diferencaReal}, Verificado: ${saldoVerificado}`);
+            
+            if (!saldoVerificado && tentativaAtual < MAX_TENTATIVAS) {
+              ultimoErro = `Verificação falhou: esperado +${diferencaEsperada}, obtido +${diferencaReal}`;
+              console.warn(`⚠️ ${ultimoErro}. Tentando novamente...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              continue;
+            }
+          } else {
+            saldoVerificado = true;
+          }
+          
+          console.log(`💰 Saldo DEPOIS (tentativa ${tentativaAtual}): ${saldoDepois} pontos`);
+        }
+
+        if (saldoVerificado) {
+          break;
+        }
+      } catch (error: any) {
+        ultimoErro = error.message;
+        console.error(`⚠️ Erro na tentativa ${tentativaAtual}:`, error);
+        
+        if (tentativaAtual < MAX_TENTATIVAS) {
+          await new Promise(resolve => setTimeout(resolve, 2000 * tentativaAtual));
+        }
       }
-    } catch (error) {
-      console.error('⚠️ Erro na verificação de saldo:', error);
     }
 
-    // 4️⃣ REGISTRAR LOG de sucesso com verificação
+    // 5️⃣ REGISTRAR LOG COM RESULTADO FINAL
     const { data: logData, error: logError } = await supabase
       .from('streamelements_sync_logs')
       .insert({
         username,
         points_added: points,
-        success: true,
+        success: saldoVerificado,
         saldo_antes: saldoAntes,
         saldo_depois: saldoDepois,
         saldo_verificado: saldoVerificado,
         tipo_operacao,
         referencia_id,
         user_id,
-        verificado_em: saldoVerificado ? new Date().toISOString() : null
+        verificado_em: saldoVerificado ? new Date().toISOString() : null,
+        tentativas_verificacao: tentativaAtual,
+        requer_reprocessamento: !saldoVerificado,
+        error_message: saldoVerificado ? null : ultimoErro
       })
       .select()
       .single();
@@ -183,33 +184,51 @@ serve(async (req) => {
     if (logError) {
       console.error('⚠️ Erro ao salvar log:', logError);
     } else {
-      console.log('📝 Log registrado:', logData?.id);
+      console.log(`📝 Log registrado: ${logData?.id} (${tentativaAtual} tentativas)`);
+    }
+
+    if (!saldoVerificado) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Falha na verificação após múltiplas tentativas',
+          details: ultimoErro,
+          tentativas: tentativaAtual,
+          saldoAntes,
+          saldoDepois,
+          requerReprocessamento: true
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `${points} points added to ${username} on StreamElements`,
+        message: `${points} pontos adicionados com verificação para ${username}`,
         saldoAntes,
         saldoDepois,
         verificado: saldoVerificado,
-        data: addData,
+        tentativas: tentativaAtual,
         logId: logData?.id
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
     console.error('❌ Error in sync-streamelements-points:', error);
+    
+    // Registrar erro crítico
+    await supabase.from('streamelements_sync_logs').insert({
+      username: 'unknown',
+      points_added: 0,
+      success: false,
+      error_message: error.message,
+      requer_reprocessamento: true
+    });
+    
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

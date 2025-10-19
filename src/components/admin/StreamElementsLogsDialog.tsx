@@ -32,6 +32,9 @@ interface StreamElementsLog {
   saldo_verificado: boolean;
   tipo_operacao: string;
   verificado_em: string | null;
+  tentativas_verificacao: number | null;
+  requer_reprocessamento: boolean;
+  reprocessado_em: string | null;
 }
 
 interface StreamElementsLogsDialogProps {
@@ -104,6 +107,7 @@ export function StreamElementsLogsDialog({ open, onOpenChange }: StreamElementsL
     erro: logs.filter(l => !l.success).length,
     verificados: logs.filter(l => l.saldo_verificado).length,
     naoVerificados: logs.filter(l => l.success && !l.saldo_verificado).length,
+    requerReprocessamento: logs.filter(l => l.requer_reprocessamento && !l.reprocessado_em).length,
     totalPontos: logs.filter(l => l.success).reduce((sum, l) => sum + l.points_added, 0)
   };
 
@@ -132,7 +136,7 @@ export function StreamElementsLogsDialog({ open, onOpenChange }: StreamElementsL
           </div>
 
           {/* Estatísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
             <div className="p-4 border rounded-lg">
               <div className="text-sm text-muted-foreground">Total</div>
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -153,6 +157,10 @@ export function StreamElementsLogsDialog({ open, onOpenChange }: StreamElementsL
               <div className="text-sm text-muted-foreground">Não Verificados</div>
               <div className="text-2xl font-bold text-warning">{stats.naoVerificados}</div>
             </div>
+            <div className="p-4 border rounded-lg bg-orange-500/10">
+              <div className="text-sm text-muted-foreground">Pendentes</div>
+              <div className="text-2xl font-bold text-orange-600">{stats.requerReprocessamento}</div>
+            </div>
             <div className="p-4 border rounded-lg">
               <div className="text-sm text-muted-foreground">Total Pontos</div>
               <div className="text-2xl font-bold">{stats.totalPontos}</div>
@@ -172,7 +180,7 @@ export function StreamElementsLogsDialog({ open, onOpenChange }: StreamElementsL
                   <TableHead>Saldo Antes</TableHead>
                   <TableHead>Saldo Depois</TableHead>
                   <TableHead>Verificação</TableHead>
-                  <TableHead>Erro</TableHead>
+                  <TableHead>Ações/Erro</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -202,9 +210,47 @@ export function StreamElementsLogsDialog({ open, onOpenChange }: StreamElementsL
                       <TableCell className="text-right">
                         {log.saldo_depois !== null ? log.saldo_depois : "-"}
                       </TableCell>
-                      <TableCell>{getStatusBadge(log)}</TableCell>
-                      <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
-                        {log.error_message || "-"}
+                      <TableCell>
+                        {getStatusBadge(log)}
+                        {log.tentativas_verificacao && log.tentativas_verificacao > 1 && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            {log.tentativas_verificacao} tentativas
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-xs text-xs">
+                        {log.requer_reprocessamento && !log.reprocessado_em && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mb-2 w-full"
+                            onClick={async () => {
+                              try {
+                                const { data: { user } } = await supabase.auth.getUser();
+                                const { error } = await supabase.functions.invoke('reprocess-streamelements-failed', {
+                                  body: { log_id: log.id, admin_user_id: user?.id }
+                                });
+                                
+                                if (error) throw error;
+                                
+                                toast.success("Log reprocessado com sucesso!");
+                                fetchLogs();
+                              } catch (error: any) {
+                                toast.error("Erro ao reprocessar: " + error.message);
+                              }
+                            }}
+                          >
+                            🔄 Reprocessar
+                          </Button>
+                        )}
+                        {log.reprocessado_em && (
+                          <Badge variant="secondary" className="mb-2">
+                            ✓ Reprocessado
+                          </Badge>
+                        )}
+                        <div className="text-muted-foreground truncate">
+                          {log.error_message || "-"}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
