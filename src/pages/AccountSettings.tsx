@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, Gamepad2 } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, Gamepad2, FileText } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import QRCode from "qrcode";
@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Ticket } from "lucide-react";
 import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
 import { TibiaTermoAdminPanel } from "@/components/admin/TibiaTermoAdminPanel";
+import { StreamElementsLogsDialog } from "@/components/admin/StreamElementsLogsDialog";
 import {
   Collapsible,
   CollapsibleContent,
@@ -65,6 +66,7 @@ export default function AccountSettings() {
   const [resgates, setResgates] = useState<any[]>([]);
   const [loadingResgates, setLoadingResgates] = useState(false);
   const [showTibiaTermoConfig, setShowTibiaTermoConfig] = useState(false);
+  const [seLogsOpen, setSeLogsOpen] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -877,7 +879,26 @@ export default function AccountSettings() {
               {/* Seção 5: Rankings e Exibição */}
               <RankingDisplaySection />
 
-              {/* Seção 6: Gerenciar Saldos de Rubini Coins */}
+              {/* Seção 6: Log Diário StreamElements */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl">Log Diário StreamElements</CardTitle>
+                  <CardDescription className="text-sm">
+                    Visualizar e conferir todas as operações de pontos do dia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => setSeLogsOpen(true)}
+                    className="w-full"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Ver Log Diário
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Seção 7: Gerenciar Saldos de Rubini Coins */}
               <AdminManageRubiniCoins />
 
               {/* Gerenciar Progresso dos Usuários */}
@@ -953,6 +974,11 @@ export default function AccountSettings() {
           }}
         />
       )}
+      
+      <StreamElementsLogsDialog
+        open={seLogsOpen}
+        onOpenChange={setSeLogsOpen}
+      />
     </>
   );
 }
