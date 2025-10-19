@@ -1003,7 +1003,77 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      se_sync_logs_v: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string | null
+          points_added: number | null
+          referencia_id: string | null
+          reprocessado_em: string | null
+          reprocessado_por: string | null
+          requer_reprocessamento: boolean | null
+          saldo_antes: number | null
+          saldo_depois: number | null
+          saldo_verificado: boolean | null
+          status: string | null
+          success: boolean | null
+          tentativas_verificacao: number | null
+          tipo_operacao: string | null
+          user_id: string | null
+          username: string | null
+          verificado_em: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string | null
+          points_added?: number | null
+          referencia_id?: string | null
+          reprocessado_em?: string | null
+          reprocessado_por?: string | null
+          requer_reprocessamento?: boolean | null
+          saldo_antes?: number | null
+          saldo_depois?: number | null
+          saldo_verificado?: boolean | null
+          status?: never
+          success?: boolean | null
+          tentativas_verificacao?: number | null
+          tipo_operacao?: string | null
+          user_id?: string | null
+          username?: string | null
+          verificado_em?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string | null
+          points_added?: number | null
+          referencia_id?: string | null
+          reprocessado_em?: string | null
+          reprocessado_por?: string | null
+          requer_reprocessamento?: boolean | null
+          saldo_antes?: number | null
+          saldo_depois?: number | null
+          saldo_verificado?: boolean | null
+          status?: never
+          success?: boolean | null
+          tentativas_verificacao?: number | null
+          tipo_operacao?: string | null
+          user_id?: string | null
+          username?: string | null
+          verificado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streamelements_sync_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_or_create_profile_by_name: {
