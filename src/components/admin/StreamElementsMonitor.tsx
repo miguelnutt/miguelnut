@@ -265,6 +265,7 @@ export function StreamElementsMonitor() {
                   <SelectItem value="tibiatermo">TibiaTermo</SelectItem>
                   <SelectItem value="roleta_principal">Roleta Principal</SelectItem>
                   <SelectItem value="roleta_consolacao">Roleta Consolação</SelectItem>
+                  <SelectItem value="store_points_reversal">Reverso (Estorno)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -312,6 +313,7 @@ export function StreamElementsMonitor() {
                     case 'tibiatermo': return 'bg-purple-500/10 text-purple-700 border-purple-500/20';
                     case 'roleta_principal': return 'bg-amber-500/10 text-amber-700 border-amber-500/20';
                     case 'roleta_consolacao': return 'bg-orange-500/10 text-orange-700 border-orange-500/20';
+                    case 'store_points_reversal': return 'bg-red-500/10 text-red-700 border-red-500/20';
                     default: return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
                   }
                 };
@@ -322,6 +324,7 @@ export function StreamElementsMonitor() {
                     case 'tibiatermo': return 'TibiaTermo';
                     case 'roleta_principal': return 'Roleta Principal';
                     case 'roleta_consolacao': return 'Roleta Consolação';
+                    case 'store_points_reversal': return 'Reverso';
                     default: return tipo;
                   }
                 };
@@ -353,7 +356,9 @@ export function StreamElementsMonitor() {
                         </div>
                     <div className="text-sm text-muted-foreground">
                       {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss')} · 
-                      +{log.points_added} pontos · 
+                      <span className={log.points_added < 0 ? 'text-red-600 font-semibold' : ''}>
+                        {log.points_added > 0 ? '+' : ''}{log.points_added} pontos
+                      </span> · 
                       {log.saldo_antes !== null && ` ${log.saldo_antes} → ${log.saldo_depois}`}
                       {log.tentativas_verificacao > 1 && ` · ${log.tentativas_verificacao} tentativas`}
                     </div>

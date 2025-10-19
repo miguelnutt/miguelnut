@@ -600,10 +600,12 @@ export type Database = {
       }
       streamelements_sync_logs: {
         Row: {
+          admin_user_id: string | null
           created_at: string
           error_message: string | null
           id: string
           points_added: number
+          ref_original_log_id: string | null
           referencia_id: string | null
           reprocessado_em: string | null
           reprocessado_por: string | null
@@ -619,10 +621,12 @@ export type Database = {
           verificado_em: string | null
         }
         Insert: {
+          admin_user_id?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
           points_added: number
+          ref_original_log_id?: string | null
           referencia_id?: string | null
           reprocessado_em?: string | null
           reprocessado_por?: string | null
@@ -638,10 +642,12 @@ export type Database = {
           verificado_em?: string | null
         }
         Update: {
+          admin_user_id?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
           points_added?: number
+          ref_original_log_id?: string | null
           referencia_id?: string | null
           reprocessado_em?: string | null
           reprocessado_por?: string | null
@@ -657,6 +663,27 @@ export type Database = {
           verificado_em?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "streamelements_sync_logs_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "streamelements_sync_logs_ref_original_log_id_fkey"
+            columns: ["ref_original_log_id"]
+            isOneToOne: false
+            referencedRelation: "se_sync_logs_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "streamelements_sync_logs_ref_original_log_id_fkey"
+            columns: ["ref_original_log_id"]
+            isOneToOne: false
+            referencedRelation: "streamelements_sync_logs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "streamelements_sync_logs_user_id_fkey"
             columns: ["user_id"]

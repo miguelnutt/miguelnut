@@ -4,7 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2, AlertTriangle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -35,6 +45,9 @@ export default function History() {
   const [spins, setSpins] = useState<Spin[]>([]);
   const [filteredSpins, setFilteredSpins] = useState<Spin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [spinToDelete, setSpinToDelete] = useState<{ id: string; spin: Spin } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [filters, setFilters] = useState({
     usuario: "",
     tipo: "",
@@ -144,20 +157,33 @@ export default function History() {
   };
 
   const deleteHistory = async (id: string, spin: Spin) => {
-    if (!confirm("Tem certeza que deseja apagar este histórico?")) {
+    // Para Pontos de Loja (roletas ou TibiaTermo), mostrar diálogo com aviso de estorno
+    if (spin.tipo_recompensa === "Pontos de Loja") {
+      setSpinToDelete({ id, spin });
+      setDeleteDialogOpen(true);
       return;
     }
 
+    // Para outros tipos (Tickets, Rubini Coins), confirmação simples
+    if (!confirm("Tem certeza que deseja apagar este histórico? O saldo do usuário será ajustado.")) {
+      return;
+    }
+
+    await executeDelete(id, spin);
+  };
+
+  const executeDelete = async (id: string, spin: Spin) => {
+    setDeleting(true);
     try {
-      // Se for do TibiaTermo, deletar da tabela específica
+      // Se for do TibiaTermo, usar função específica que gerencia estorno
       if (spin.origem === 'TibiaTermo') {
-        const { error } = await supabase
-          .from("tibiatermo_history")
-          .delete()
-          .eq("id", id);
+        const { data, error } = await supabase.functions.invoke("delete-tibiatermo-history", {
+          body: { historyId: id },
+        });
 
         if (error) throw error;
-        toast.success("Histórico apagado com sucesso!");
+        
+        toast.success(data?.message || "Histórico apagado com sucesso!");
         await fetchSpins();
         return;
       }
@@ -169,8 +195,24 @@ export default function History() {
         });
 
         if (error) throw error;
+      } else if (spin.tipo_recompensa === "Pontos de Loja") {
+        // Para Pontos de Loja, usar função de estorno que envia débito para StreamElements
+        const { data, error } = await supabase.functions.invoke("revert-store-points", {
+          body: { spinId: id },
+        });
+
+        if (error) throw error;
+
+        if (data?.reverted) {
+          toast.success(data.message || "Histórico apagado e pontos estornados na StreamElements!");
+        } else {
+          toast.success(data.message || "Histórico apagado com sucesso!");
+        }
+        
+        await fetchSpins();
+        return;
       } else {
-        // Para Pontos de Loja, deletar direto (não podemos deduzir do StreamElements)
+        // Fallback: deletar direto
         const { error } = await supabase
           .from("spins")
           .delete()
@@ -184,6 +226,10 @@ export default function History() {
     } catch (error: any) {
       console.error("Error deleting history:", error);
       toast.error("Erro ao apagar histórico: " + error.message);
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setSpinToDelete(null);
     }
   };
 
@@ -306,6 +352,51 @@ export default function History() {
           </CardContent>
         </Card>
       </main>
+
+      {/* AlertDialog para Pontos de Loja */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Confirmar Exclusão de Pontos de Loja
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                <p className="font-semibold text-foreground mb-1">Atenção: Esta ação irá:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Excluir o histórico permanentemente</li>
+                  <li>
+                    <strong>Debitar -{spinToDelete?.spin.valor} pontos</strong> da conta do usuário{' '}
+                    <strong>{spinToDelete?.spin.nome_usuario}</strong> na StreamElements
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="text-sm text-muted-foreground">
+                <p><strong>Usuário:</strong> {spinToDelete?.spin.nome_usuario}</p>
+                <p><strong>Valor:</strong> {spinToDelete?.spin.valor} pontos</p>
+                <p><strong>Origem:</strong> {spinToDelete?.spin.origem || spinToDelete?.spin.wheels?.nome || "-"}</p>
+                <p><strong>Data:</strong> {spinToDelete?.spin.created_at && formatDate(spinToDelete.spin.created_at)}</p>
+              </div>
+              
+              <p className="text-sm font-medium">
+                Tem certeza que deseja continuar?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => spinToDelete && executeDelete(spinToDelete.id, spinToDelete.spin)}
+              disabled={deleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleting ? "Excluindo e estornando..." : "Confirmar Exclusão"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
