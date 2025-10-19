@@ -162,45 +162,39 @@ Deno.serve(async (req) => {
 
     // Award prizes if game is won
     if (acertou) {
-      // Award store points via StreamElements
+      // Award store points via StreamElements usando função centralizada
       if (premiacao_pontos > 0) {
-        const streamElementsJwt = Deno.env.get('STREAMELEMENTS_JWT_TOKEN');
-        const channelId = Deno.env.get('STREAMELEMENTS_CHANNEL_ID');
-
-        if (streamElementsJwt && channelId) {
-          try {
-            const seResponse = await fetch(
-              `https://api.streamelements.com/kappa/v2/points/${channelId}/${twitchUsername}/${premiacao_pontos}`,
-              {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${streamElementsJwt}`,
-                  'Content-Type': 'application/json',
-                },
-              }
-            );
-
-            if (!seResponse.ok) {
-              console.error('StreamElements error:', await seResponse.text());
-            } else {
-              console.log(`Awarded ${premiacao_pontos} points to ${twitchUsername}`);
-              
-              // Registrar no histórico do TibiaTermo
-              await supabase
-                .from('tibiatermo_history')
-                .insert({
-                  user_id: profile.id,
-                  nome_usuario: twitchUsername,
-                  tipo_recompensa: 'Pontos de Loja',
-                  valor: premiacao_pontos,
-                  num_tentativas: numTentativas,
-                });
-              
-              console.log(`Pontos de loja concedidos e registrados: ${premiacao_pontos}`);
+        try {
+          console.log(`Creditando ${premiacao_pontos} pontos para ${twitchUsername} via sync-streamelements-points`);
+          
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
+            body: {
+              username: twitchUsername,
+              points: premiacao_pontos,
+              tipo_operacao: 'tibiatermo',
+              referencia_id: jogo_id,
+              user_id: profile.id
             }
-          } catch (error) {
-            console.error('Error awarding StreamElements points:', error);
+          });
+
+          if (syncError) {
+            console.error('Erro ao sincronizar com StreamElements:', syncError);
+          } else {
+            console.log(`Pontos creditados e verificados com sucesso via sync:`, syncData);
+            
+            // Registrar no histórico do TibiaTermo apenas se sucesso
+            await supabase
+              .from('tibiatermo_history')
+              .insert({
+                user_id: profile.id,
+                nome_usuario: twitchUsername,
+                tipo_recompensa: 'Pontos de Loja',
+                valor: premiacao_pontos,
+                num_tentativas: numTentativas,
+              });
           }
+        } catch (error) {
+          console.error('Error awarding StreamElements points:', error);
         }
       }
 
