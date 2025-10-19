@@ -260,19 +260,19 @@ export const Navbar = () => {
       <Dialog open={adminPanelOpen} onOpenChange={setAdminPanelOpen}>
         <DialogContent 
           className="max-w-6xl max-h-[90vh] overflow-y-auto"
-          aria-labelledby="admin-console-title"
-          aria-describedby="admin-console-description"
         >
           <DialogHeader>
-            <DialogTitle id="admin-console-title" className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-purple-600" />
               Console de Administração
             </DialogTitle>
-            <DialogDescription id="admin-console-description">
+            <DialogDescription>
               Gerencie todas as configurações do sistema
             </DialogDescription>
           </DialogHeader>
-          <AdminConsolePanel open={adminPanelOpen} onOpenChange={setAdminPanelOpen} />
+          {status === 'ready' && isAdmin && (
+            <AdminConsolePanel open={adminPanelOpen} onOpenChange={setAdminPanelOpen} />
+          )}
         </DialogContent>
       </Dialog>
 

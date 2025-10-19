@@ -75,17 +75,31 @@ export function UsersSection() {
         .maybeSingle();
 
       // StreamElements Points
-      const { data: seData } = await supabase.functions.invoke('get-streamelements-points', {
-        body: { twitchUsername }
+      const { data: seData, error: seError } = await supabase.functions.invoke('get-streamelements-points', {
+        body: { username: twitchUsername }
       });
+
+      if (seError) {
+        console.error('Erro ao buscar pontos SE:', seError);
+        toast({ 
+          title: "Aviso", 
+          description: "Não foi possível consultar pontos do StreamElements",
+          variant: "destructive" 
+        });
+      }
 
       setBalances({
         rubiniCoins: rubiniData?.saldo || 0,
         tickets: ticketsData?.tickets_atual || 0,
-        sePoints: seData?.data?.points || 0,
+        sePoints: seData?.points || 0,
       });
     } catch (error) {
       console.error('Erro ao carregar saldos:', error);
+      toast({ 
+        title: "Erro", 
+        description: "Falha ao carregar saldos do usuário",
+        variant: "destructive" 
+      });
     }
   };
 

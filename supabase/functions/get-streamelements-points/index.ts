@@ -18,23 +18,29 @@ serve(async (req) => {
   }
 
   try {
-    const { username }: GetPointsRequest = await req.json();
+    const body = await req.json();
+    console.log('[get-streamelements-points] Request body:', JSON.stringify(body));
+    
+    const { username } = body;
 
     if (!username) {
+      console.error('[get-streamelements-points] Missing username parameter');
       return new Response(
-        JSON.stringify({ error: 'Username is required' }),
+        JSON.stringify({ error: 'MISSING_USERNAME', message: 'Username é obrigatório' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
     if (!JWT_TOKEN || !CHANNEL_ID) {
-      console.error('StreamElements credentials not configured');
+      console.error('[get-streamelements-points] StreamElements credentials not configured');
       return new Response(
-        JSON.stringify({ error: 'StreamElements credentials not configured', points: 0 }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        JSON.stringify({ error: 'SE_ENV_MISSING', message: 'Credenciais do StreamElements não configuradas', points: 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
+    console.log(`[get-streamelements-points] Fetching points for username: ${username}`);
+    
     // Buscar pontos do usuário no StreamElements
     const response = await fetch(
       `https://api.streamelements.com/kappa/v2/points/${CHANNEL_ID}/${username}`,
@@ -48,15 +54,26 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
-      console.error('StreamElements API error:', response.status);
+      const errorText = await response.text();
+      console.error(`[get-streamelements-points] StreamElements API error: ${response.status} - ${errorText}`);
+      
+      if (response.status === 404) {
+        return new Response(
+          JSON.stringify({ error: 'USER_NOT_FOUND', message: 'Usuário não encontrado no StreamElements', points: 0 }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch points', points: 0 }),
+        JSON.stringify({ error: 'SE_UNAVAILABLE', message: 'Falha ao consultar StreamElements', points: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
     const data = await response.json();
     const points = data.points || 0;
+    
+    console.log(`[get-streamelements-points] Success - Username: ${username}, Points: ${points}`);
 
     return new Response(
       JSON.stringify({ points }),
@@ -64,11 +81,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in get-streamelements-points:', error);
+    console.error('[get-streamelements-points] Unexpected error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage, points: 0 }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      JSON.stringify({ error: 'INTERNAL_ERROR', message: errorMessage, points: 0 }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
