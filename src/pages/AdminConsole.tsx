@@ -25,18 +25,26 @@ export default function AdminConsole() {
   const [loading, setLoading] = useState(true);
   const { isAdmin, loading: adminLoading } = useAdmin(user);
   const [activeSection, setActiveSection] = useState("overview");
+  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
     checkUser();
   }, []);
 
-  // Só redireciona se tiver certeza que NÃO é admin (depois de carregar)
+  // Marcar que a verificação de admin foi concluída
   useEffect(() => {
-    if (!loading && !adminLoading && !isAdmin && user) {
-      console.log("[AdminConsole] Não é admin, redirecionando...");
+    if (!adminLoading && !loading) {
+      setHasChecked(true);
+    }
+  }, [adminLoading, loading]);
+
+  // Só redireciona DEPOIS que verificou tudo E confirmou que não é admin
+  useEffect(() => {
+    if (hasChecked && !isAdmin && user) {
+      console.log("[AdminConsole] Verificação completa: não é admin, redirecionando...");
       navigate("/");
     }
-  }, [isAdmin, adminLoading, loading, user, navigate]);
+  }, [hasChecked, isAdmin, user, navigate]);
 
   const checkUser = async () => {
     try {
@@ -55,21 +63,24 @@ export default function AdminConsole() {
     }
   };
 
-  // Mostrar loading enquanto verifica QUALQUER coisa
-  if (loading || adminLoading) {
+  // Mostrar loading enquanto não terminou de verificar TUDO
+  if (loading || adminLoading || !hasChecked) {
+    console.log("[AdminConsole] Loading... (loading:", loading, "adminLoading:", adminLoading, "hasChecked:", hasChecked, ")");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="ml-2 text-muted-foreground">Verificando permissões...</p>
       </div>
     );
   }
 
-  // Se terminou de carregar e não é admin, não renderiza nada (vai redirecionar)
+  // Se não é admin depois de verificar tudo, mostra loading (vai redirecionar)
   if (!isAdmin) {
-    console.log("[AdminConsole] Não é admin após carregar");
+    console.log("[AdminConsole] Não é admin após verificação completa");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="ml-2 text-muted-foreground">Redirecionando...</p>
       </div>
     );
   }
