@@ -58,11 +58,10 @@ export function AdminConsolePanel({ open, onOpenChange }: AdminConsolePanelProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className="max-w-6xl max-h-[90vh] overflow-y-auto"
-        aria-describedby="admin-console-desc"
-        aria-labelledby="admin-console-title"
+        aria-describedby="admin-console-description"
       >
-        <DialogTitle id="admin-console-title">Console de Administração</DialogTitle>
-        <DialogDescription id="admin-console-desc">
+        <DialogTitle>Console de Administração</DialogTitle>
+        <DialogDescription id="admin-console-description">
           Gerencie todas as configurações do sistema
         </DialogDescription>
 

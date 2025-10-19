@@ -7,32 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, Gamepad2, FileText } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
-import QRCode from "qrcode";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
-import { ManageDailyRewardsDialog } from "@/components/ManageDailyRewardsDialog";
-import { ManagePointsDialog } from "@/components/ManagePointsDialog";
-import { DailyRewardTodaySection } from "@/components/admin/DailyRewardTodaySection";
-import { StreakRulesSection } from "@/components/admin/StreakRulesSection";
-import { DailyRewardSpecialConfigDialog } from "@/components/DailyRewardSpecialConfigDialog";
-import { MaintenanceSection } from "@/components/admin/MaintenanceSection";
-import { RankingDisplaySection } from "@/components/admin/RankingDisplaySection";
 import { PromotionalBar } from "@/components/PromotionalBar";
 import { RubiniCoinsResgateDialog } from "@/components/RubiniCoinsResgateDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ticket } from "lucide-react";
-import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoins";
-import { TibiaTermoAdminPanel } from "@/components/admin/TibiaTermoAdminPanel";
-import { StreamElementsLogsDialog } from "@/components/admin/StreamElementsLogsDialog";
-import { StreamElementsMonitor } from "@/components/admin/StreamElementsMonitor";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -56,11 +38,6 @@ export default function AccountSettings() {
   const [editandoPersonagem, setEditandoPersonagem] = useState(false);
   const [personagemSalvo, setPersonagemSalvo] = useState<string | null>(null);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
-  const [manageRewardsOpen, setManageRewardsOpen] = useState(false);
-  const [managePointsOpen, setManagePointsOpen] = useState(false);
-  const [showSpecialDialog, setShowSpecialDialog] = useState(false);
-  const [showTibiaTermoConfig, setShowTibiaTermoConfig] = useState(false);
-  const [showStreamElementsMonitor, setShowStreamElementsMonitor] = useState(false);
   const [rubiniCoins, setRubiniCoins] = useState<number>(0);
   const [tickets, setTickets] = useState<number>(0);
   const [loadingSaldos, setLoadingSaldos] = useState(false);
@@ -68,7 +45,6 @@ export default function AccountSettings() {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [resgates, setResgates] = useState<any[]>([]);
   const [loadingResgates, setLoadingResgates] = useState(false);
-  const [seLogsOpen, setSeLogsOpen] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -847,146 +823,10 @@ export default function AccountSettings() {
             </CardContent>
           </Card>
           )}
-
-          {/* SEÇÕES DE ADMINISTRAÇÃO - Apenas Admin */}
-          {isAdmin && (
-            <>
-              {/* Seção 1: Recompensa Diária (hoje) */}
-              <DailyRewardTodaySection />
-
-              {/* Seção 2: Sequência (Streak) — Regras */}
-              <StreakRulesSection />
-
-              {/* Seção 3: Recompensas Especiais por Dia da Sequência */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg md:text-xl">Recompensas Especiais da Sequência</CardTitle>
-                  <CardDescription className="text-sm">
-                    Configure prêmios específicos para dias da sequência
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    onClick={() => setShowSpecialDialog(true)}
-                    className="w-full"
-                  >
-                    <Gift className="h-4 w-4 mr-2" />
-                    Gerenciar Recompensas Especiais
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Seção 4: Manutenção e Auditoria */}
-              <MaintenanceSection />
-
-              {/* Seção 5: Rankings e Exibição */}
-              <RankingDisplaySection />
-
-              {/* Seção 6: Log Diário StreamElements */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg md:text-xl">Log Diário StreamElements</CardTitle>
-                  <CardDescription className="text-sm">
-                    Visualizar e conferir todas as operações de pontos do dia
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    onClick={() => setSeLogsOpen(true)}
-                    className="w-full"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Ver Log Diário
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Seção 7: Gerenciar Saldos de Rubini Coins */}
-              <AdminManageRubiniCoins />
-
-              {/* Gerenciar Progresso dos Usuários */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg md:text-xl">Gerenciar Usuários e Jogos</CardTitle>
-                  <CardDescription className="text-sm">
-                    Visualizar e gerenciar sequências, pontos e jogos dos usuários
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button 
-                    onClick={() => setManageRewardsOpen(true)}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Gerenciar Progresso dos Usuários
-                  </Button>
-                  <Button 
-                    onClick={() => setManagePointsOpen(true)}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Adicionar/Remover Pontos
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* TibiaTermo Admin Panel - Inline */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg md:text-xl">TibiaTermo</CardTitle>
-                  <CardDescription className="text-sm">
-                    Configure palavras, recompensas e participações do jogo
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Collapsible open={showTibiaTermoConfig} onOpenChange={setShowTibiaTermoConfig}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" className="w-full">
-                        <Gamepad2 className="mr-2 h-4 w-4" />
-                        {showTibiaTermoConfig ? 'Ocultar' : 'Configurar'} TibiaTermo
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                      <TibiaTermoAdminPanel />
-                    </CollapsibleContent>
-                  </Collapsible>
-                </CardContent>
-              </Card>
-
-              {/* StreamElements Monitor */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg md:text-xl">StreamElements Monitor</CardTitle>
-                  <CardDescription className="text-sm">
-                    Monitore sincronizações, reconcilie falhas e exporte relatórios
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Collapsible open={showStreamElementsMonitor} onOpenChange={setShowStreamElementsMonitor}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" className="w-full">
-                        <FileText className="mr-2 h-4 w-4" />
-                        {showStreamElementsMonitor ? 'Ocultar' : 'Visualizar'} Monitor
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                      <StreamElementsMonitor />
-                    </CollapsibleContent>
-                  </Collapsible>
-                </CardContent>
-              </Card>
-            </>
-          )}
         </div>
       </div>
 
       <DailyRewardDialog open={dailyRewardOpen} onOpenChange={setDailyRewardOpen} />
-      <ManageDailyRewardsDialog open={manageRewardsOpen} onOpenChange={setManageRewardsOpen} />
-      <ManagePointsDialog open={managePointsOpen} onOpenChange={setManagePointsOpen} />
-      <DailyRewardSpecialConfigDialog 
-        open={showSpecialDialog} 
-        onOpenChange={setShowSpecialDialog}
-      />
       
       {resgateDialogOpen && twitchUser && profileUserId && (
         <RubiniCoinsResgateDialog
@@ -1000,11 +840,6 @@ export default function AccountSettings() {
           }}
         />
       )}
-      
-      <StreamElementsLogsDialog
-        open={seLogsOpen}
-        onOpenChange={setSeLogsOpen}
-      />
     </>
   );
 }

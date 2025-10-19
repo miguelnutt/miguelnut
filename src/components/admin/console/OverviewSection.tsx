@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase-helper";
+import { getTodayRangeBrasilia } from "@/lib/date-utils";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -36,13 +37,16 @@ export function OverviewSection() {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const { start, end } = getTodayRangeBrasilia();
       
       // StreamElements stats
-      const { data: seData } = await supabase
+      const { data: seData, error: seError } = await supabase
         .from('streamelements_sync_logs')
         .select('status')
-        .gte('created_at', today);
+        .gte('created_at', start)
+        .lt('created_at', end);
+      
+      if (seError) console.error('Erro ao buscar SE logs:', seError);
       
       const seStats = {
         sent: seData?.length || 0,
@@ -51,21 +55,27 @@ export function OverviewSection() {
         failed: seData?.filter(s => s.status === 'failed').length || 0,
       };
 
-      // Daily rewards stats
-      const { data: drData } = await supabase
+      // Daily rewards stats - usar created_at como filtro de data
+      const { data: drData, error: drError } = await supabase
         .from('daily_rewards_history')
-        .select('success')
-        .gte('claimed_at', today);
+        .select('*')
+        .gte('created_at', start)
+        .lt('created_at', end);
       
+      if (drError) console.error('Erro ao buscar daily rewards:', drError);
+      
+      // Todos os registros nesta tabela são coletas bem-sucedidas
       const drStats = {
-        collected: drData?.filter(d => d.success).length || 0,
-        failed: drData?.filter(d => !d.success).length || 0,
+        collected: drData?.length || 0,
+        failed: 0, // Não há registro de falhas nesta tabela
       };
 
-      // Resgates stats
-      const { data: resgatesData } = await supabase
+      // Resgates stats - todos os status, não apenas de hoje
+      const { data: resgatesData, error: resgatesError } = await supabase
         .from('rubini_coins_resgates')
         .select('status');
+      
+      if (resgatesError) console.error('Erro ao buscar resgates:', resgatesError);
       
       const resgatesStats = {
         pending: resgatesData?.filter(r => r.status === 'pendente').length || 0,
@@ -74,15 +84,18 @@ export function OverviewSection() {
         rejected: resgatesData?.filter(r => r.status === 'recusado').length || 0,
       };
 
-      // TibiaTermo stats
-      const { data: ttData } = await supabase
+      // TibiaTermo stats - usar acertou em vez de won
+      const { data: ttData, error: ttError } = await supabase
         .from('tibiatermo_user_games')
-        .select('guesses_count, won')
-        .gte('created_at', today);
+        .select('num_tentativas, acertou')
+        .gte('created_at', start)
+        .lt('created_at', end);
+      
+      if (ttError) console.error('Erro ao buscar TibiaTermo:', ttError);
       
       const ttStats = {
         participants: ttData?.length || 0,
-        hitRate: ttData?.length ? (ttData.filter(t => t.won).length / ttData.length) * 100 : 0,
+        hitRate: ttData?.length ? (ttData.filter(t => t.acertou).length / ttData.length) * 100 : 0,
       };
 
       setStats({
