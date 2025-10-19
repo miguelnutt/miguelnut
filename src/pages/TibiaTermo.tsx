@@ -173,12 +173,13 @@ const TibiaTermo = () => {
         },
       });
 
-      if (error) {
-        if (error.message.includes('Palavra inválida')) {
-          toast.error("Palavra inválida! Tente outra.");
-          return;
-        }
-        throw error;
+      if (error) throw error;
+
+      // Check for invalid word in response
+      if (data?.invalid_word) {
+        toast.error("Palavra inválida! Não existe no dicionário.");
+        setSubmitting(false);
+        return;
       }
 
       setGuesses(data.tentativas);
