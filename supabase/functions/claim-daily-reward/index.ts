@@ -161,14 +161,14 @@ serve(async (req) => {
       .from('profiles')
       .select('twitch_username')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       console.error('Erro ao buscar perfil:', profileError);
       throw profileError;
     }
 
-    if (!profile.twitch_username) {
+    if (!profile || !profile.twitch_username) {
       console.log('Usuário não possui username da Twitch vinculado');
       return new Response(
         JSON.stringify({ error: 'Usuário não possui username da Twitch vinculado' }),

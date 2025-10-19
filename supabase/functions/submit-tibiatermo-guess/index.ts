@@ -54,20 +54,25 @@ Deno.serve(async (req) => {
     }
 
     const twitchUsername = twitchData.user.login;
+    const displayName = twitchData.user.display_name;
 
-    // Get profile ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('twitch_username', twitchUsername)
-      .single();
+    // Get or merge profile ID
+    const { data: profileId, error: profileError } = await supabase
+      .rpc('get_or_merge_profile', {
+        p_twitch_username: twitchUsername,
+        p_nome: displayName,
+        p_nome_personagem: null
+      });
 
-    if (!profile) {
-      return new Response(JSON.stringify({ error: 'Perfil não encontrado' }), {
-        status: 404,
+    if (profileError || !profileId) {
+      console.error('Error getting profile:', profileError);
+      return new Response(JSON.stringify({ error: 'Erro ao obter perfil' }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const profile = { id: profileId };
 
     const { tentativa, jogo_id } = await req.json();
 
