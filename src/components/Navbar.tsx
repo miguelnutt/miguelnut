@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -13,6 +13,9 @@ import { TwitchLoginButton } from "@/components/TwitchLoginButton";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { AdminRubiniCoinsResgatesButton } from "@/components/admin/AdminRubiniCoinsResgatesButton";
 import { useDailyRewardStatus } from "@/hooks/useDailyRewardStatus";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AdminConsolePanel } from "@/components/AdminConsolePanel";
+import { toast } from "@/hooks/use-toast";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -20,6 +23,7 @@ export const Navbar = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
   
@@ -70,6 +74,24 @@ export const Navbar = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/login");
+  };
+
+  const handleOpenAdminPanel = () => {
+    if (!isAdmin) {
+      return;
+    }
+    
+    // Verificar se está na rota raiz
+    if (window.location.pathname !== '/') {
+      toast({
+        title: "Console Admin indisponível",
+        description: "O Console de Administração só pode ser aberto a partir da página inicial.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setAdminPanelOpen(true);
   };
 
   return (
@@ -165,10 +187,11 @@ export const Navbar = () => {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => navigate("/admin")}
+                        onClick={handleOpenAdminPanel}
                         className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                         title="Console de Administração"
                       >
+                        <Shield className="mr-2 h-4 w-4" />
                         Console Admin
                       </Button>
                     </>
@@ -205,10 +228,11 @@ export const Navbar = () => {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => navigate("/admin")}
+                        onClick={handleOpenAdminPanel}
                         className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                         title="Console de Administração"
                       >
+                        <Shield className="mr-2 h-4 w-4" />
                         Console Admin
                       </Button>
                     </>
@@ -324,12 +348,12 @@ export const Navbar = () => {
                         <Button
                           variant="default"
                           onClick={() => {
-                            navigate("/admin");
+                            handleOpenAdminPanel();
                             setMobileMenuOpen(false);
                           }}
                           className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                         >
-                          <SettingsIcon className="mr-2 h-4 w-4" />
+                          <Shield className="mr-2 h-4 w-4" />
                           Console Admin
                         </Button>
                       </>
@@ -372,12 +396,12 @@ export const Navbar = () => {
                         <Button
                           variant="default"
                           onClick={() => {
-                            navigate("/admin");
+                            handleOpenAdminPanel();
                             setMobileMenuOpen(false);
                           }}
                           className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                         >
-                          <SettingsIcon className="mr-2 h-4 w-4" />
+                          <Shield className="mr-2 h-4 w-4" />
                           Console Admin
                         </Button>
                       </>
@@ -424,6 +448,26 @@ export const Navbar = () => {
           </div>
         )}
       </div>
+
+      {/* Admin Panel Dialog */}
+      <Dialog open={adminPanelOpen} onOpenChange={setAdminPanelOpen}>
+        <DialogContent 
+          className="max-w-6xl max-h-[90vh] overflow-y-auto"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-purple-600" />
+              Console de Administração
+            </DialogTitle>
+            <DialogDescription>
+              Gerencie todas as configurações do sistema
+            </DialogDescription>
+          </DialogHeader>
+          {isAdmin && (
+            <AdminConsolePanel open={adminPanelOpen} onOpenChange={setAdminPanelOpen} />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <DailyRewardDialog open={dailyRewardOpen} onOpenChange={setDailyRewardOpen} />
     </nav>
