@@ -127,55 +127,30 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
     try {
       const nomeParaUsar = nomeVencedor || "Visitante";
       
-      // SEMPRE buscar por twitch_username primeiro (case-insensitive)
-      console.log("Buscando perfil para:", nomeParaUsar);
+      console.log("Obtendo ou criando perfil para:", nomeParaUsar);
       
-      // Tentar buscar por twitch_username primeiro
-      const { data: profileByTwitch } = await supabase
-        .from('profiles')
-        .select('id, nome, twitch_username, nome_personagem')
-        .ilike('twitch_username', nomeParaUsar)
-        .maybeSingle();
-      
-      // Se não encontrou por twitch_username, buscar por nome
-      const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
-        .from('profiles')
-        .select('id, nome, twitch_username, nome_personagem')
-        .ilike('nome', nomeParaUsar)
-        .maybeSingle();
-      
-      let profileData = profileByTwitch || profileByName;
-      console.log("Perfil encontrado:", profileData);
+      // Usar a função get_or_merge_profile para buscar ou criar automaticamente
+      const { data: userId, error: profileError } = await supabase
+        .rpc('get_or_merge_profile', {
+          p_twitch_username: nomeParaUsar,
+          p_nome: nomeParaUsar
+        });
 
-      let userId: string;
-
-      if (profileData) {
-        // Perfil encontrado
-        userId = profileData.id;
-        console.log("Usando perfil existente:", userId);
-      } else {
-        // Criar novo perfil
-        console.log("Criando novo perfil para:", nomeParaUsar);
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({ 
-            nome: nomeParaUsar,
-            twitch_username: nomeParaUsar // Assumir que é username da Twitch
-          })
-          .select('id, nome, twitch_username, nome_personagem')
-          .single();
-
-        if (createError) {
-          console.error("Erro ao criar perfil:", createError);
-          toast.error("Erro ao processar usuário");
-          setAwaitingConfirmation(false);
-          return;
-        }
-
-        userId = newProfile.id;
-        profileData = newProfile; // ✅ IMPORTANTE: Atualizar profileData com o novo perfil
-        console.log("Novo perfil criado:", profileData);
+      if (profileError || !userId) {
+        console.error("Erro ao obter/criar perfil:", profileError);
+        toast.error("Erro ao processar usuário");
+        setAwaitingConfirmation(false);
+        return;
       }
+
+      console.log("Perfil obtido/criado com sucesso. User ID:", userId);
+
+      // Buscar dados completos do perfil
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, nome, twitch_username, nome_personagem')
+        .eq('id', userId)
+        .single();
 
       // Se for Rubini Coins, usar o nome_personagem do perfil encontrado
       let personagemInfo = null;

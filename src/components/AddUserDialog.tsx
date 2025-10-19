@@ -53,59 +53,35 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
     setLoading(true);
 
     try {
-      // Verificar se já existe um usuário com esse nome buscando por twitch_username primeiro
-      console.log("Buscando perfil para:", nome.trim());
+      console.log("Obtendo ou criando perfil para:", nome.trim());
       
-      // Buscar primeiro por twitch_username (case-insensitive)
-      const { data: profileByTwitch } = await supabase
-        .from("profiles")
-        .select("id, nome, twitch_username, nome_personagem")
-        .ilike("twitch_username", nome.trim())
+      // Usar a função get_or_merge_profile para buscar ou criar automaticamente
+      const { data: userId, error: profileError } = await supabase
+        .rpc('get_or_merge_profile', {
+          p_twitch_username: nome.trim().toLowerCase(),
+          p_nome: nome.trim()
+        });
+
+      if (profileError || !userId) {
+        console.error("Erro ao obter/criar perfil:", profileError);
+        toast.error("Erro ao processar usuário");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Perfil obtido/criado com sucesso. User ID:", userId);
+
+      // Verificar se já tem tickets
+      const { data: existingTickets } = await supabase
+        .from("tickets")
+        .select("tickets_atual")
+        .eq("user_id", userId)
         .maybeSingle();
-      
-      // Se não encontrou, buscar por nome
-      const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
-        .from("profiles")
-        .select("id, nome, twitch_username, nome_personagem")
-        .ilike("nome", nome.trim())
-        .maybeSingle();
-      
-      const existingProfile = profileByTwitch || profileByName;
-      console.log("Perfil encontrado:", existingProfile);
 
-      let userId: string;
-
-      if (existingProfile) {
-        // Usuário já existe, verificar se tem tickets
-        const { data: existingTickets } = await supabase
-          .from("tickets")
-          .select("tickets_atual")
-          .eq("user_id", existingProfile.id)
-          .maybeSingle();
-
-        if (existingTickets) {
-          toast.error("Este usuário já possui tickets cadastrados. Use a página de gerenciamento para editar.");
-          setLoading(false);
-          return;
-        }
-
-        // Usuário existe mas não tem tickets, usar o ID existente
-        userId = existingProfile.id;
-        toast.info(`Adicionando tickets ao usuário existente: ${nome}`);
-      } else {
-        // Criar novo perfil
-        userId = crypto.randomUUID();
-        
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert({
-            id: userId,
-            nome: nome.trim(),
-            twitch_username: nome.trim().toLowerCase() // Salvar como twitch_username também
-          });
-
-        if (profileError) throw profileError;
-        console.log("Novo perfil criado com twitch_username:", nome.trim().toLowerCase());
+      if (existingTickets) {
+        toast.error("Este usuário já possui tickets cadastrados. Use a página de gerenciamento para editar.");
+        setLoading(false);
+        return;
       }
 
       // Criar entrada de tickets
