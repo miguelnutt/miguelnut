@@ -227,6 +227,38 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         return;
       }
 
+      // Se ganhou Pontos de Loja, sincronizar com StreamElements
+      if (resultado.tipo === "Pontos de Loja") {
+        const pontosGanhos = parseInt(resultado.valor) || 0;
+        
+        try {
+          console.log(`🎯 Sincronizando ${pontosGanhos} pontos de loja para ${nomeParaUsar}`);
+          
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
+            body: {
+              username: nomeParaUsar,
+              points: pontosGanhos
+            }
+          });
+          
+          if (syncError) {
+            console.error("❌ Erro ao sincronizar pontos com StreamElements:", syncError);
+            toast.error(`Erro ao sincronizar ${pontosGanhos} pontos de loja para ${nomeParaUsar} no StreamElements`);
+          } else {
+            console.log("✅ StreamElements sync bem-sucedido:", syncData);
+            toast.success(`${nomeParaUsar} ganhou +${pontosGanhos} pontos de loja!`);
+          }
+        } catch (seError: any) {
+          console.error("❌ Erro ao chamar função de sincronização StreamElements:", seError);
+          toast.error(`Falha ao sincronizar pontos com StreamElements: ${seError.message}`);
+        }
+        
+        setShowResultDialog(false);
+        onOpenChange(false);
+        setAwaitingConfirmation(false);
+        return;
+      }
+
       // Se ganhou Rubini Coins, adicionar ao saldo automaticamente
       if (resultado.tipo === "Rubini Coins" && userId) {
         const rubiniGanhos = parseInt(resultado.valor) || 0;
