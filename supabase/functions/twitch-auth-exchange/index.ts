@@ -136,10 +136,12 @@ serve(async (req) => {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
         // Usar função de banco de dados para buscar ou mesclar perfil automaticamente
+        // IMPORTANTE: Agora usa twitch_user_id como identificador único (fonte da verdade)
         const { data: mergedProfileId, error: profileError } = await supabase
-          .rpc('get_or_merge_profile', {
-            p_twitch_username: twitchUser.login,
-            p_nome: twitchUser.display_name,
+          .rpc('get_or_merge_profile_v2', {
+            p_twitch_user_id: twitchUser.id,
+            p_display_name: twitchUser.display_name,
+            p_login: twitchUser.login,
             p_nome_personagem: null
           });
 
