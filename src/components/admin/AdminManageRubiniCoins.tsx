@@ -27,33 +27,59 @@ export function AdminManageRubiniCoins() {
 
     setBuscando(true);
     try {
-      const { data: profiles, error } = await supabase
+      // Buscar todos os perfis correspondentes (pode haver duplicatas)
+      const { data: allProfiles, error: searchError } = await supabase
         .from('profiles')
         .select('id, nome, twitch_username')
-        .or(`nome.ilike.%${buscaUsuario}%,twitch_username.ilike.%${buscaUsuario}%`)
-        .limit(1)
-        .maybeSingle();
+        .or(`nome.ilike.%${buscaUsuario}%,twitch_username.ilike.%${buscaUsuario}%`);
 
-      if (error) throw error;
+      if (searchError) throw searchError;
 
-      if (!profiles) {
+      if (!allProfiles || allProfiles.length === 0) {
         toast.error('Usuário não encontrado');
         setUsuarioSelecionado(null);
         setSaldoAtual(0);
         return;
       }
 
-      setUsuarioSelecionado(profiles);
+      // Se houver múltiplos perfis, buscar saldos e priorizar quem tem saldo > 0
+      let perfilSelecionado = allProfiles[0];
+      
+      if (allProfiles.length > 1) {
+        console.warn(`⚠️ Perfis duplicados encontrados para "${buscaUsuario}":`, allProfiles);
+        toast.warning(`Encontrados ${allProfiles.length} perfis duplicados. Selecionando o com saldo.`);
+        
+        // Buscar saldos de todos
+        const saldosPromises = allProfiles.map(p => 
+          supabase
+            .from('rubini_coins_balance')
+            .select('saldo')
+            .eq('user_id', p.id)
+            .maybeSingle()
+        );
+        
+        const saldosResults = await Promise.all(saldosPromises);
+        
+        // Priorizar perfil com saldo > 0
+        const perfilComSaldo = allProfiles.find((_, index) => {
+          const saldo = saldosResults[index].data?.saldo || 0;
+          return saldo > 0;
+        });
+        
+        perfilSelecionado = perfilComSaldo || allProfiles[0];
+      }
 
-      // Buscar saldo atual
+      setUsuarioSelecionado(perfilSelecionado);
+
+      // Buscar saldo atual do perfil selecionado
       const { data: saldo } = await supabase
         .from('rubini_coins_balance')
         .select('saldo')
-        .eq('user_id', profiles.id)
+        .eq('user_id', perfilSelecionado.id)
         .maybeSingle();
 
       setSaldoAtual(saldo?.saldo || 0);
-      toast.success('Usuário encontrado');
+      toast.success(`Usuário encontrado: ${perfilSelecionado.nome || perfilSelecionado.twitch_username}`);
     } catch (error: any) {
       console.error('Erro ao buscar usuário:', error);
       toast.error('Erro ao buscar usuário');
