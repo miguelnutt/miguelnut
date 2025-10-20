@@ -33,8 +33,11 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
   const [streakPerdida, setStreakPerdida] = useState(false);
   const [diasPerdidos, setDiasPerdidos] = useState(0);
   const [custoRestauracao, setCustoRestauracao] = useState(0);
-  const [pontosDisponiveis, setPontosDisponiveis] = useState(0);
+  const [pontosDisponiveis, setPontosDisponiveis] = useState<number | null>(null);
+  const [pontosLoading, setPontosLoading] = useState(false);
+  const [pontosError, setPontosError] = useState(false);
   const [restaurando, setRestaurando] = useState(false);
+  const [permitirRestauracao, setPermitirRestauracao] = useState(true);
 
   // Único useEffect - recarregar sempre que abrir E quando twitchAuth terminar de carregar
   useEffect(() => {
@@ -133,39 +136,95 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
         console.log('  - dia_atual:', loginData.dia_atual);
         console.log('  - ultimo_login:', loginData.ultimo_login);
         
-        // Verificar se perdeu a sequência
-        const hoje = new Date();
-        const ultimoLogin = new Date(loginData.ultimo_login);
-        const diffTime = Math.abs(hoje.getTime() - ultimoLogin.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // Carregar configuração de restauração
+        const { data: config } = await supabase
+          .from('daily_reward_default_config')
+          .select('custo_restauracao_por_dia, permitir_restauracao')
+          .limit(1)
+          .maybeSingle();
+
+        const custoBasePorDia = config?.custo_restauracao_por_dia || 200;
+        const permitirRestaur = config?.permitir_restauracao ?? true;
+        setPermitirRestauracao(permitirRestaur);
         
+        // Calcular dias perdidos corretamente (timezone Brasília)
+        const hoje = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Sao_Paulo',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).format(new Date());
+        
+        const ultimoLogin = loginData.ultimo_login;
+        
+        // Calcular diferença em dias
+        const hojeDate = new Date(hoje + 'T00:00:00');
+        const ultimoLoginDate = new Date(ultimoLogin + 'T00:00:00');
+        const diffTime = hojeDate.getTime() - ultimoLoginDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        console.log('[DailyReward] Cálculo de perda - Hoje:', hoje, 'Último:', ultimoLogin, 'Diff:', diffDays);
+        
+        // Só perdeu se diffDays > 1 (mais de 1 dia sem resgatar) E já tinha streak
         if (diffDays > 1 && loginData.dia_atual > 0) {
-          // Perdeu a sequência
-          const diasPerdidos = diffDays - 1; // Quantos dias ficou sem entrar
-          const custo = diasPerdidos * 200;
+          const diasPerdidos = diffDays - 1; // Quantos dias inteiros perdidos
+          const custo = diasPerdidos * custoBasePorDia;
           
           setStreakPerdida(true);
           setDiasPerdidos(diasPerdidos);
           setCustoRestauracao(custo);
           
-          // Buscar pontos disponíveis do usuário (só se tiver username)
-          if (username) {
-            const pontosResponse = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-streamelements-points`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                },
-                body: JSON.stringify({ username }),
-              }
-            );
-          
-            if (pontosResponse.ok) {
+          // Buscar pontos disponíveis (se tiver username e restauração permitida)
+          if (username && permitirRestaur) {
+            setPontosLoading(true);
+            setPontosError(false);
+            
+            try {
+              const pontosResponse = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-streamelements-points`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                  },
+                  body: JSON.stringify({ username }),
+                }
+              );
+            
+              if (!pontosResponse.ok) throw new Error('Falha ao buscar pontos');
+              
               const pontosData = await pontosResponse.json();
-              setPontosDisponiveis(pontosData.points || 0);
+              setPontosDisponiveis(pontosData.points ?? 0);
+            } catch (err) {
+              console.error('[DailyReward] Erro ao buscar pontos:', err);
+              // Retry uma vez
+              try {
+                const retryResponse = await fetch(
+                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-streamelements-points`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`,
+                      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                    },
+                    body: JSON.stringify({ username }),
+                  }
+                );
+                
+                if (retryResponse.ok) {
+                  const pontosData = await retryResponse.json();
+                  setPontosDisponiveis(pontosData.points ?? 0);
+                } else {
+                  setPontosError(true);
+                }
+              } catch {
+                setPontosError(true);
+              }
+            } finally {
+              setPontosLoading(false);
             }
           }
         } else {
@@ -280,13 +339,13 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
   };
 
   const handleRestaurarSequencia = async () => {
-    if (!userId || !twitchUsername) {
+    if (!userId) {
       toast.error("Usuário não identificado");
       return;
     }
 
-    if (pontosDisponiveis < custoRestauracao) {
-      toast.error(`Você precisa de ${custoRestauracao} pontos para restaurar (você tem ${pontosDisponiveis})`);
+    if (pontosDisponiveis !== null && pontosDisponiveis < custoRestauracao) {
+      toast.error(`Você precisa de ${custoRestauracao} pontos (tem ${pontosDisponiveis})`);
       return;
     }
 
@@ -294,9 +353,8 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
     try {
       const token = localStorage.getItem('twitch_token');
       
-      // Descontar pontos
-      const pontosResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-streamelements-points`,
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/restore-daily-streak`,
         {
           method: 'POST',
           headers: {
@@ -305,32 +363,21 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            username: twitchUsername,
-            amount: -custoRestauracao,
-            reason: `Restauração de sequência (${diasPerdidos} dias perdidos)`
+            userId,
+            diasPerdidos,
+            custoTotal: custoRestauracao,
           }),
         }
       );
 
-      if (!pontosResponse.ok) {
-        toast.error("Erro ao descontar pontos");
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Erro ao restaurar sequência");
         return;
       }
 
-      // Atualizar ultimo_login para ontem (para poder resgatar hoje)
-      const hoje = new Date();
-      const ontem = new Date(hoje);
-      ontem.setDate(ontem.getDate() - 1);
-      const ontemStr = ontem.toISOString().split('T')[0];
-
-      const { error } = await supabase
-        .from('user_daily_logins')
-        .update({ ultimo_login: ontemStr })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      toast.success(`Sequência restaurada! ${custoRestauracao} pontos descontados.`);
+      toast.success(data.message || "Sequência restaurada com sucesso!");
       setStreakPerdida(false);
       loadData(); // Recarregar dados
     } catch (error: any) {
@@ -362,13 +409,13 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle id="daily-reward-title" className="flex items-center gap-2">
             <Gift className="h-6 w-6" />
             Recompensa Diária
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="daily-reward-desc">
             Faça login todos os dias para ganhar pontos! Logins consecutivos aumentam suas recompensas.
           </DialogDescription>
         </DialogHeader>
@@ -378,7 +425,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto space-y-4 px-1">
             {/* Sequência Atual */}
             <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border-2 border-primary/20">
               <div className="flex items-center gap-3">
@@ -416,40 +463,71 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
             {/* Alerta de Sequência Perdida */}
             {streakPerdida && (
-              <div className="p-4 bg-destructive/10 border-2 border-destructive/30 rounded-lg space-y-3">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-                  <div className="flex-1">
+              <div className="p-3 bg-destructive/10 border-2 border-destructive/30 rounded-lg space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
                     <p className="font-semibold text-destructive mb-1">Sequência Perdida!</p>
                     <p className="text-sm text-muted-foreground">
                       Você ficou {diasPerdidos} {diasPerdidos === 1 ? 'dia' : 'dias'} sem resgatar e perdeu sua sequência de {userLogin?.dia_atual} dias.
                     </p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      <strong>Custo da restauração:</strong> {custoRestauracao} pontos ({diasPerdidos} dias × 200 pontos)
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Seus pontos disponíveis:</strong> {pontosDisponiveis} pontos
-                    </p>
+                    
+                    {permitirRestauracao ? (
+                      <>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          <strong>Custo:</strong> {custoRestauracao} pontos ({diasPerdidos} × {custoRestauracao / diasPerdidos})
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Disponível:</strong>{' '}
+                          {pontosLoading ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Carregando...
+                            </span>
+                          ) : pontosError ? (
+                            <span className="text-amber-600">Indisponível ⚠️</span>
+                          ) : (
+                            <span>{pontosDisponiveis ?? 0} pontos</span>
+                          )}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-2 italic">
+                        A restauração de sequência está temporariamente desativada.
+                      </p>
+                    )}
                   </div>
                 </div>
                 
-                <Button
-                  onClick={handleRestaurarSequencia}
-                  disabled={restaurando || pontosDisponiveis < custoRestauracao}
-                  variant="destructive"
-                  className="w-full"
-                >
-                  {restaurando ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Restaurando...
-                    </>
-                  ) : pontosDisponiveis < custoRestauracao ? (
-                    `Pontos Insuficientes (Faltam ${custoRestauracao - pontosDisponiveis})`
-                  ) : (
-                    `Restaurar Sequência por ${custoRestauracao} Pontos`
-                  )}
-                </Button>
+                {permitirRestauracao && (
+                  <Button
+                    onClick={handleRestaurarSequencia}
+                    disabled={
+                      restaurando || 
+                      pontosLoading || 
+                      pontosError || 
+                      (pontosDisponiveis !== null && pontosDisponiveis < custoRestauracao)
+                    }
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                  >
+                    {restaurando ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Restaurando...
+                      </>
+                    ) : pontosLoading ? (
+                      'Carregando saldo...'
+                    ) : pontosError ? (
+                      'Erro ao verificar saldo'
+                    ) : pontosDisponiveis !== null && pontosDisponiveis < custoRestauracao ? (
+                      `Insuficiente (faltam ${custoRestauracao - pontosDisponiveis})`
+                    ) : (
+                      `Restaurar por ${custoRestauracao} Pontos`
+                    )}
+                  </Button>
+                )}
                 
                 <p className="text-xs text-center text-muted-foreground">
                   Ou continue sem restaurar e comece uma nova sequência
@@ -458,24 +536,27 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
             )}
 
             {/* Regras */}
-            <div className="p-4 bg-muted/30 rounded-lg border text-sm space-y-2">
+            <div className="p-3 bg-muted/30 rounded-lg border text-sm space-y-1">
               <p className="font-medium">📋 Como Funciona:</p>
-              <ul className="space-y-1 text-muted-foreground ml-4">
+              <ul className="space-y-0.5 text-muted-foreground ml-4 text-xs">
                 <li>• Resgate 1x por dia</li>
                 <li>• Virada à meia-noite (horário de Brasília)</li>
                 <li>• Perder um dia zera a sequência</li>
               </ul>
             </div>
+          </div>
+        )}
 
-            {/* Botão de Resgate */}
-            <div className="flex flex-col items-center gap-2 pt-2">
-              <Button
-                onClick={handleClaimReward}
-                disabled={!podeClamar() || claiming}
-                size="lg"
-                className="w-full disabled:opacity-50 disabled:bg-muted disabled:text-muted-foreground"
-                variant={!podeClamar() && !claiming ? "outline" : "default"}
-              >
+        {/* Rodapé sticky com CTA */}
+        {!loading && (
+          <div className="sticky bottom-0 bg-background border-t pt-3 pb-1 flex-shrink-0">
+            <Button
+              onClick={handleClaimReward}
+              disabled={!podeClamar() || claiming}
+              size="lg"
+              className="w-full disabled:opacity-50"
+              variant={!podeClamar() && !claiming ? "outline" : "default"}
+            >
                 {claiming ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -486,13 +567,13 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
                 ) : (
                   "✓ Já Resgatado Hoje"
                 )}
-              </Button>
-              {!podeClamar() && !claiming && (
-                <p className="text-xs text-muted-foreground">
-                  Volte amanhã para continuar sua sequência!
-                </p>
-              )}
-            </div>
+            </Button>
+            
+            {!podeClamar() && (
+              <p className="text-xs text-muted-foreground text-center mt-1">
+                Você já resgatou hoje
+              </p>
+            )}
           </div>
         )}
       </DialogContent>

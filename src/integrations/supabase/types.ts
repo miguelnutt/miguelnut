@@ -221,23 +221,35 @@ export type Database = {
       daily_reward_default_config: {
         Row: {
           created_at: string | null
+          custo_restauracao_por_dia: number
           id: string
+          permitir_restauracao: boolean
           pontos_dia_comum: number
           pontos_multiplo_cinco: number
+          rubini_coins_por_dia: number
+          tickets_por_dia: number
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          custo_restauracao_por_dia?: number
           id?: string
+          permitir_restauracao?: boolean
           pontos_dia_comum?: number
           pontos_multiplo_cinco?: number
+          rubini_coins_por_dia?: number
+          tickets_por_dia?: number
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          custo_restauracao_por_dia?: number
           id?: string
+          permitir_restauracao?: boolean
           pontos_dia_comum?: number
           pontos_multiplo_cinco?: number
+          rubini_coins_por_dia?: number
+          tickets_por_dia?: number
           updated_at?: string | null
         }
         Relationships: []

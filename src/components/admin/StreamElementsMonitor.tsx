@@ -266,6 +266,7 @@ export function StreamElementsMonitor() {
                   <SelectItem value="roleta_principal">Roleta Principal</SelectItem>
                   <SelectItem value="roleta_consolacao">Roleta Consolação</SelectItem>
                   <SelectItem value="store_points_reversal">Reverso (Estorno)</SelectItem>
+                  <SelectItem value="streak_restore">Restauração Streak</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -314,6 +315,7 @@ export function StreamElementsMonitor() {
                     case 'roleta_principal': return 'bg-amber-500/10 text-amber-700 border-amber-500/20';
                     case 'roleta_consolacao': return 'bg-orange-500/10 text-orange-700 border-orange-500/20';
                     case 'store_points_reversal': return 'bg-red-500/10 text-red-700 border-red-500/20';
+                    case 'streak_restore': return 'bg-indigo-500/10 text-indigo-700 border-indigo-500/20';
                     default: return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
                   }
                 };
@@ -325,6 +327,7 @@ export function StreamElementsMonitor() {
                     case 'roleta_principal': return 'Roleta Principal';
                     case 'roleta_consolacao': return 'Roleta Consolação';
                     case 'store_points_reversal': return 'Reverso';
+                    case 'streak_restore': return 'Restauração Streak';
                     default: return tipo;
                   }
                 };
