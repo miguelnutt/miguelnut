@@ -26,7 +26,7 @@ export const Navbar = () => {
   
   // Verificar status da recompensa diária - só quando auth estiver pronta
   const { hasRewardAvailable } = useDailyRewardStatus(
-    status === 'ready' ? twitchUser?.login : undefined
+    status === 'ready' ? twitchUser : undefined
   );
 
   useEffect(() => {

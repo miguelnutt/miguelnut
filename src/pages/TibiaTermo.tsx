@@ -479,19 +479,34 @@ const TibiaTermo = () => {
 
     setResetting(true);
     try {
-      // Buscar profile do usuário
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('twitch_username', resetUsername.toLowerCase())
-        .maybeSingle();
+      // Resolver usuário pela identidade canônica (suporta twitch_user_id ou nome)
+      const token = localStorage.getItem('twitch_token');
+      const resolveResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resolve-user-identity`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ searchTerm: resetUsername.trim() }),
+        }
+      );
 
-      if (profileError) throw profileError;
+      if (!resolveResponse.ok) {
+        toast.error("Erro ao buscar usuário");
+        return;
+      }
+
+      const resolveData = await resolveResponse.json();
       
-      if (!profile) {
+      if (!resolveData.canonicalProfile) {
         toast.error("Usuário não encontrado");
         return;
       }
+
+      const profileId = resolveData.canonicalProfile.id;
 
       // Deletar o jogo de hoje desse usuário
       const now = new Date();
@@ -501,7 +516,7 @@ const TibiaTermo = () => {
       const { error: deleteError } = await supabase
         .from('tibiatermo_user_games')
         .delete()
-        .eq('user_id', profile.id)
+        .eq('user_id', profileId)
         .eq('data_jogo', dateStr);
 
       if (deleteError) throw deleteError;

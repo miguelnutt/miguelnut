@@ -84,19 +84,53 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
       let profileId: string | null = null;
       let username: string | null = null;
 
-      // Tentar usar twitch user primeiro
-      if (twitchUser?.login) {
-        console.log('[DailyReward] Usando Twitch User:', twitchUser.login);
+      // Tentar usar twitch user primeiro (buscar por twitch_user_id que é a chave canônica)
+      if (twitchUser?.twitch_user_id) {
+        console.log('[DailyReward] Usando Twitch User ID:', twitchUser.twitch_user_id, 'Login:', twitchUser.login);
         
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id')
-          .eq('twitch_username', twitchUser.login)
+          .select('id, twitch_username')
+          .eq('twitch_user_id', twitchUser.twitch_user_id)
           .maybeSingle();
 
         if (profile) {
           profileId = profile.id;
-          username = twitchUser.login;
+          username = profile.twitch_username || twitchUser.login;
+          console.log('[DailyReward] ✓ Perfil encontrado por twitch_user_id');
+        } else {
+          console.log('[DailyReward] ⚠️ Perfil não encontrado por twitch_user_id, tentando criar...');
+          
+          // Se não encontrou, tentar criar/mesclar via edge function resolve-user-identity
+          try {
+            const token = localStorage.getItem('twitch_token');
+            const resolveResponse = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resolve-user-identity`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                },
+                body: JSON.stringify({ 
+                  twitch_user_id: twitchUser.twitch_user_id,
+                  searchTerm: twitchUser.login 
+                }),
+              }
+            );
+            
+            if (resolveResponse.ok) {
+              const resolveData = await resolveResponse.json();
+              if (resolveData.canonicalProfile) {
+                profileId = resolveData.canonicalProfile.id;
+                username = resolveData.canonicalProfile.twitch_username || twitchUser.login;
+                console.log('[DailyReward] ✓ Perfil resolvido/criado via resolve-user-identity');
+              }
+            }
+          } catch (err) {
+            console.error('[DailyReward] Erro ao resolver identidade:', err);
+          }
         }
       }
 

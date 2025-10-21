@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAuth } from "@/contexts/AuthContext";
+import { TwitchUser } from "./useTwitchAuth";
 
-export function useDailyRewardStatus(twitchUsername: string | undefined) {
+export function useDailyRewardStatus(twitchUser: TwitchUser | undefined | null) {
   const { authReady, sessionUserId } = useAuth();
   const [hasRewardAvailable, setHasRewardAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -10,63 +11,62 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
   const isFetchingRef = useRef(false);
   const lastCheckRef = useRef<string | null>(null);
 
-  // Buscar userId da sessão se não tiver twitchUsername
+  // Buscar userId da sessão se não tiver twitchUser
   useEffect(() => {
-    const getUserIdFromSession = async () => {
-      if (twitchUsername) return;
-      
+    if (!authReady || twitchUser) return;
+
+    const fetchSessionUserId = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
         setUserIdFromSession(session.user.id);
       }
     };
-    
-    getUserIdFromSession();
-  }, [twitchUsername]);
 
+    fetchSessionUserId();
+  }, [authReady, twitchUser]);
+
+  // Verificar se a recompensa está disponível
   useEffect(() => {
-    // GATE: Só verificar quando auth estiver pronto
     if (!authReady) {
       console.log('[DailyReward] Auth não está pronto, aguardando...');
-      setLoading(false);
       return;
     }
 
-    // Só verificar se tiver twitchUsername OU userId da sessão
-    if (!twitchUsername && !userIdFromSession && !sessionUserId) {
-      console.log('[DailyReward] Nenhum identificador de usuário disponível');
+    if (!twitchUser && !userIdFromSession && !sessionUserId) {
+      console.log('[DailyReward] Nenhum identificador disponível');
       setHasRewardAvailable(false);
       setLoading(false);
       return;
     }
 
+    console.log('[DailyReward] Verificando recompensa disponível...');
     checkRewardStatus();
 
-    // Ouvir mudanças na tabela user_daily_logins para atualizar em tempo real
+    // Verificar a cada 60 segundos
+    const interval = setInterval(checkRewardStatus, 60000);
+
+    // Subscrever mudanças em user_daily_logins
     const channel = supabase
-      .channel('daily_login_changes')
+      .channel("daily_logins_changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'user_daily_logins'
+          event: "*",
+          schema: "public",
+          table: "user_daily_logins",
         },
         () => {
-          console.log('[DailyReward] Detectou mudança em user_daily_logins, atualizando...');
+          console.log('[DailyReward] Mudança detectada em user_daily_logins');
           checkRewardStatus();
         }
       )
       .subscribe();
 
-    // Atualizar a cada 30 segundos também
-    const interval = setInterval(checkRewardStatus, 30000);
-
     return () => {
-      supabase.removeChannel(channel);
       clearInterval(interval);
+      channel.unsubscribe();
     };
-  }, [twitchUsername, userIdFromSession, authReady, sessionUserId]);
+  }, [authReady, twitchUser?.twitch_user_id, userIdFromSession, sessionUserId]);
 
   const checkRewardStatus = async () => {
     // Single-flight: evitar chamadas concorrentes
@@ -79,12 +79,12 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
       isFetchingRef.current = true;
       let userId: string | null = null;
 
-      // Tentar buscar perfil por twitch_username primeiro
-      if (twitchUsername) {
+      // Buscar perfil por twitch_user_id primeiro (identidade canônica)
+      if (twitchUser?.twitch_user_id) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("id")
-          .eq("twitch_username", twitchUsername)
+          .eq("twitch_user_id", twitchUser.twitch_user_id)
           .maybeSingle();
         
         if (profile) {
@@ -92,7 +92,7 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
         }
       }
 
-      // Se não encontrou por twitchUsername, usar userId da sessão
+      // Se não encontrou por twitch_user_id, usar userId da sessão
       if (!userId && (userIdFromSession || sessionUserId)) {
         userId = userIdFromSession || sessionUserId;
       }
@@ -109,6 +109,7 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
         console.log('[DailyReward] Verificação já feita para este userId, ignorando');
         return;
       }
+
       lastCheckRef.current = userId;
 
       console.log('[DailyReward] Verificando recompensa para userId:', userId);
