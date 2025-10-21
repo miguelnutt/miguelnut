@@ -441,40 +441,22 @@ export type Database = {
       rubini_coins_history: {
         Row: {
           created_at: string | null
-          error_message: string | null
           id: string
-          idempotency_key: string | null
           motivo: string
-          origem: string | null
-          referencia_id: string | null
-          retries: number | null
-          status: string | null
           user_id: string | null
           variacao: number
         }
         Insert: {
           created_at?: string | null
-          error_message?: string | null
           id?: string
-          idempotency_key?: string | null
           motivo: string
-          origem?: string | null
-          referencia_id?: string | null
-          retries?: number | null
-          status?: string | null
           user_id?: string | null
           variacao: number
         }
         Update: {
           created_at?: string | null
-          error_message?: string | null
           id?: string
-          idempotency_key?: string | null
           motivo?: string
-          origem?: string | null
-          referencia_id?: string | null
-          retries?: number | null
-          status?: string | null
           user_id?: string | null
           variacao?: number
         }

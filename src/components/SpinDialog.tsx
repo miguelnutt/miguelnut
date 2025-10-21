@@ -282,40 +282,27 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         return;
       }
 
-      // Se ganhou Rubini Coins, adicionar ao saldo automaticamente COM IDEMPOTÊNCIA
+      // Se ganhou Rubini Coins, adicionar ao saldo automaticamente
       if (resultado.tipo === "Rubini Coins" && userId) {
         const rubiniGanhos = parseInt(resultado.valor) || 0;
         
-        // Gerar idempotency_key único para esta operação
-        const idempotencyKey = `roulette-${wheel.id}-${userId}-${Date.now()}`;
-        
         try {
-          console.log(`[SpinDialog] 💰 Creditando ${rubiniGanhos} Rubini Coins com idempotency_key: ${idempotencyKey}`);
-          
-          const { data, error: rubiniError } = await supabase.functions.invoke('add-rubini-coins', {
+          const { error: rubiniError } = await supabase.functions.invoke('add-rubini-coins', {
             body: {
               userId: userId,
               quantidade: rubiniGanhos,
-              motivo: `Ganhou ${rubiniGanhos} Rubini Coins na roleta ${wheel.nome}`,
-              idempotencyKey: idempotencyKey,
-              origem: 'roulette',
-              referenciaId: wheel.id
+              motivo: `Ganhou ${rubiniGanhos} Rubini Coins na roleta ${wheel.nome}`
             }
           });
           
           if (rubiniError) {
-            console.error("[SpinDialog] ❌ Erro ao adicionar Rubini Coins:", rubiniError);
-            toast.error("Erro ao creditar Rubini Coins. Operação registrada para reprocessamento.");
-          } else if (data?.duplicated) {
-            console.log("[SpinDialog] ⚠️ Operação duplicada detectada, sem crédito adicional");
-            toast.info(`${nomeParaUsar} já havia recebido estes ${rubiniGanhos} Rubini Coins`);
+            console.error("Erro ao adicionar Rubini Coins:", rubiniError);
+            toast.warning("Rubini Coins não foram adicionados automaticamente");
           } else {
-            console.log("[SpinDialog] ✅ Rubini Coins creditados com sucesso");
             toast.success(`${nomeParaUsar} ganhou +${rubiniGanhos} Rubini Coins!`);
           }
         } catch (rcError: any) {
-          console.error("[SpinDialog] ❌ Erro inesperado ao adicionar Rubini Coins:", rcError);
-          toast.error("Falha ao creditar Rubini Coins");
+          console.error("Erro ao adicionar Rubini Coins:", rcError);
         }
         
         setShowResultDialog(false);
