@@ -181,12 +181,9 @@ export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="wheel-dialog-description">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{wheel ? "Editar Roleta" : "Nova Roleta"}</DialogTitle>
-          <p id="wheel-dialog-description" className="text-sm text-muted-foreground">
-            Configure o nome, duração do giro e recompensas da roleta
-          </p>
         </DialogHeader>
 
         <div className="space-y-4">

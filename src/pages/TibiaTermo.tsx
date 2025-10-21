@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { Loader2, Settings, Trash2, Plus } from "lucide-react";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { useAdmin } from "@/hooks/useAdmin";
-import { useAuth } from "@/contexts/AuthContext";
 import { WheelRanking } from "@/components/WheelRanking";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -35,7 +34,6 @@ import { Label } from "@/components/ui/label";
 const TibiaTermo = () => {
   const navigate = useNavigate();
   const { user: twitchUser, loading: twitchLoading } = useTwitchAuth();
-  const { authReady } = useAuth();
   const [user, setUser] = useState<any>(null);
   const { isAdmin, loading: adminLoading } = useAdmin(user);
   const [gameData, setGameData] = useState<any>(null);
@@ -46,8 +44,6 @@ const TibiaTermo = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loadingGame, setLoadingGame] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const isLoadingGameRef = useRef(false);
-  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Admin states
   const [words, setWords] = useState<any[]>([]);
@@ -68,43 +64,24 @@ const TibiaTermo = () => {
   }, []);
 
   useEffect(() => {
-    // Limpar timeout anterior
-    if (loadTimeoutRef.current) {
-      clearTimeout(loadTimeoutRef.current);
-    }
-
-    // Só proceder se auth estiver pronto
-    if (!authReady || twitchLoading || adminLoading) {
-      console.log('[TibiaTermo] Aguardando auth...', { authReady, twitchLoading, adminLoading });
-      return;
-    }
-
-    // Admin sempre pode acessar (se tiver Twitch)
-    if (isAdmin && twitchUser) {
-      loadTimeoutRef.current = setTimeout(() => {
-        loadGame();
-      }, 300);
-      return;
-    }
-    
-    // Não-admin precisa de login Twitch
-    if (!twitchUser) {
-      toast.error("Você precisa estar logado com a Twitch para jogar!");
-      navigate("/login");
-      return;
-    }
-
-    // Carregar jogo com debounce
-    loadTimeoutRef.current = setTimeout(() => {
-      loadGame();
-    }, 300);
-
-    return () => {
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current);
+    if (!twitchLoading && !adminLoading) {
+      // Admin sempre pode acessar
+      if (isAdmin) {
+        if (twitchUser) {
+          loadGame();
+        }
+        return;
       }
-    };
-  }, [authReady, twitchUser, twitchLoading, isAdmin, adminLoading, navigate]);
+      
+      // Não-admin precisa de login Twitch
+      if (!twitchUser) {
+        toast.error("Você precisa estar logado com a Twitch para jogar!");
+        navigate("/login");
+      } else {
+        loadGame();
+      }
+    }
+  }, [twitchUser, twitchLoading, isAdmin, adminLoading, navigate]);
 
   useEffect(() => {
     if (isAdmin && showAdmin) {
@@ -119,22 +96,9 @@ const TibiaTermo = () => {
   };
 
   const loadGame = async () => {
-    if (!twitchUser) {
-      console.log('[TibiaTermo] loadGame: sem twitch user');
-      return;
-    }
-
-    // Single-flight: evitar múltiplas chamadas
-    if (isLoadingGameRef.current) {
-      console.log('[TibiaTermo] loadGame: já está carregando, ignorando...');
-      return;
-    }
+    if (!twitchUser) return;
     
-    isLoadingGameRef.current = true;
     setLoadingGame(true);
-    
-    console.log('[TibiaTermo] Buscando palavra do dia...');
-    
     try {
       const twitchToken = localStorage.getItem('twitch_token');
       if (!twitchToken) {
@@ -149,16 +113,7 @@ const TibiaTermo = () => {
         },
       });
 
-      if (error) {
-        console.error('[TibiaTermo] Erro ao buscar palavra:', error);
-        throw error;
-      }
-
-      console.log('[TibiaTermo] Palavra carregada:', { 
-        palavra_length: data.palavra?.length, 
-        tentativas: data.tentativas?.length,
-        acertou: data.acertou 
-      });
+      if (error) throw error;
 
       setGameData(data);
       setGuesses(data.tentativas || []);
@@ -168,19 +123,10 @@ const TibiaTermo = () => {
         setWon(data.acertou);
       }
     } catch (error: any) {
-      console.error('[TibiaTermo] Error loading game:', error);
-      
-      if (error.message?.includes('404')) {
-        toast.error("Função do jogo não encontrada. Entre em contato com o suporte.");
-      } else if (error.message?.includes('401')) {
-        toast.error("Sessão expirada. Faça login novamente.");
-        navigate("/login");
-      } else {
-        toast.error(error.message || "Erro ao carregar jogo");
-      }
+      console.error('Error loading game:', error);
+      toast.error(error.message || "Erro ao carregar jogo");
     } finally {
       setLoadingGame(false);
-      isLoadingGameRef.current = false;
     }
   };
 

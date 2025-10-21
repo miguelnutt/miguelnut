@@ -12,7 +12,6 @@ interface AuthState {
   twitchUser: TwitchUser | null;
   isAdmin: boolean;
   lastCheckedAt: number;
-  authReady: boolean;
 }
 
 interface AuthContextValue extends AuthState {
@@ -30,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     twitchUser: null,
     isAdmin: false,
     lastCheckedAt: Date.now(),
-    authReady: false,
   });
 
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
@@ -78,8 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 3. Aguardar twitchUser se ainda estiver carregando
       // (Será atualizado pelo useEffect que observa twitchUser)
       
-      const authIsReady = !!(sessionUserId || twitchUser);
-      
       setState({
         status: 'ready',
         sessionUserId,
@@ -87,10 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         twitchUser: twitchUser || null,
         isAdmin,
         lastCheckedAt: Date.now(),
-        authReady: authIsReady,
       });
 
-      console.log('[AuthContext] Hydrate completo:', { sessionUserId, isAdmin, twitchUser: twitchUser?.login, authReady: authIsReady });
+      console.log('[AuthContext] Hydrate completo:', { sessionUserId, isAdmin, twitchUser: twitchUser?.login });
     } catch (error) {
       console.error('[AuthContext] Erro fatal no hydrate:', error);
       setState(prev => ({ ...prev, status: 'error', lastCheckedAt: Date.now() }));
@@ -100,14 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Atualizar twitchUser quando ele mudar (sem resetar o resto)
   useEffect(() => {
     if (state.status === 'ready' && !twitchLoading) {
-      const authIsReady = !!(state.sessionUserId || twitchUser);
       setState(prev => ({
         ...prev,
         twitchUser: twitchUser || null,
-        authReady: authIsReady,
       }));
     }
-  }, [twitchUser, twitchLoading, state.status, state.sessionUserId]);
+  }, [twitchUser, twitchLoading, state.status]);
 
   // Hydrate inicial
   useEffect(() => {
@@ -128,7 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           twitchUser: null,
           isAdmin: false,
           lastCheckedAt: Date.now(),
-          authReady: false,
         });
       }
     });
@@ -153,7 +145,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       twitchUser: null,
       isAdmin: false,
       lastCheckedAt: Date.now(),
-      authReady: false,
     });
   };
 

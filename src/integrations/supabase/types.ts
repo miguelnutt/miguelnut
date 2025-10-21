@@ -310,97 +310,32 @@ export type Database = {
           },
         ]
       }
-      profile_merge_audit: {
-        Row: {
-          canonical_profile_id: string
-          duplicate_profile_id: string
-          id: string
-          merged_at: string
-          merged_by: string | null
-          metadata: Json | null
-          rubini_coins_after_canonical: number
-          rubini_coins_before_canonical: number
-          rubini_coins_before_duplicate: number
-          tickets_after_canonical: number
-          tickets_before_canonical: number
-          tickets_before_duplicate: number
-        }
-        Insert: {
-          canonical_profile_id: string
-          duplicate_profile_id: string
-          id?: string
-          merged_at?: string
-          merged_by?: string | null
-          metadata?: Json | null
-          rubini_coins_after_canonical?: number
-          rubini_coins_before_canonical?: number
-          rubini_coins_before_duplicate?: number
-          tickets_after_canonical?: number
-          tickets_before_canonical?: number
-          tickets_before_duplicate?: number
-        }
-        Update: {
-          canonical_profile_id?: string
-          duplicate_profile_id?: string
-          id?: string
-          merged_at?: string
-          merged_by?: string | null
-          metadata?: Json | null
-          rubini_coins_after_canonical?: number
-          rubini_coins_before_canonical?: number
-          rubini_coins_before_duplicate?: number
-          tickets_after_canonical?: number
-          tickets_before_canonical?: number
-          tickets_before_duplicate?: number
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
-          display_name_canonical: string | null
           id: string
-          is_active: boolean
-          merged_into: string | null
           nome: string
           nome_personagem: string | null
-          twitch_user_id: string | null
           twitch_username: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
-          display_name_canonical?: string | null
           id: string
-          is_active?: boolean
-          merged_into?: string | null
           nome: string
           nome_personagem?: string | null
-          twitch_user_id?: string | null
           twitch_username?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
-          display_name_canonical?: string | null
           id?: string
-          is_active?: boolean
-          merged_into?: string | null
           nome?: string
           nome_personagem?: string | null
-          twitch_user_id?: string | null
           twitch_username?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_merged_into_fkey"
-            columns: ["merged_into"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       promotional_bar_config: {
         Row: {
@@ -1031,41 +966,6 @@ export type Database = {
           },
         ]
       }
-      user_aliases: {
-        Row: {
-          changed_at: string
-          id: string
-          old_display_name: string
-          old_login: string | null
-          twitch_user_id: string
-          user_id: string
-        }
-        Insert: {
-          changed_at?: string
-          id?: string
-          old_display_name: string
-          old_login?: string | null
-          twitch_user_id: string
-          user_id: string
-        }
-        Update: {
-          changed_at?: string
-          id?: string
-          old_display_name?: string
-          old_login?: string | null
-          twitch_user_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_aliases_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_daily_logins: {
         Row: {
           created_at: string | null
@@ -1237,12 +1137,11 @@ export type Database = {
         Args: { p_nome: string }
         Returns: string
       }
-      get_or_merge_profile_v2: {
+      get_or_merge_profile: {
         Args: {
-          p_display_name?: string
-          p_login?: string
+          p_nome?: string
           p_nome_personagem?: string
-          p_twitch_user_id: string
+          p_twitch_username?: string
         }
         Returns: string
       }

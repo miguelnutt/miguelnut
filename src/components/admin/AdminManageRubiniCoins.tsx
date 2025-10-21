@@ -27,45 +27,59 @@ export function AdminManageRubiniCoins() {
 
     setBuscando(true);
     try {
-      // Usar edge function para resolver identidade canônica
-      const { data, error } = await supabase.functions.invoke('resolve-user-identity', {
-        body: { searchTerm: buscaUsuario.trim() }
-      });
+      // Buscar todos os perfis correspondentes (pode haver duplicatas)
+      const { data: allProfiles, error: searchError } = await supabase
+        .from('profiles')
+        .select('id, nome, twitch_username')
+        .or(`nome.ilike.%${buscaUsuario}%,twitch_username.ilike.%${buscaUsuario}%`);
 
-      if (error) throw error;
+      if (searchError) throw searchError;
 
-      if (!data.success || !data.canonicalProfile) {
+      if (!allProfiles || allProfiles.length === 0) {
         toast.error('Usuário não encontrado');
         setUsuarioSelecionado(null);
         setSaldoAtual(0);
         return;
       }
 
-      // Usar perfil canônico e saldo consolidado
-      const profile = data.canonicalProfile;
-      const consolidatedBalance = data.consolidatedBalances.rubini_coins;
-
-      setUsuarioSelecionado({
-        id: profile.id,
-        nome: profile.display_name_canonical || profile.nome,
-        twitch_username: profile.twitch_username,
-        twitch_user_id: profile.twitch_user_id,
-        aliases: data.aliases,
-        hasDuplicates: data.hasDuplicates,
-        duplicateProfiles: data.duplicateProfiles
-      });
-
-      setSaldoAtual(consolidatedBalance);
-
-      let successMessage = `Usuário encontrado: ${profile.display_name_canonical || profile.nome}`;
-      if (data.hasDuplicates) {
-        successMessage += ` (⚠️ ${data.duplicateProfiles.length} duplicatas - saldo consolidado)`;
+      // Se houver múltiplos perfis, buscar saldos e priorizar quem tem saldo > 0
+      let perfilSelecionado = allProfiles[0];
+      
+      if (allProfiles.length > 1) {
+        console.warn(`⚠️ Perfis duplicados encontrados para "${buscaUsuario}":`, allProfiles);
+        toast.warning(`Encontrados ${allProfiles.length} perfis duplicados. Selecionando o com saldo.`);
+        
+        // Buscar saldos de todos
+        const saldosPromises = allProfiles.map(p => 
+          supabase
+            .from('rubini_coins_balance')
+            .select('saldo')
+            .eq('user_id', p.id)
+            .maybeSingle()
+        );
+        
+        const saldosResults = await Promise.all(saldosPromises);
+        
+        // Priorizar perfil com saldo > 0
+        const perfilComSaldo = allProfiles.find((_, index) => {
+          const saldo = saldosResults[index].data?.saldo || 0;
+          return saldo > 0;
+        });
+        
+        perfilSelecionado = perfilComSaldo || allProfiles[0];
       }
-      if (data.aliases.length > 0) {
-        successMessage += ` [${data.aliases.length} alias]`;
-      }
 
-      toast.success(successMessage);
+      setUsuarioSelecionado(perfilSelecionado);
+
+      // Buscar saldo atual do perfil selecionado
+      const { data: saldo } = await supabase
+        .from('rubini_coins_balance')
+        .select('saldo')
+        .eq('user_id', perfilSelecionado.id)
+        .maybeSingle();
+
+      setSaldoAtual(saldo?.saldo || 0);
+      toast.success(`Usuário encontrado: ${perfilSelecionado.nome || perfilSelecionado.twitch_username}`);
     } catch (error: any) {
       console.error('Erro ao buscar usuário:', error);
       toast.error('Erro ao buscar usuário');

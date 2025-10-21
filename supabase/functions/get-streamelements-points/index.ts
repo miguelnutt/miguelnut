@@ -18,16 +18,6 @@ serve(async (req) => {
   }
 
   try {
-    // Validar Authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.error('[get-streamelements-points] Missing or invalid Authorization header');
-      return new Response(
-        JSON.stringify({ error: 'UNAUTHORIZED', message: 'Token de autenticação obrigatório' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
     const body = await req.json();
     console.log('[get-streamelements-points] Request body:', JSON.stringify(body));
     

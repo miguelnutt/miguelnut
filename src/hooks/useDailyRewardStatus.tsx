@@ -1,14 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-helper";
-import { useAuth } from "@/contexts/AuthContext";
 
 export function useDailyRewardStatus(twitchUsername: string | undefined) {
-  const { authReady, sessionUserId } = useAuth();
   const [hasRewardAvailable, setHasRewardAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userIdFromSession, setUserIdFromSession] = useState<string | null>(null);
-  const isFetchingRef = useRef(false);
-  const lastCheckRef = useRef<string | null>(null);
 
   // Buscar userId da sessão se não tiver twitchUsername
   useEffect(() => {
@@ -25,16 +21,8 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
   }, [twitchUsername]);
 
   useEffect(() => {
-    // GATE: Só verificar quando auth estiver pronto
-    if (!authReady) {
-      console.log('[DailyReward] Auth não está pronto, aguardando...');
-      setLoading(false);
-      return;
-    }
-
     // Só verificar se tiver twitchUsername OU userId da sessão
-    if (!twitchUsername && !userIdFromSession && !sessionUserId) {
-      console.log('[DailyReward] Nenhum identificador de usuário disponível');
+    if (!twitchUsername && !userIdFromSession) {
       setHasRewardAvailable(false);
       setLoading(false);
       return;
@@ -66,17 +54,10 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [twitchUsername, userIdFromSession, authReady, sessionUserId]);
+  }, [twitchUsername, userIdFromSession]);
 
   const checkRewardStatus = async () => {
-    // Single-flight: evitar chamadas concorrentes
-    if (isFetchingRef.current) {
-      console.log('[DailyReward] Verificação já em andamento, ignorando chamada duplicada');
-      return;
-    }
-
     try {
-      isFetchingRef.current = true;
       let userId: string | null = null;
 
       // Tentar buscar perfil por twitch_username primeiro
@@ -93,8 +74,8 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
       }
 
       // Se não encontrou por twitchUsername, usar userId da sessão
-      if (!userId && (userIdFromSession || sessionUserId)) {
-        userId = userIdFromSession || sessionUserId;
+      if (!userId && userIdFromSession) {
+        userId = userIdFromSession;
       }
 
       // Se ainda não tem userId, não fazer nada
@@ -103,13 +84,6 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
         setLoading(false);
         return;
       }
-
-      // Debounce: evitar verificações duplicadas para o mesmo userId
-      if (lastCheckRef.current === userId) {
-        console.log('[DailyReward] Verificação já feita para este userId, ignorando');
-        return;
-      }
-      lastCheckRef.current = userId;
 
       console.log('[DailyReward] Verificando recompensa para userId:', userId);
 
@@ -152,7 +126,6 @@ export function useDailyRewardStatus(twitchUsername: string | undefined) {
       console.error("[DailyReward] Erro ao verificar status da recompensa:", error);
     } finally {
       setLoading(false);
-      isFetchingRef.current = false;
     }
   };
 
