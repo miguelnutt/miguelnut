@@ -27,33 +27,45 @@ export function AdminManageRubiniCoins() {
 
     setBuscando(true);
     try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id, nome, twitch_username')
-        .or(`nome.ilike.%${buscaUsuario}%,twitch_username.ilike.%${buscaUsuario}%`)
-        .limit(1)
-        .maybeSingle();
+      // Usar edge function para resolver identidade canônica
+      const { data, error } = await supabase.functions.invoke('resolve-user-identity', {
+        body: { searchTerm: buscaUsuario.trim() }
+      });
 
       if (error) throw error;
 
-      if (!profiles) {
+      if (!data.success || !data.canonicalProfile) {
         toast.error('Usuário não encontrado');
         setUsuarioSelecionado(null);
         setSaldoAtual(0);
         return;
       }
 
-      setUsuarioSelecionado(profiles);
+      // Usar perfil canônico e saldo consolidado
+      const profile = data.canonicalProfile;
+      const consolidatedBalance = data.consolidatedBalances.rubini_coins;
 
-      // Buscar saldo atual
-      const { data: saldo } = await supabase
-        .from('rubini_coins_balance')
-        .select('saldo')
-        .eq('user_id', profiles.id)
-        .maybeSingle();
+      setUsuarioSelecionado({
+        id: profile.id,
+        nome: profile.display_name_canonical || profile.nome,
+        twitch_username: profile.twitch_username,
+        twitch_user_id: profile.twitch_user_id,
+        aliases: data.aliases,
+        hasDuplicates: data.hasDuplicates,
+        duplicateProfiles: data.duplicateProfiles
+      });
 
-      setSaldoAtual(saldo?.saldo || 0);
-      toast.success('Usuário encontrado');
+      setSaldoAtual(consolidatedBalance);
+
+      let successMessage = `Usuário encontrado: ${profile.display_name_canonical || profile.nome}`;
+      if (data.hasDuplicates) {
+        successMessage += ` (⚠️ ${data.duplicateProfiles.length} duplicatas - saldo consolidado)`;
+      }
+      if (data.aliases.length > 0) {
+        successMessage += ` [${data.aliases.length} alias]`;
+      }
+
+      toast.success(successMessage);
     } catch (error: any) {
       console.error('Erro ao buscar usuário:', error);
       toast.error('Erro ao buscar usuário');

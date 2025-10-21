@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import { Loader2, Trophy, Flame, Gift, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase-helper";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UserDailyLogin {
   dia_atual: number;
@@ -24,7 +25,10 @@ interface DailyRewardDialogProps {
 
 export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps) {
   const { user: twitchUser, loading: twitchLoading } = useTwitchAuth();
+  const { authReady } = useAuth();
   const [loading, setLoading] = useState(true);
+  const loadingRef = useRef(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [userLogin, setUserLogin] = useState<UserDailyLogin | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -39,20 +43,42 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
   const [restaurando, setRestaurando] = useState(false);
   const [permitirRestauracao, setPermitirRestauracao] = useState(true);
 
-  // Único useEffect - recarregar sempre que abrir E quando twitchAuth terminar de carregar
+  // Único useEffect - recarregar sempre que abrir E quando auth estiver pronto
   useEffect(() => {
-    // Guard: só executar quando não estiver loading e dialog estiver aberto
-    if (!open || twitchLoading) {
+    // Limpar timer anterior
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Guard: só executar quando auth estiver pronto e dialog aberto
+    if (!open || !authReady || twitchLoading) {
+      console.log('[DailyReward] Aguardando condições: open=%s authReady=%s twitchLoading=%s', open, authReady, twitchLoading);
       return;
     }
     
-    console.log('[DailyReward] Dialog aberto e auth carregado, carregando dados...');
-    loadData();
-  }, [open, twitchLoading]);
+    // Debounce de 500ms
+    debounceTimerRef.current = setTimeout(() => {
+      console.log('[DailyReward] Dialog aberto e auth carregado, carregando dados...');
+      loadData();
+    }, 500);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [open, authReady, twitchLoading]);
 
   const loadData = async () => {
+    // Single-flight: evitar chamadas concorrentes
+    if (loadingRef.current) {
+      console.log('[DailyReward] loadData já em execução, ignorando chamada duplicada');
+      return;
+    }
+
     console.log('[DailyReward] ========== CARREGANDO DADOS ==========');
     
+    loadingRef.current = true;
     setLoading(true);
     try {
       let profileId: string | null = null;
@@ -180,43 +206,23 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
             setPontosError(false);
             
             try {
-              const pontosResponse = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-streamelements-points`,
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                  },
-                  body: JSON.stringify({ username }),
-                }
-              );
+              const { data: pontosData, error: pontosError } = await supabase.functions.invoke('get-streamelements-points', {
+                body: { username }
+              });
             
-              if (!pontosResponse.ok) throw new Error('Falha ao buscar pontos');
+              if (pontosError) throw pontosError;
               
-              const pontosData = await pontosResponse.json();
-              setPontosDisponiveis(pontosData.points ?? 0);
+              setPontosDisponiveis(pontosData?.points ?? 0);
             } catch (err) {
               console.error('[DailyReward] Erro ao buscar pontos:', err);
               // Retry uma vez
               try {
-                const retryResponse = await fetch(
-                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-streamelements-points`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`,
-                      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                    },
-                    body: JSON.stringify({ username }),
-                  }
-                );
+                const { data: retryData, error: retryError } = await supabase.functions.invoke('get-streamelements-points', {
+                  body: { username }
+                });
                 
-                if (retryResponse.ok) {
-                  const pontosData = await retryResponse.json();
-                  setPontosDisponiveis(pontosData.points ?? 0);
+                if (!retryError) {
+                  setPontosDisponiveis(retryData?.points ?? 0);
                 } else {
                   setPontosError(true);
                 }
@@ -265,6 +271,7 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
       toast.error("Erro ao carregar recompensas");
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   };
 

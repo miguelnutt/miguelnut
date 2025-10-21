@@ -196,7 +196,7 @@ export default function Index() {
                       </div>
                       <div className="aspect-video rounded-lg overflow-hidden bg-muted">
                         <iframe
-                          src={`https://player.twitch.tv/?channel=miguelnutt&parent=${window.location.hostname}&autoplay=true&muted=false`}
+                          src={`https://player.twitch.tv/?channel=miguelnutt&parent=${window.location.hostname}&autoplay=true&muted=true`}
                           height="100%"
                           width="100%"
                           allowFullScreen

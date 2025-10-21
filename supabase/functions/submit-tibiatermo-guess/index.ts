@@ -6,9 +6,13 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  const requestId = crypto.randomUUID();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -17,7 +21,8 @@ Deno.serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+      console.error(`[${requestId}] JWT ausente`);
+      return new Response(JSON.stringify({ error: 'Não autorizado - JWT ausente' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -25,7 +30,7 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     
-    console.log('Validating Twitch token...');
+    console.log(`[${requestId}] Validando Twitch token...`);
     
     // Validate Twitch token
     const twitchMeResponse = await fetch(
@@ -40,41 +45,46 @@ Deno.serve(async (req) => {
       }
     );
 
-    console.log('Twitch auth response status:', twitchMeResponse.status);
+    console.log(`[${requestId}] Twitch auth response:`, twitchMeResponse.status);
     
     const twitchData = await twitchMeResponse.json();
-    console.log('Twitch auth data:', JSON.stringify(twitchData));
     
     if (!twitchData.success || !twitchData.user) {
-      console.error('Twitch auth failed:', twitchData);
-      return new Response(JSON.stringify({ error: 'Usuário não encontrado', details: twitchData }), {
+      console.error(`[${requestId}] Twitch auth failed:`, twitchData);
+      return new Response(JSON.stringify({ error: 'Usuário não autenticado', details: twitchData }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    const twitchUserId = twitchData.user.id;
     const twitchUsername = twitchData.user.login;
     const displayName = twitchData.user.display_name;
 
-    // Get or merge profile ID
-    const { data: profileId, error: profileError } = await supabase
-      .rpc('get_or_merge_profile', {
-        p_twitch_username: twitchUsername,
-        p_nome: displayName,
-        p_nome_personagem: null
-      });
+    console.log(`[${requestId}] Twitch user:`, { twitchUserId, twitchUsername });
+
+    // Get or merge profile using canonical identity (twitch_user_id)
+    const { data: profileId, error: profileError } = await supabase.rpc('get_or_merge_profile_v2', {
+      p_twitch_user_id: twitchUserId,
+      p_display_name: displayName,
+      p_login: twitchUsername,
+    });
 
     if (profileError || !profileId) {
-      console.error('Error getting profile:', profileError);
-      return new Response(JSON.stringify({ error: 'Erro ao obter perfil' }), {
+      console.error(`[${requestId}] Erro ao obter perfil:`, profileError);
+      return new Response(JSON.stringify({ error: 'Erro ao identificar usuário' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log(`[${requestId}] Profile ID:`, profileId);
+
     const profile = { id: profileId };
 
     const { tentativa, jogo_id } = await req.json();
+
+    console.log(`[${requestId}] Tentativa recebida:`, { jogo_id, tentativa_length: tentativa?.length });
 
     // Get current game
     const { data: game, error: gameError } = await supabase
@@ -85,6 +95,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (gameError || !game) {
+      console.error(`[${requestId}] Jogo não encontrado:`, gameError);
       return new Response(JSON.stringify({ error: 'Jogo não encontrado' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -240,6 +251,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    const duration = Date.now() - startTime;
+    console.log(`[${requestId}] Tentativa processada`, {
+      acertou,
+      num_tentativas: numTentativas,
+      jogo_finalizado: jogoFinalizado,
+      premiacao_pontos,
+      premiacao_tickets,
+      duration_ms: duration
+    });
+
     return new Response(JSON.stringify({ 
       success: true,
       tentativas: novasTentativas,
@@ -253,7 +274,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error('Error in submit-tibiatermo-guess:', error);
+    console.error(`[${requestId}] Error in submit-tibiatermo-guess:`, error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
