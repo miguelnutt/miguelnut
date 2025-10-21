@@ -24,32 +24,23 @@ export default function AdminConsole() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { isAdmin, loading: adminLoading } = useAdmin(user);
-  const [activeSection, setActiveSection] = useState("overview");
-  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
     checkUser();
   }, []);
 
-  // Marcar que a verificação de admin foi concluída
+  // Redirecionar para home se não for admin, pois o console real é via Dialog no Navbar
   useEffect(() => {
     if (!adminLoading && !loading) {
-      setHasChecked(true);
+      if (!isAdmin) {
+        navigate("/");
+      }
     }
-  }, [adminLoading, loading]);
-
-  // Só redireciona DEPOIS que verificou tudo E confirmou que não é admin
-  useEffect(() => {
-    if (hasChecked && !isAdmin && user) {
-      console.log("[AdminConsole] Verificação completa: não é admin, redirecionando...");
-      navigate("/");
-    }
-  }, [hasChecked, isAdmin, user, navigate]);
+  }, [adminLoading, loading, isAdmin, navigate]);
 
   const checkUser = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log("[AdminConsole] User carregado:", user?.id);
       setUser(user);
       
       if (!user) {
@@ -63,9 +54,7 @@ export default function AdminConsole() {
     }
   };
 
-  // Mostrar loading enquanto não terminou de verificar TUDO
-  if (loading || adminLoading || !hasChecked) {
-    console.log("[AdminConsole] Loading... (loading:", loading, "adminLoading:", adminLoading, "hasChecked:", hasChecked, ")");
+  if (loading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -74,59 +63,28 @@ export default function AdminConsole() {
     );
   }
 
-  // Se não é admin depois de verificar tudo, mostra loading (vai redirecionar)
-  if (!isAdmin) {
-    console.log("[AdminConsole] Não é admin após verificação completa");
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="ml-2 text-muted-foreground">Redirecionando...</p>
-      </div>
-    );
-  }
-
-  console.log("[AdminConsole] É admin! Renderizando console...");
-
+  // Nota: Esta página é mantida por compatibilidade, mas o console real 
+  // abre via Dialog no Navbar (botão Admin Console)
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       
       <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Console de Administração</h1>
-          <p className="text-muted-foreground">Gerencie todas as configurações do sistema</p>
-        </div>
-
-        {/* Menu de navegação */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {menuItems.map((item) => (
-            <Button
-              key={item.id}
-              variant={activeSection === item.id ? "default" : "outline"}
-              onClick={() => setActiveSection(item.id)}
-              className="flex items-center gap-2"
-            >
-              <item.icon className="h-4 w-4" />
-              {item.title}
-            </Button>
-          ))}
-        </div>
-
-        {/* Conteúdo */}
         <Card>
           <CardHeader>
-            <CardTitle>{menuItems.find(m => m.id === activeSection)?.title}</CardTitle>
+            <CardTitle>Console de Administração</CardTitle>
             <CardDescription>
-              Seção de {menuItems.find(m => m.id === activeSection)?.title.toLowerCase()}
+              Use o botão "Admin Console" no topo da página para abrir o console completo
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              Conteúdo da seção "{activeSection}" em desenvolvimento.
+            <p className="text-muted-foreground mb-4">
+              O Console de Administração completo abre em uma janela modal através do botão 
+              <strong> Admin Console</strong> localizado no topo de qualquer página.
             </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Esta é a nova Console de Administração com layout modular e organizado.
-            </p>
+            <Button onClick={() => navigate("/")}>
+              Voltar para Home
+            </Button>
           </CardContent>
         </Card>
       </div>
