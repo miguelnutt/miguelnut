@@ -127,30 +127,32 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
     try {
       const nomeParaUsar = nomeVencedor || "Visitante";
       
-      console.log("Obtendo ou criando perfil para:", nomeParaUsar);
+      console.log("[Roulette] 🎯 Resolvendo identidade para:", nomeParaUsar);
       
-      // Usar a função get_or_merge_profile para buscar ou criar automaticamente
-      const { data: userId, error: profileError } = await supabase
-        .rpc('get_or_merge_profile', {
-          p_twitch_username: nomeParaUsar,
-          p_nome: nomeParaUsar
-        });
+      // Usar a edge function resolve-user-identity para obter o perfil canônico
+      const { data: identityData, error: identityError } = await supabase.functions.invoke('resolve-user-identity', {
+        body: {
+          searchTerm: nomeParaUsar
+        }
+      });
 
-      if (profileError || !userId) {
-        console.error("Erro ao obter/criar perfil:", profileError);
+      if (identityError || !identityData?.canonicalProfile) {
+        console.error("[Roulette] ❌ Erro ao resolver identidade:", identityError);
         toast.error("Erro ao processar usuário");
         setAwaitingConfirmation(false);
         return;
       }
 
-      console.log("Perfil obtido/criado com sucesso. User ID:", userId);
+      const userId = identityData.canonicalProfile.id;
+      const profileData = identityData.canonicalProfile;
+      
+      console.log("[Roulette] ✅ Perfil canônico resolvido:", {
+        userId,
+        nome: profileData.nome,
+        twitch_user_id: profileData.twitch_user_id,
+        hasDuplicates: identityData.hasDuplicates
+      });
 
-      // Buscar dados completos do perfil
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, nome, twitch_username, nome_personagem')
-        .eq('id', userId)
-        .single();
 
       // Se for Rubini Coins, usar o nome_personagem do perfil encontrado
       let personagemInfo = null;
@@ -286,11 +288,18 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       if (resultado.tipo === "Rubini Coins" && userId) {
         const rubiniGanhos = parseInt(resultado.valor) || 0;
         
-        // Gerar idempotency_key único para esta operação
-        const idempotencyKey = `roulette-${wheel.id}-${userId}-${Date.now()}`;
+        // Gerar idempotency_key único e consistente baseado em timestamp truncado
+        const timestampTrunc = Math.floor(Date.now() / 1000) * 1000;
+        const idempotencyKey = `roulette-${wheel.id}-${userId}-${timestampTrunc}`;
         
         try {
-          console.log(`[SpinDialog] 💰 Creditando ${rubiniGanhos} Rubini Coins com idempotency_key: ${idempotencyKey}`);
+          console.log(`[Roulette] 💰 Creditando ${rubiniGanhos} Rubini Coins`, {
+            action: 'roulette.pay.rc',
+            userId,
+            value: rubiniGanhos,
+            idempotencyKey,
+            wheelId: wheel.id
+          });
           
           const { data, error: rubiniError } = await supabase.functions.invoke('add-rubini-coins', {
             body: {
@@ -304,17 +313,21 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           });
           
           if (rubiniError) {
-            console.error("[SpinDialog] ❌ Erro ao adicionar Rubini Coins:", rubiniError);
+            console.error("[Roulette] ❌ Erro ao creditar Rubini Coins:", rubiniError);
             toast.error("Erro ao creditar Rubini Coins. Operação registrada para reprocessamento.");
           } else if (data?.duplicated) {
-            console.log("[SpinDialog] ⚠️ Operação duplicada detectada, sem crédito adicional");
+            console.log("[Roulette] ⚠️ Operação duplicada detectada");
             toast.info(`${nomeParaUsar} já havia recebido estes ${rubiniGanhos} Rubini Coins`);
           } else {
-            console.log("[SpinDialog] ✅ Rubini Coins creditados com sucesso");
+            console.log("[Roulette] ✅ Rubini Coins creditados", {
+              action: 'roulette.pay.rc.confirmed',
+              userId,
+              value: rubiniGanhos
+            });
             toast.success(`${nomeParaUsar} ganhou +${rubiniGanhos} Rubini Coins!`);
           }
         } catch (rcError: any) {
-          console.error("[SpinDialog] ❌ Erro inesperado ao adicionar Rubini Coins:", rcError);
+          console.error("[Roulette] ❌ Erro inesperado:", rcError);
           toast.error("Falha ao creditar Rubini Coins");
         }
         
@@ -508,11 +521,14 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" aria-describedby="spin-dialog-description">
           <DialogHeader>
             <DialogTitle>
               {isModoTeste ? "🎮 Teste: " : "Girar: "}{wheel?.nome}
             </DialogTitle>
+            <p id="spin-dialog-description" className="sr-only">
+              Insira o nome do usuário e gire a roleta para sortear uma recompensa
+            </p>
           </DialogHeader>
 
           <div className="space-y-6">
@@ -580,7 +596,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
 
       {/* Dialog de Resultado */}
       <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby="result-dialog-description">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Resultado do Sorteio</DialogTitle>
+            <p id="result-dialog-description" className="sr-only">
+              Confirme o pagamento da recompensa sorteada ao usuário
+            </p>
+          </DialogHeader>
           <div className="text-center space-y-6 py-6">
             <div className="text-6xl animate-bounce">🎉</div>
             
