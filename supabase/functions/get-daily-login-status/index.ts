@@ -44,18 +44,24 @@ serve(async (req) => {
 
     console.log(`[get-daily-login-status] Dados encontrados:`, loginData);
 
-    // Calcular se pode resgatar
+    // Calcular se pode resgatar (usar timezone Brasília para consistência)
     let podeResgatar = false;
     
     if (!loginData) {
       // Primeira vez - pode resgatar
       podeResgatar = true;
     } else {
-      // Verificar se já resgatou hoje
-      const hoje = new Date().toISOString().split('T')[0];
+      // Verificar se já resgatou hoje usando timezone de Brasília
+      const hoje = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+      
       const ultimoLogin = loginData.ultimo_login;
       
-      console.log(`[get-daily-login-status] Hoje: ${hoje}, Último login: ${ultimoLogin}`);
+      console.log(`[get-daily-login-status] Hoje (Brasília): ${hoje}, Último login: ${ultimoLogin}`);
       
       if (ultimoLogin !== hoje) {
         podeResgatar = true;

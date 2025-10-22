@@ -31,7 +31,7 @@ export const Navbar = () => {
   const { isAdmin, loading: adminLoading } = useAdmin(session?.user ?? null);
   
   // Verificar status da recompensa diária - só quando auth terminar de carregar
-  const { hasRewardAvailable } = useDailyRewardStatus(
+  const { hasRewardAvailable, forceRefresh } = useDailyRewardStatus(
     !twitchLoading ? twitchUser : undefined
   );
 
@@ -460,7 +460,11 @@ export const Navbar = () => {
         </DialogContent>
       </Dialog>
 
-      <DailyRewardDialog open={dailyRewardOpen} onOpenChange={setDailyRewardOpen} />
+      <DailyRewardDialog 
+        open={dailyRewardOpen} 
+        onOpenChange={setDailyRewardOpen}
+        onClaimSuccess={forceRefresh}
+      />
     </nav>
   );
 };

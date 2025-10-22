@@ -21,9 +21,10 @@ interface UserDailyLogin {
 interface DailyRewardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onClaimSuccess?: () => void; // Callback para invalidar badge
 }
 
-export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps) {
+export function DailyRewardDialog({ open, onOpenChange, onClaimSuccess }: DailyRewardDialogProps) {
   const { user: twitchUser, loading: twitchLoading } = useTwitchAuth();
   const { authReady } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -376,6 +377,11 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
       toast.success(data.message || "Recompensa resgatada com sucesso!");
       
+      // Notificar parent para invalidar badge
+      if (onClaimSuccess) {
+        onClaimSuccess();
+      }
+      
       // Fechar o dialog após 1s
       setTimeout(() => {
         onOpenChange(false);
@@ -460,8 +466,11 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent 
+        className="max-w-md max-h-[90vh] flex flex-col p-0"
+        aria-describedby="daily-reward-desc"
+      >
+        <DialogHeader className="flex-shrink-0 p-6 pb-2">
           <DialogTitle id="daily-reward-title" className="flex items-center gap-2">
             <Gift className="h-6 w-6" />
             Recompensa Diária
@@ -472,11 +481,11 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
         </DialogHeader>
 
         {loading ? (
-          <div className="flex justify-center py-8">
+          <div className="flex justify-center py-8 px-6">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto space-y-4 px-1">
+          <div className="flex-1 overflow-y-auto space-y-4 px-6 py-2">
             {/* Sequência Atual */}
             <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border-2 border-primary/20">
               <div className="flex items-center gap-3">
@@ -598,9 +607,9 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
           </div>
         )}
 
-        {/* Rodapé sticky com CTA */}
+        {/* Rodapé com CTA */}
         {!loading && (
-          <div className="sticky bottom-0 bg-background border-t pt-3 pb-1 flex-shrink-0">
+          <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-6 py-4">
             <Button
               onClick={handleClaimReward}
               disabled={!podeClamar() || claiming}
@@ -621,8 +630,8 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
             </Button>
             
             {!podeClamar() && (
-              <p className="text-xs text-muted-foreground text-center mt-1">
-                Você já resgatou hoje
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Você já resgatou hoje. Volte amanhã!
               </p>
             )}
           </div>

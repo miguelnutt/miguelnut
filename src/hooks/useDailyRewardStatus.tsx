@@ -3,7 +3,10 @@ import { supabase } from "@/lib/supabase-helper";
 import { useAuth } from "@/contexts/AuthContext";
 import { TwitchUser } from "./useTwitchAuth";
 
-export function useDailyRewardStatus(twitchUser: TwitchUser | undefined | null) {
+export function useDailyRewardStatus(
+  twitchUser: TwitchUser | undefined | null,
+  onClaimSuccess?: () => void // Callback para invalidar após claim
+) {
   const { authReady, sessionUserId } = useAuth();
   const [hasRewardAvailable, setHasRewardAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -152,5 +155,12 @@ export function useDailyRewardStatus(twitchUser: TwitchUser | undefined | null) 
     }
   };
 
-  return { hasRewardAvailable, loading };
+  // Expor método para forçar re-verificação (chamado após claim)
+  const forceRefresh = () => {
+    console.log('[DailyReward] Forçando refresh após claim...');
+    setHasRewardAvailable(false);
+    checkRewardStatus();
+  };
+
+  return { hasRewardAvailable, loading, forceRefresh };
 }
