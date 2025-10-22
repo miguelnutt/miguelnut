@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const twitchUserId = twitchData.user.id;
+    const twitchUserId = twitchData.user.twitch_user_id;
     const twitchUsername = twitchData.user.login;
     const displayName = twitchData.user.display_name;
 
@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
       p_twitch_user_id: twitchUserId,
       p_display_name: displayName,
       p_login: twitchUsername,
+      p_nome_personagem: null,
     });
 
     if (profileError || !profileId) {

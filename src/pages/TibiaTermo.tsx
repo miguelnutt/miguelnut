@@ -197,8 +197,8 @@ const TibiaTermo = () => {
   };
 
   const submitGuess = async () => {
-    if (!currentGuess || currentGuess.length !== gameData.palavra.length) {
-      toast.error(`A palavra deve ter ${gameData.palavra.length} letras`);
+    if (!gameData || !currentGuess || currentGuess.length !== gameData.palavra.length) {
+      toast.error(`A palavra deve ter ${gameData?.palavra.length || 0} letras`);
       return;
     }
 
@@ -1057,7 +1057,7 @@ const TibiaTermo = () => {
                       Tentativas esgotadas! 😢
                     </div>
                     <div className="text-muted-foreground">
-                      A palavra era: <span className="font-bold text-foreground">{gameData.palavra}</span>
+                      A palavra era: <span className="font-bold text-foreground">{gameData?.palavra || '???'}</span>
                     </div>
                   </div>
                 )}
