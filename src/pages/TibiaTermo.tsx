@@ -76,6 +76,7 @@ const TibiaTermo = () => {
     // Só proceder se auth estiver pronto
     if (!authReady || twitchLoading || adminLoading) {
       console.log('[TibiaTermo] Aguardando auth...', { authReady, twitchLoading, adminLoading });
+      setLoadingGame(true);
       return;
     }
 
@@ -89,8 +90,9 @@ const TibiaTermo = () => {
     
     // Não-admin precisa de login Twitch
     if (!twitchUser) {
-      toast.error("Você precisa estar logado com a Twitch para jogar!");
-      navigate("/login");
+      console.log('[TibiaTermo] Usuário não logado, redirecionando...');
+      setLoadingGame(false);
+      // Não mostrar nada até redirecionar
       return;
     }
 
@@ -545,9 +547,43 @@ const TibiaTermo = () => {
     );
   }
 
-  // Se não é admin e não tem Twitch, redireciona
-  if (!isAdmin && !twitchUser) {
-    return null;
+  // Se não é admin e não tem Twitch, mostrar tela de login
+  if (!isAdmin && !twitchUser && authReady && !twitchLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center space-y-6">
+              <div>
+                <h1 className="text-4xl font-bold text-foreground mb-2">TibiaTermo</h1>
+                <p className="text-muted-foreground">
+                  Descubra a palavra do dia em até 6 tentativas!
+                </p>
+              </div>
+              
+              <Card className="p-8">
+                <div className="space-y-4">
+                  <div className="text-lg font-medium">
+                    🎮 Faça login para jogar
+                  </div>
+                  <p className="text-muted-foreground">
+                    Para jogar o TibiaTermo, você precisa estar logado com sua conta da Twitch.
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/login')}
+                    size="lg"
+                    className="w-full"
+                  >
+                    Login com a Twitch
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   // Admin sem Twitch só pode ver configurações

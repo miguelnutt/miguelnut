@@ -104,12 +104,7 @@ export function useDailyRewardStatus(twitchUser: TwitchUser | undefined | null) 
         return;
       }
 
-      // Debounce: evitar verificações duplicadas para o mesmo userId
-      if (lastCheckRef.current === userId) {
-        console.log('[DailyReward] Verificação já feita para este userId, ignorando');
-        return;
-      }
-
+      // Resetar debounce ao forçar nova verificação
       lastCheckRef.current = userId;
 
       console.log('[DailyReward] Verificando recompensa para userId:', userId);

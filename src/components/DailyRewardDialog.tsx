@@ -225,8 +225,12 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
         
         console.log('[DailyReward] Cálculo de perda - Hoje:', hoje, 'Último:', ultimoLogin, 'Diff:', diffDays);
         
-        // Só perdeu se diffDays > 1 (mais de 1 dia sem resgatar) E já tinha streak
-        if (diffDays > 1 && loginData.dia_atual > 0) {
+        // CRÍTICO: Só mostrar "perdeu" se diffDays > 1 E já resgatou hoje
+        // Se ainda não resgatou hoje (ultimo_login !== hoje), então ainda está no prazo
+        const jaResgatouHoje = ultimoLogin === hoje;
+        const perdeuStreak = diffDays > 1 && loginData.dia_atual > 0 && jaResgatouHoje;
+        
+        if (perdeuStreak) {
           const diasPerdidos = diffDays - 1; // Quantos dias inteiros perdidos
           const custo = diasPerdidos * custoBasePorDia;
           
@@ -347,29 +351,35 @@ export function DailyRewardDialog({ open, onOpenChange }: DailyRewardDialogProps
       const data = await response.json();
       console.log('[DailyReward] Resposta da edge function:', data);
 
-      // CRÍTICO: Atualizar streak mesmo quando retorna erro (já resgatado)
-      if (data.diaAtual !== undefined) {
-        const hoje = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'America/Sao_Paulo',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).format(new Date());
-
-        console.log('[DailyReward] Atualizando estado local - dia_atual:', data.diaAtual, 'ultimo_login:', hoje);
-        
-        setUserLogin({
-          dia_atual: data.diaAtual,
-          ultimo_login: hoje
-        });
-      }
-
       if (!response.ok) {
         toast.error(data.error || "Erro ao resgatar recompensa");
         return;
       }
 
+      // Sucesso: atualizar estado local imediatamente
+      const hoje = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+
+      console.log('[DailyReward] ✓ Resgate bem-sucedido! Atualizando estado local...');
+      
+      setUserLogin({
+        dia_atual: data.diaAtual,
+        ultimo_login: hoje
+      });
+
+      // Limpar flag de streak perdida após claim
+      setStreakPerdida(false);
+
       toast.success(data.message || "Recompensa resgatada com sucesso!");
+      
+      // Fechar o dialog após 1s
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 1000);
       
     } catch (error: any) {
       console.error("[DailyReward] Erro ao resgatar:", error);
