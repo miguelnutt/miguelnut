@@ -38,6 +38,7 @@ export function UsersSection() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, nome, twitch_username, created_at')
+        .eq('is_active', true)
         .or(`twitch_username.ilike.%${searchTerm}%,nome.ilike.%${searchTerm}%`)
         .limit(1)
         .single();

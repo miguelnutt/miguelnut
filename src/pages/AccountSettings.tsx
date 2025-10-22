@@ -106,6 +106,7 @@ export default function AccountSettings() {
         .from('profiles')
         .select('id')
         .eq('twitch_username', twitchUser.login)
+        .eq('is_active', true)
         .maybeSingle();
 
       if (!profiles?.id) return;
@@ -182,7 +183,8 @@ export default function AccountSettings() {
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, nome_personagem')
-        .eq('twitch_username', twitchUser.login);
+        .eq('twitch_username', twitchUser.login)
+        .eq('is_active', true);
 
       console.log("Perfis carregados:", profiles);
 
