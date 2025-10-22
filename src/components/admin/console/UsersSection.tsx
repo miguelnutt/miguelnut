@@ -35,13 +35,15 @@ export function UsersSection() {
 
     setSearching(true);
     try {
+      // Buscar com prioridade para perfis com twitch_user_id
       const { data, error } = await supabase
         .from('profiles')
         .select('id, nome, twitch_username, created_at')
         .eq('is_active', true)
         .or(`twitch_username.ilike.%${searchTerm}%,nome.ilike.%${searchTerm}%`)
+        .order('twitch_user_id', { ascending: false, nullsLast: true })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
