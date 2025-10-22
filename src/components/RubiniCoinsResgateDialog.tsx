@@ -41,15 +41,20 @@ export function RubiniCoinsResgateDialog({
 
   const carregarPersonagens = async () => {
     try {
+      // SEMPRE buscar perfil ativo para garantir consistência
       const { data: profile } = await supabase
         .from('profiles')
         .select('nome_personagem')
         .eq('id', userId)
-        .single();
+        .eq('is_active', true)
+        .maybeSingle();
 
       if (profile?.nome_personagem) {
         setPersonagens([profile.nome_personagem]);
         setPersonagem(profile.nome_personagem);
+      } else {
+        setPersonagens([]);
+        setPersonagem('');
       }
     } catch (error) {
       console.error('Erro ao carregar personagens:', error);

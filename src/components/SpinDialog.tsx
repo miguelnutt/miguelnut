@@ -469,11 +469,12 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         try {
           console.log("🎮 Buscando personagem para:", nomeParaExibir);
           
-          // Buscar perfil por twitch_username primeiro
+          // Buscar perfil ativo por twitch_username primeiro
           const { data: profileByTwitch } = await supabase
             .from('profiles')
             .select('id, nome, twitch_username, nome_personagem')
             .ilike('twitch_username', nomeParaExibir)
+            .eq('is_active', true)
             .maybeSingle();
           
           // Se não encontrou por twitch_username, buscar por nome
@@ -481,6 +482,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
             .from('profiles')
             .select('id, nome, twitch_username, nome_personagem')
             .ilike('nome', nomeParaExibir)
+            .eq('is_active', true)
             .maybeSingle();
           
           const profileData = profileByTwitch || profileByName;
