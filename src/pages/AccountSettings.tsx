@@ -54,8 +54,7 @@ export default function AccountSettings() {
   useEffect(() => {
     // Só carregar quando twitchAuth terminar de carregar E tiver usuário
     if (!twitchLoading && authReady && twitchUser) {
-      loadTwitchUserProfile();
-      carregarSaldos();
+      carregarDadosCompletos();
     }
   }, [twitchUser, twitchLoading, authReady]);
 
@@ -97,27 +96,139 @@ export default function AccountSettings() {
     }
   }, [profileUserId]);
 
-  const carregarSaldos = async () => {
+  /**
+   * FUNÇÃO UNIFICADA: Carrega TUDO do perfil do usuário
+   * - Busca perfil ativo UMA VEZ (prioriza twitch_user_id)
+   * - Seta profileUserId
+   * - Carrega nome do personagem
+   * - Carrega saldos
+   * - Carrega pontos StreamElements
+   */
+  const carregarDadosCompletos = async () => {
     if (!twitchUser) return;
     
+    console.log('🔄 Carregando dados completos do perfil...');
     setLoadingSaldos(true);
+    
     try {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('twitch_username', twitchUser.login)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!profiles?.id) return;
+      // 1. PRIORIDADE: Buscar por twitch_user_id (fonte única da verdade)
+      let profile = null;
       
-      setProfileUserId(profiles.id);
+      if (twitchUser.twitch_user_id) {
+        const { data: profileByTwitchId } = await supabase
+          .from('profiles')
+          .select('id, nome_personagem')
+          .eq('twitch_user_id', twitchUser.twitch_user_id)
+          .eq('is_active', true)
+          .maybeSingle();
 
+        profile = profileByTwitchId;
+        console.log('Busca por twitch_user_id:', profile ? '✅ Encontrado' : '❌ Não encontrado');
+      }
+      
+      // 2. Fallback: Buscar por twitch_username (apenas se não achou por ID)
+      if (!profile) {
+        const { data: profileByUsername, error: usernameError } = await supabase
+          .from('profiles')
+          .select('id, nome_personagem')
+          .eq('twitch_username', twitchUser.login)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (usernameError) throw usernameError;
+        profile = profileByUsername;
+        console.log('Busca por twitch_username:', profile ? '✅ Encontrado' : '❌ Não encontrado');
+      }
+
+      // 3. Se não tem perfil, criar com TODOS os dados da Twitch
+      if (!profile) {
+        console.log('Criando novo perfil com twitch_user_id...');
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            nome: twitchUser.display_name,
+            twitch_username: twitchUser.login,
+            twitch_user_id: twitchUser.twitch_user_id,
+            display_name_canonical: twitchUser.display_name,
+            is_active: true
+          })
+          .select('id, nome_personagem')
+          .single();
+
+        if (insertError) throw insertError;
+        
+        console.log('✅ Perfil criado:', newProfile.id);
+        await carregarDadosPerfil(newProfile);
+      } else {
+        // 4. Se perfil existe mas não tem twitch_user_id, atualizar
+        if (twitchUser.twitch_user_id) {
+          await supabase
+            .from('profiles')
+            .update({ 
+              twitch_user_id: twitchUser.twitch_user_id,
+              display_name_canonical: twitchUser.display_name
+            })
+            .eq('id', profile.id);
+          console.log('✅ Perfil atualizado com twitch_user_id');
+        }
+        
+        console.log('✅ Perfil encontrado:', profile.id);
+        await carregarDadosPerfil(profile);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados completos:', error);
+      toast.error('Erro ao carregar dados do perfil');
+    } finally {
+      setLoadingSaldos(false);
+    }
+  };
+
+  /**
+   * Carrega todos os dados de um perfil já identificado
+   */
+  const carregarDadosPerfil = async (profile: { id: string; nome_personagem: string | null }) => {
+    // Setar ID do perfil (usado pelos listeners)
+    setProfileUserId(profile.id);
+
+    // Nome do personagem
+    const personagemAtual = profile.nome_personagem || "";
+    console.log('Nome do personagem no DB:', personagemAtual);
+    
+    if (!editandoPersonagem) {
+      setNomePersonagem(personagemAtual);
+    }
+    
+    if (personagemAtual) {
+      setPersonagemSalvo(personagemAtual);
+      setEditandoPersonagem(false);
+    } else {
+      setPersonagemSalvo(null);
+      if (!personagemSalvo) {
+        setEditandoPersonagem(true);
+      }
+    }
+
+    // Carregar saldos e pontos em paralelo
+    await Promise.all([
+      carregarSaldos(profile.id),
+      fetchStreamElementsPoints()
+    ]);
+  };
+
+  /**
+   * Carrega apenas os saldos (Rubini Coins + Tickets)
+   * Pode receber profileId como parâmetro ou usar o state
+   */
+  const carregarSaldos = async (profileId?: string) => {
+    const userId = profileId || profileUserId;
+    if (!userId) return;
+    
+    try {
       // Buscar Rubini Coins
       const { data: rubiniData } = await supabase
         .from('rubini_coins_balance')
         .select('saldo')
-        .eq('user_id', profiles.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       setRubiniCoins(rubiniData?.saldo || 0);
@@ -126,15 +237,22 @@ export default function AccountSettings() {
       const { data: ticketsData } = await supabase
         .from('tickets')
         .select('tickets_atual')
-        .eq('user_id', profiles.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       setTickets(ticketsData?.tickets_atual || 0);
+      
+      console.log(`💰 Saldos carregados: ${rubiniData?.saldo || 0} RC, ${ticketsData?.tickets_atual || 0} Tickets`);
     } catch (error) {
       console.error('Erro ao carregar saldos:', error);
-    } finally {
-      setLoadingSaldos(false);
     }
+  };
+
+  /**
+   * Handler para botões de refresh (aceita eventos)
+   */
+  const handleRefreshSaldos = () => {
+    carregarSaldos();
   };
 
   const carregarResgates = async () => {
@@ -171,65 +289,6 @@ export default function AccountSettings() {
     } finally {
       setLoading(false);
       setAuthReady(true);
-    }
-  };
-
-  const loadTwitchUserProfile = async () => {
-    if (!twitchUser) return;
-    
-    console.log("Carregando perfil Twitch...");
-    
-    try {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, nome_personagem')
-        .eq('twitch_username', twitchUser.login)
-        .eq('is_active', true);
-
-      console.log("Perfis carregados:", profiles);
-
-      let profile = profiles && profiles.length > 0 ? profiles[0] : null;
-
-      // Se não tem perfil, criar
-      if (!profile) {
-        console.log("Criando perfil inicial...");
-        const { data: newProfiles } = await supabase
-          .from('profiles')
-          .insert({
-            nome: twitchUser.display_name,
-            twitch_username: twitchUser.login,
-          })
-          .select('id, nome_personagem');
-
-        profile = newProfiles && newProfiles.length > 0 ? newProfiles[0] : null;
-        console.log("Perfil criado:", profile);
-      }
-
-      // Atualizar estado com o que está salvo
-      if (profile) {
-        const personagemAtual = profile.nome_personagem || "";
-        console.log("Personagem atual no DB:", personagemAtual);
-        
-        // Só atualizar se não estiver editando
-        if (!editandoPersonagem) {
-          setNomePersonagem(personagemAtual);
-        }
-        
-        if (personagemAtual) {
-          setPersonagemSalvo(personagemAtual);
-          setEditandoPersonagem(false);
-        } else {
-          setPersonagemSalvo(null);
-          // Só colocar em modo de edição se realmente não tem personagem
-          if (!personagemSalvo) {
-            setEditandoPersonagem(true);
-          }
-        }
-      }
-      
-      await fetchStreamElementsPoints();
-    } catch (error) {
-      console.error("Erro ao carregar perfil:", error);
     }
   };
 
@@ -522,7 +581,7 @@ export default function AccountSettings() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={carregarSaldos}
+                        onClick={handleRefreshSaldos}
                         disabled={loadingSaldos}
                         className="mt-4 w-full"
                       >
@@ -551,7 +610,7 @@ export default function AccountSettings() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={carregarSaldos}
+                        onClick={handleRefreshSaldos}
                         disabled={loadingSaldos}
                         className="mt-4 w-full"
                       >
