@@ -684,8 +684,6 @@ export default function AccountSettings() {
                             <div className="text-sm space-y-1">
                               <p>
                                 <span className="font-bold text-primary">{resgate.quantidade}</span> Rubini Coins
-                                {' → '} 
-                                <span className="font-medium">{resgate.personagem}</span>
                               </p>
                               {resgate.status === 'RECUSADO' && resgate.motivo_recusa && (
                                 <div className="bg-destructive/10 text-destructive rounded p-2 mt-2">

@@ -232,8 +232,6 @@ export function RubiniCoinsResgateDialog({
                     <div className="text-sm space-y-1">
                       <p>
                         <span className="font-bold text-primary">{resgate.quantidade}</span> Rubini Coins
-                        {' → '} 
-                        <span className="font-medium">{resgate.personagem}</span>
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(resgate.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
