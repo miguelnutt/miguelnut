@@ -65,11 +65,12 @@ Deno.serve(async (req) => {
       nome_personagem: nome_personagem.trim()
     });
 
-    // Buscar perfil existente
+    // Buscar perfil existente (apenas perfis ativos)
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('id, nome_personagem')
       .eq('twitch_username', twitchUser.login as string)
+      .eq('is_active', true)
       .maybeSingle();
 
     if (existingProfile) {
