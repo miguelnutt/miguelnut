@@ -187,7 +187,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         userId
       });
       
-      const { error: spinError } = await supabase
+      const { data: spinData, error: spinError } = await supabase
         .from("spins")
         .insert({
           wheel_id: wheel.id,
@@ -195,46 +195,47 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           nome_usuario: nomeParaUsar,
           tipo_recompensa: tipoParaSalvar,
           valor: resultado.valor
-        });
+        })
+        .select()
+        .single();
 
       if (spinError) {
         console.error("❌ Erro ao salvar spin:", spinError);
         throw spinError;
       }
       
-      console.log("✅ Spin salvo com sucesso");
+      console.log("✅ Spin salvo com sucesso", spinData);
 
-      // Se ganhou ticket, atualizar
+      // Se ganhou ticket, usar serviço unificado
       if (resultado.tipo === "Tickets" && userId) {
         const ticketsGanhos = parseInt(resultado.valor) || 1;
+        const idempotencyKey = `spin-${spinData?.id}-tickets`;
 
-        const { data: ticketsData } = await supabase
-          .from("tickets")
-          .select("tickets_atual")
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        const ticketsAtuais = ticketsData?.tickets_atual || 0;
-        const novoTotal = ticketsAtuais + ticketsGanhos;
-
-        const { error: ticketsError } = await supabase
-          .from("tickets")
-          .upsert({
-            user_id: userId,
-            tickets_atual: novoTotal
+        try {
+          const { data: awardData, error: awardError } = await supabase.functions.invoke('award-reward', {
+            body: {
+              userId,
+              type: 'tickets',
+              value: ticketsGanhos,
+              source: 'roulette',
+              idempotencyKey,
+              reason: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
+            }
           });
 
-        if (ticketsError) throw ticketsError;
+          if (awardError) {
+            console.error('Error awarding tickets via award-reward:', awardError);
+            throw awardError;
+          }
 
-        await supabase
-          .from("ticket_ledger")
-          .insert({
-            user_id: userId,
-            variacao: ticketsGanhos,
-            motivo: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
-          });
+          console.log(`Tickets awarded via unified service:`, awardData);
+          toast.success(`${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Novo saldo: ${awardData.newBalance})`);
+        } catch (error) {
+          console.error('Error awarding tickets:', error);
+          toast.error('Erro ao conceder tickets');
+          throw error;
+        }
         
-        toast.success(`${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Agora possui ${novoTotal} tickets)`);
         setShowResultDialog(false);
         onOpenChange(false);
         setAwaitingConfirmation(false);

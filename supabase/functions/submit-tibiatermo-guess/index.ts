@@ -210,45 +210,41 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Award tickets
+      // Award tickets via unified service
       if (premiacao_tickets > 0) {
-        const { data: currentTickets } = await supabase
-          .from('tickets')
-          .select('tickets_atual')
-          .eq('user_id', profile.id)
-          .maybeSingle();
+        try {
+          const idempotencyKey = `tibiatermo-${game.id}-tickets`;
+          
+          const { data: awardData, error: awardError } = await supabase.functions.invoke('award-reward', {
+            body: {
+              userId: profile.id,
+              type: 'tickets',
+              value: premiacao_tickets,
+              source: 'tibiatermo',
+              idempotencyKey,
+              reason: `TibiaTermo - Acertou em ${numTentativas} tentativa${numTentativas > 1 ? 's' : ''}`
+            }
+          });
 
-        if (currentTickets) {
+          if (awardError) {
+            console.error('Error awarding tickets via award-reward:', awardError);
+          } else {
+            console.log(`Tickets awarded via unified service:`, awardData);
+          }
+
+          // Registrar no histórico do TibiaTermo
           await supabase
-            .from('tickets')
-            .update({ tickets_atual: currentTickets.tickets_atual + premiacao_tickets })
-            .eq('user_id', profile.id);
-        } else {
-          await supabase
-            .from('tickets')
-            .insert({ user_id: profile.id, tickets_atual: premiacao_tickets });
+            .from('tibiatermo_history')
+            .insert({
+              user_id: profile.id,
+              nome_usuario: twitchUsername,
+              tipo_recompensa: 'Tickets',
+              valor: premiacao_tickets,
+              num_tentativas: numTentativas,
+            });
+        } catch (error) {
+          console.error('Error awarding tickets:', error);
         }
-
-        await supabase
-          .from('ticket_ledger')
-          .insert({
-            user_id: profile.id,
-            variacao: premiacao_tickets,
-            motivo: `TibiaTermo - Acertou em ${numTentativas} tentativa${numTentativas > 1 ? 's' : ''}`,
-          });
-
-        // Registrar no histórico do TibiaTermo
-        await supabase
-          .from('tibiatermo_history')
-          .insert({
-            user_id: profile.id,
-            nome_usuario: twitchUsername,
-            tipo_recompensa: 'Tickets',
-            valor: premiacao_tickets,
-            num_tentativas: numTentativas,
-          });
-        
-        console.log(`Tickets concedidos e registrados: ${premiacao_tickets}`);
       }
     }
 

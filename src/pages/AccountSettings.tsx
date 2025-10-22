@@ -62,6 +62,38 @@ export default function AccountSettings() {
   useEffect(() => {
     if (profileUserId) {
       carregarResgates();
+      
+      // Listener para atualizar saldos em tempo real
+      const ticketsChannel = supabase
+        .channel('tickets_balance_updates')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tickets',
+          filter: `user_id=eq.${profileUserId}`
+        }, () => {
+          console.log('📊 Tickets updated, refreshing...');
+          carregarSaldos();
+        })
+        .subscribe();
+
+      const rcChannel = supabase
+        .channel('rc_balance_updates')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'rubini_coins_balance',
+          filter: `user_id=eq.${profileUserId}`
+        }, () => {
+          console.log('📊 Rubini Coins updated, refreshing...');
+          carregarSaldos();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(ticketsChannel);
+        supabase.removeChannel(rcChannel);
+      };
     }
   }, [profileUserId]);
 
