@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, ShoppingCart, Gem, Ticket } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, ShoppingCart, Gem, Ticket, BadgeCheck, Link2, Link2Off } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
@@ -515,6 +515,66 @@ export default function AccountSettings() {
         </div>
 
         <div className="space-y-4 md:space-y-6">
+          {/* Identidade Twitch - Só para usuários Twitch */}
+          {twitchUser && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+                <BadgeCheck className="h-5 w-5 text-primary" />
+                Identidade Twitch
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Informações de vínculo da sua conta
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 rounded-lg border bg-card/50">
+                  <div className={`p-2 rounded-full ${twitchUser.twitch_user_id ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}>
+                    {twitchUser.twitch_user_id ? (
+                      <Link2 className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <Link2Off className="h-5 w-5 text-yellow-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Status do Vínculo</p>
+                      <p className={`text-base font-semibold ${twitchUser.twitch_user_id ? 'text-green-500' : 'text-yellow-500'}`}>
+                        {twitchUser.twitch_user_id ? 'Conta Vinculada' : 'Vínculo Parcial'}
+                      </p>
+                      {!twitchUser.twitch_user_id && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Reconecte-se para completar o vínculo
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Nome de Exibição</Label>
+                        <p className="text-sm font-medium">{twitchUser.display_name}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Login Twitch</Label>
+                        <p className="text-sm font-mono font-medium">@{twitchUser.login}</p>
+                      </div>
+                      {twitchUser.twitch_user_id && (
+                        <div className="md:col-span-2">
+                          <Label className="text-xs text-muted-foreground">ID Canônico Twitch</Label>
+                          <p className="text-xs font-mono bg-muted px-2 py-1 rounded mt-1">
+                            {twitchUser.twitch_user_id}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          )}
+
           {/* Saldos Consolidados - Só para usuários Twitch */}
           {twitchUser && (
           <Card>
