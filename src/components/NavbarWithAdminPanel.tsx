@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AdminConsolePanel } from "@/components/AdminConsolePanel";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { BetaBanner } from "@/components/BetaBanner";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -283,6 +284,8 @@ export const Navbar = () => {
           onOpenChange={setDailyRewardOpen}
         />
       )}
+      
+      <BetaBanner />
     </>
   );
 };
