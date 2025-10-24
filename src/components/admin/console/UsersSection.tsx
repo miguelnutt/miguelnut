@@ -4,10 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase-helper";
-import { Search, RefreshCw, BadgeCheck, Link2, Link2Off, AlertTriangle } from "lucide-react";
+import { Search, RefreshCw, BadgeCheck, Link2, Link2Off, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { AdminManageRubiniCoins } from "../AdminManageRubiniCoins";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserProfile {
   id: string;
@@ -24,11 +34,28 @@ interface UserBalances {
   sePoints: number;
 }
 
+interface ReconcilePreview {
+  rubiniCoins: {
+    before: number;
+    calculated: number;
+    divergence: number;
+  };
+  tickets: {
+    before: number;
+    calculated: number;
+    divergence: number;
+  };
+  hadDivergence: boolean;
+}
+
 export function UsersSection() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searching, setSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [balances, setBalances] = useState<UserBalances | null>(null);
+  const [reconcileDialogOpen, setReconcileDialogOpen] = useState(false);
+  const [reconcilePreview, setReconcilePreview] = useState<ReconcilePreview | null>(null);
+  const [reconciling, setReconciling] = useState(false);
 
   const searchUser = async () => {
     if (!searchTerm.trim()) {
@@ -120,64 +147,106 @@ export function UsersSection() {
   const handleReconcileBalance = async () => {
     if (!selectedUser) return;
 
-    toast({ title: "Buscando transações pendentes..." });
+    setReconciling(true);
+    toast({ title: "Analisando saldos..." });
     
     try {
-      // Buscar histórico pendente ou falho
-      const { data: pendingEvents, error: fetchError } = await supabase
-        .from('rubini_coins_history')
-        .select('*')
-        .eq('user_id', selectedUser.id)
-        .in('status', ['pendente', 'falhou'])
-        .order('created_at', { ascending: true });
+      // Primeiro fazer dry-run para ver o que seria corrigido
+      const { data, error } = await supabase.functions.invoke('reconcile-balance', {
+        body: { 
+          userId: selectedUser.id,
+          dryRun: true
+        }
+      });
 
-      if (fetchError) throw fetchError;
+      if (error) throw error;
 
-      if (!pendingEvents || pendingEvents.length === 0) {
+      if (!data.summary.hadDivergence) {
         toast({ 
-          title: "Nenhuma transação pendente", 
-          description: "O saldo está sincronizado" 
+          title: "✅ Saldos corretos!", 
+          description: "Não há divergências a corrigir"
         });
+        setReconciling(false);
         return;
       }
 
+      // Mostrar preview das correções
+      setReconcilePreview({
+        rubiniCoins: {
+          before: data.rubiniCoins.before,
+          calculated: data.rubiniCoins.calculated,
+          divergence: data.rubiniCoins.divergence
+        },
+        tickets: {
+          before: data.tickets.before,
+          calculated: data.tickets.calculated,
+          divergence: data.tickets.divergence
+        },
+        hadDivergence: data.summary.hadDivergence
+      });
+      
+      setReconcileDialogOpen(true);
+      setReconciling(false);
+
+    } catch (error) {
+      console.error('Erro ao analisar saldos:', error);
       toast({ 
-        title: `Reconciliando ${pendingEvents.length} transação(ões)...`,
-        description: "Aguarde o processamento"
+        title: "Erro na análise",
+        description: error instanceof Error ? error.message : "Falha ao analisar saldos",
+        variant: "destructive"
+      });
+      setReconciling(false);
+    }
+  };
+
+  const confirmReconcile = async () => {
+    if (!selectedUser) return;
+
+    setReconciling(true);
+    setReconcileDialogOpen(false);
+    toast({ title: "Aplicando correções..." });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('reconcile-balance', {
+        body: { 
+          userId: selectedUser.id,
+          dryRun: false
+        }
       });
 
-      // Processar cada evento pendente
-      let successCount = 0;
-      for (const event of pendingEvents) {
-        try {
-          const { data, error } = await supabase.functions.invoke('reconcile-rubini-coins', {
-            body: { 
-              historyId: event.id,
-              adminUserId: selectedUser.id
-            }
-          });
+      if (error) throw error;
 
-          if (error) throw error;
-          if (data?.success) successCount++;
-        } catch (err) {
-          console.error(`Erro ao reconciliar evento ${event.id}:`, err);
-        }
+      const rcCorrected = data.rubiniCoins.corrected;
+      const ticketsCorrected = data.tickets.corrected;
+      const corrections = [];
+      
+      if (rcCorrected) {
+        corrections.push(`Rubini Coins: ${data.rubiniCoins.before} → ${data.rubiniCoins.after}`);
+      }
+      if (ticketsCorrected) {
+        corrections.push(`Tickets: ${data.tickets.before} → ${data.tickets.after}`);
       }
 
       toast({ 
-        title: "Reconciliação concluída!",
-        description: `${successCount} de ${pendingEvents.length} transação(ões) processadas com sucesso`
+        title: "✅ Reconciliação concluída!",
+        description: corrections.length > 0 
+          ? corrections.join(' | ')
+          : "Saldos já estavam corretos"
       });
 
       // Recarregar saldos
       await loadUserBalances(selectedUser.id, selectedUser.twitch_username);
+      setReconcilePreview(null);
+      
     } catch (error) {
-      console.error('Erro ao reconciliar:', error);
+      console.error('Erro ao aplicar correções:', error);
       toast({ 
         title: "Erro na reconciliação",
-        description: "Falha ao processar transações pendentes",
+        description: error instanceof Error ? error.message : "Falha ao aplicar correções",
         variant: "destructive"
       });
+    } finally {
+      setReconciling(false);
     }
   };
 
@@ -219,9 +288,14 @@ export function UsersSection() {
                   <CardDescription>@{selectedUser.twitch_username}</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={handleReconcileBalance} variant="outline" size="sm">
+                  <Button 
+                    onClick={handleReconcileBalance} 
+                    variant="outline" 
+                    size="sm"
+                    disabled={reconciling}
+                  >
                     <AlertTriangle className="h-4 w-4 mr-2" />
-                    Reconciliar
+                    {reconciling ? "Analisando..." : "Reconciliar"}
                   </Button>
                   <Button onClick={handleResyncUser} variant="outline" size="sm">
                     <RefreshCw className="h-4 w-4 mr-2" />
@@ -301,6 +375,99 @@ export function UsersSection() {
       {selectedUser && (
         <AdminManageRubiniCoins />
       )}
+
+      {/* Dialog de Confirmação de Reconciliação */}
+      <AlertDialog open={reconcileDialogOpen} onOpenChange={setReconcileDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Reconciliação de Saldo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Foram detectadas divergências entre os saldos armazenados e o histórico de transações.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          {reconcilePreview && (
+            <div className="space-y-4 py-4">
+              {/* Rubini Coins */}
+              {reconcilePreview.rubiniCoins.divergence !== 0 && (
+                <div className="space-y-2 p-4 rounded-lg border bg-card/50">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-purple-500" />
+                    <p className="text-sm font-semibold">Rubini Coins</p>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Saldo atual:</span>
+                      <span className="font-mono">{reconcilePreview.rubiniCoins.before}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Saldo correto:</span>
+                      <span className="font-mono font-semibold text-green-500">
+                        {reconcilePreview.rubiniCoins.calculated}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-muted-foreground">Divergência:</span>
+                      <span className={`font-mono font-bold ${
+                        reconcilePreview.rubiniCoins.divergence > 0 ? 'text-red-500' : 'text-yellow-500'
+                      }`}>
+                        {reconcilePreview.rubiniCoins.divergence > 0 ? '+' : ''}
+                        {reconcilePreview.rubiniCoins.divergence}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tickets */}
+              {reconcilePreview.tickets.divergence !== 0 && (
+                <div className="space-y-2 p-4 rounded-lg border bg-card/50">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                    <p className="text-sm font-semibold">Tickets</p>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Saldo atual:</span>
+                      <span className="font-mono">{reconcilePreview.tickets.before}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Saldo correto:</span>
+                      <span className="font-mono font-semibold text-green-500">
+                        {reconcilePreview.tickets.calculated}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-muted-foreground">Divergência:</span>
+                      <span className={`font-mono font-bold ${
+                        reconcilePreview.tickets.divergence > 0 ? 'text-red-500' : 'text-yellow-500'
+                      }`}>
+                        {reconcilePreview.tickets.divergence > 0 ? '+' : ''}
+                        {reconcilePreview.tickets.divergence}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                  Esta ação corrigirá os saldos para corresponder ao histórico de transações confirmadas.
+                  Um registro de auditoria será criado.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReconcile} disabled={reconciling}>
+              {reconciling ? "Aplicando..." : "Confirmar Correção"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

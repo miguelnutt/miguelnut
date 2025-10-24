@@ -176,6 +176,14 @@ CHECK (twitch_user_id ~ '^\d+$');
    - ✅ Retorna relatório detalhado de cada consolidação
    - ✅ Idempotente - pode ser executada múltiplas vezes
 
+7. **Reconciliação de Saldos por Usuário** (Admin) **[NOVO]**
+   - ✅ Análise com dry-run antes de aplicar correções
+   - ✅ Dialog de confirmação com preview detalhado
+   - ✅ Recalcula saldos a partir do histórico de transações confirmadas
+   - ✅ Corrige divergências em Rubini Coins e Tickets
+   - ✅ Registra auditoria completa em `balance_reconciliation_audit`
+   - ✅ Idempotente - múltiplas execuções em saldos corretos não fazem alterações
+
 ## 📊 Pontos de Integração Tocados
 
 ### Tabelas do Banco
@@ -185,6 +193,7 @@ CHECK (twitch_user_id ~ '^\d+$');
 - `rubini_coins_history` (migração, novos índices de performance)
 - `tickets` (consolidação de saldos)
 - `ticket_ledger` (migração, campos de idempotência adicionados)
+- `balance_reconciliation_audit` (auditoria de reconciliações) **[NOVO]**
 - `daily_rewards_history` (migração de histórico)
 - `tibiatermo_user_games` (migração de jogos)
 - `spins` (migração de roletas)
@@ -197,12 +206,78 @@ CHECK (twitch_user_id ~ '^\d+$');
 - `twitch-auth-exchange` (validação e normalização de login)
 - `twitch-auth-me` (validação de sessão JWT)
 - `award-reward` (idempotência completa para tickets)
+- `reconcile-balance` (reconciliação de saldos com auditoria completa) **[NOVO]**
+- `consolidate-profiles-batch` (consolidação batch manual)
 - `get_or_merge_profile_v2` (consolidação automática em tempo real)
 - `consolidate_duplicate_profiles()` (consolidação batch de duplicatas existentes)
 
 ### Componentes Frontend
 - `AccountSettings.tsx` (identidade Twitch)
-- `UsersSection.tsx` (admin - reconciliação)
+- `UsersSection.tsx` (admin - reconciliação de saldos com preview e confirmação) **[ATUALIZADO]**
+
+## 🔄 Fluxo de Reconciliação de Saldos **[NOVO]**
+
+### Quando Usar
+- Suspeita de divergência entre saldo armazenado e histórico de transações
+- Após migrações ou consolidações de perfis
+- Verificação periódica de integridade de dados
+
+### Fluxo Passo a Passo
+```
+1. Admin clica em "Reconciliar" na seção de usuário
+2. Sistema executa análise (dry-run):
+   - Calcula saldo correto = SUM(transações confirmadas)
+   - Compara com saldo armazenado
+   - Identifica divergências
+3. Se houver divergências:
+   - Mostra dialog com preview:
+     * Saldo atual vs. saldo correto
+     * Valor da divergência
+     * Ações que serão tomadas
+4. Admin confirma correção
+5. Sistema aplica correções:
+   - Atualiza rubini_coins_balance
+   - Atualiza tickets
+   - Registra transações de correção no histórico
+   - Registra auditoria em balance_reconciliation_audit
+6. Retorna relatório detalhado
+```
+
+### Garantias de Idempotência
+- ✅ Reconciliação em saldos já corretos não faz alterações
+- ✅ Múltiplas execuções não duplicam correções
+- ✅ Correções são registradas no histórico com idempotency_key único
+- ✅ Auditoria completa de cada operação
+
+### Exemplo de Resposta
+```json
+{
+  "success": true,
+  "userId": "uuid",
+  "username": "joao_gamer",
+  "rubiniCoins": {
+    "before": 150,
+    "calculated": 125,
+    "after": 125,
+    "divergence": 25,
+    "corrected": true
+  },
+  "tickets": {
+    "before": 10,
+    "calculated": 10,
+    "after": 10,
+    "divergence": 0,
+    "corrected": false
+  },
+  "summary": {
+    "hadDivergence": true,
+    "correctionApplied": true,
+    "reason": "Divergência detectada e corrigida"
+  },
+  "auditId": "audit-uuid",
+  "requestId": "reconcile-..."
+}
+```
 
 ## 🔐 Segurança e Validação
 
@@ -243,15 +318,64 @@ CHECK (twitch_user_id ~ '^\d+$');
 - ✅ `idx_rubini_coins_history_origem` - Queries filtradas por origem
 - ✅ `idx_rubini_coins_history_user_created` - Auditoria por usuário e data
 - ✅ `idx_rubini_coins_history_referencia_id` - Rastreamento por referência
+- ✅ `idx_balance_reconciliation_user_id` - Histórico de reconciliações por usuário **[NOVO]**
+- ✅ `idx_balance_reconciliation_performed_by` - Reconciliações por admin **[NOVO]**
+- ✅ `idx_balance_reconciliation_created_at` - Busca cronológica de auditorias **[NOVO]**
+- ✅ `idx_balance_reconciliation_corrections` - Filtro rápido por correções aplicadas **[NOVO]**
 
 ### Benefícios
 - 🚀 Redução no tempo de verificação de idempotência
 - 🚀 Queries de auditoria mais rápidas
 - 🚀 Busca por username case-insensitive otimizada
 - 🚀 Prevenção efetiva de duplicatas em race conditions
+- 🚀 Histórico completo de reconciliações acessível rapidamente **[NOVO]**
+
+## 🔐 Segurança e Autorização
+
+### Reconciliação de Saldos
+- ✅ Requer autenticação via JWT token
+- ✅ Verifica role de admin antes de executar
+- ✅ Logging estruturado de todas as operações
+- ✅ Auditoria completa com ID do admin executor
+- ✅ Todas as correções registradas no histórico
+
+### Consolidação de Perfis
+- ✅ Função de banco `SECURITY DEFINER` para bypass controlado de RLS
+- ✅ Lock pessimista previne race conditions
+- ✅ Transações atômicas garantem consistência
+
+## 🧪 Cenários de Teste Recomendados
+
+### Reconciliação de Saldos
+1. **Saldo Correto (Sem Divergência)**
+   - ✅ Executar reconciliação
+   - ✅ Verificar que mensagem "Saldos corretos!" é exibida
+   - ✅ Confirmar que nenhuma alteração é feita
+
+2. **Saldo Divergente (Rubini Coins)**
+   - ✅ Forçar divergência manual no banco
+   - ✅ Executar análise e ver preview
+   - ✅ Confirmar correção
+   - ✅ Verificar saldo atualizado e auditoria registrada
+
+3. **Saldo Divergente (Tickets)**
+   - ✅ Forçar divergência manual no banco
+   - ✅ Executar análise e ver preview
+   - ✅ Confirmar correção
+   - ✅ Verificar saldo atualizado e auditoria registrada
+
+4. **Múltiplas Reconciliações (Idempotência)**
+   - ✅ Reconciliar saldo divergente
+   - ✅ Executar novamente imediatamente
+   - ✅ Confirmar que segunda execução não altera nada
+   - ✅ Verificar apenas uma entrada de auditoria com correção
+
+5. **Permissão Negada (Não-Admin)**
+   - ✅ Tentar reconciliar sem role de admin
+   - ✅ Verificar erro 403 Forbidden
 
 ---
 
 **Status**: ✅ Implementação Completa  
 **Última Atualização**: 2025-10-24  
-**Versão**: 2.0 (inclui melhorias de ticket_ledger e consolidação batch)
+**Versão**: 3.0 (inclui reconciliação de saldos com auditoria)

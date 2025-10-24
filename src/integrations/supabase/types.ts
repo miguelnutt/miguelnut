@@ -35,6 +35,51 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_reconciliation_audit: {
+        Row: {
+          corrections_applied: boolean
+          created_at: string
+          id: string
+          metadata: Json | null
+          performed_by: string
+          rubini_coins_before: number
+          rubini_coins_calculated: number
+          rubini_coins_divergence: number
+          tickets_before: number
+          tickets_calculated: number
+          tickets_divergence: number
+          user_id: string
+        }
+        Insert: {
+          corrections_applied?: boolean
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          performed_by: string
+          rubini_coins_before?: number
+          rubini_coins_calculated?: number
+          rubini_coins_divergence?: number
+          tickets_before?: number
+          tickets_calculated?: number
+          tickets_divergence?: number
+          user_id: string
+        }
+        Update: {
+          corrections_applied?: boolean
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string
+          rubini_coins_before?: number
+          rubini_coins_calculated?: number
+          rubini_coins_divergence?: number
+          tickets_before?: number
+          tickets_calculated?: number
+          tickets_divergence?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_bans: {
         Row: {
           ban_expira_em: string | null
