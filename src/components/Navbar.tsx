@@ -16,6 +16,7 @@ import { useDailyRewardStatus } from "@/hooks/useDailyRewardStatus";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AdminConsolePanel } from "@/components/AdminConsolePanel";
 import { toast } from "@/hooks/use-toast";
+import { BetaBanner } from "@/components/BetaBanner";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -86,7 +87,8 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
+    <>
+      <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
       <div className="container mx-auto px-4">
         <div className="flex h-16 md:h-24 items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
@@ -466,5 +468,7 @@ export const Navbar = () => {
         onClaimSuccess={forceRefresh}
       />
     </nav>
+    <BetaBanner />
+    </>
   );
 };
