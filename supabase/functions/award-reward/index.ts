@@ -143,15 +143,16 @@ Deno.serve(async (req) => {
       // Tickets -> tickets table
       console.log(`[${requestId}] Routing to Tickets: ${value} tickets for userId ${userId}`);
 
-      // Verificar idempotência
+      // IDEMPOTÊNCIA: Verificar se já existe operação confirmada com mesmo idempotency_key
       const { data: existingTicketLog } = await supabase
         .from('ticket_ledger')
         .select('*')
-        .eq('motivo', idempotencyKey)
+        .eq('idempotency_key', idempotencyKey)
+        .eq('status', 'confirmado')
         .maybeSingle();
 
       if (existingTicketLog) {
-        console.log(`[${requestId}] Duplicate ticket award detected (idempotencyKey: ${idempotencyKey})`);
+        console.log(`[${requestId}] Duplicate ticket award detected (idempotencyKey: ${idempotencyKey}), retornando sucesso sem duplicar`);
         const { data: currentTickets } = await supabase
           .from('tickets')
           .select('tickets_atual')
@@ -171,44 +172,88 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Buscar saldo atual
-      const { data: currentTickets } = await supabase
-        .from('tickets')
-        .select('tickets_atual')
-        .eq('user_id', userId)
-        .maybeSingle();
+      try {
+        // Buscar saldo atual
+        const { data: currentTickets } = await supabase
+          .from('tickets')
+          .select('tickets_atual')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      const currentBalance = currentTickets?.tickets_atual || 0;
-      const newBalance = currentBalance + value;
+        const currentBalance = currentTickets?.tickets_atual || 0;
+        const newBalance = currentBalance + value;
 
-      // Atualizar saldo
-      await supabase
-        .from('tickets')
-        .upsert({
-          user_id: userId,
-          tickets_atual: newBalance,
-          updated_at: new Date().toISOString()
-        });
+        // Validar saldo não-negativo
+        if (newBalance < 0) {
+          // Registrar falha no ledger
+          await supabase.from('ticket_ledger').insert({
+            user_id: userId,
+            variacao: value,
+            motivo: reason || `Recompensa: ${source}`,
+            idempotency_key: idempotencyKey,
+            origem: source,
+            status: 'falhou',
+            error_message: 'Saldo insuficiente',
+            retries: 0
+          });
 
-      // Registrar no ledger
-      await supabase
-        .from('ticket_ledger')
-        .insert({
+          return new Response(
+            JSON.stringify({ error: 'Saldo de tickets insuficiente para essa operação' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Atualizar saldo
+        await supabase
+          .from('tickets')
+          .upsert({
+            user_id: userId,
+            tickets_atual: newBalance,
+            updated_at: new Date().toISOString()
+          });
+
+        // Registrar no ledger como CONFIRMADO
+        await supabase
+          .from('ticket_ledger')
+          .insert({
+            user_id: userId,
+            variacao: value,
+            motivo: reason || `Recompensa: ${source}`,
+            idempotency_key: idempotencyKey,
+            origem: source,
+            status: 'confirmado',
+            retries: 0
+          });
+
+        console.log(`[${requestId}] ✅ Tickets ${value > 0 ? 'adicionados' : 'removidos'}: ${Math.abs(value)} para user ${userId}, novo saldo: ${newBalance}`);
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            status: 'confirmed',
+            message: `${value} tickets creditados`,
+            requestId,
+            newBalance
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error: any) {
+        console.error(`[${requestId}] ❌ Erro ao processar tickets:`, error);
+        
+        // Registrar falha no ledger
+        await supabase.from('ticket_ledger').insert({
           user_id: userId,
           variacao: value,
-          motivo: idempotencyKey // Usar idempotencyKey como motivo para evitar duplicação
+          motivo: reason || `Recompensa: ${source}`,
+          idempotency_key: idempotencyKey,
+          origem: source,
+          status: 'falhou',
+          error_message: error.message || 'Erro desconhecido',
+          retries: 0
         });
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          status: 'confirmed',
-          message: `${value} tickets creditados`,
-          requestId,
-          newBalance
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        
+        throw error;
+      }
 
     } else {
       return new Response(

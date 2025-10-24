@@ -12,7 +12,7 @@
 - ✅ **Registro de Aliases**: Mantém histórico de mudanças de nome
 - ✅ **Constraint de Formato**: Valida que `twitch_user_id` é numérico
 
-#### Índices e Constraints Criados
+#### Índices e Constraints Criados (Profiles)
 ```sql
 -- Garante apenas um perfil ativo por twitch_user_id
 CREATE UNIQUE INDEX idx_profiles_twitch_user_id_active 
@@ -26,6 +26,27 @@ ON profiles(twitch_username) WHERE is_active = true;
 ALTER TABLE profiles ADD CONSTRAINT check_twitch_user_id_format 
 CHECK (twitch_user_id ~ '^\d+$');
 ```
+
+#### Melhorias em `ticket_ledger` (Idempotência Completa)
+- ✅ **Campo `idempotency_key`**: Chave única para garantir idempotência
+- ✅ **Campo `status`**: Rastreamento de status (confirmado/pendente/falhou)
+- ✅ **Campo `origem`**: Identificação da fonte da transação
+- ✅ **Campo `referencia_id`**: Referência externa (reward_id, game_id, etc)
+- ✅ **Campo `error_message`**: Mensagem de erro para transações falhadas
+- ✅ **Campo `retries`**: Contador de tentativas de reprocessamento
+- ✅ **Índices de Performance**: Para `idempotency_key`, `status`, e queries de auditoria
+
+#### Melhorias em `rubini_coins_history` (Performance)
+- ✅ **Índice por origem**: Otimiza queries filtradas por fonte
+- ✅ **Índice composto**: Para queries de auditoria por usuário e data
+- ✅ **Índice por referencia_id**: Para rastreamento de transações relacionadas
+
+#### Função `consolidate_duplicate_profiles()` (Batch Consolidation)
+- ✅ **Consolidação em Lote**: Processa todas as duplicatas existentes no banco
+- ✅ **Migração Completa**: Move todos os relacionamentos e históricos
+- ✅ **Auditoria Detalhada**: Registra saldos antes/depois em `profile_merge_audit`
+- ✅ **Idempotência**: Pode ser executada múltiplas vezes sem problemas
+- ✅ **Logging Estruturado**: RAISE NOTICE para cada duplicata processada
 
 ### 2. **Edge Functions Atualizadas**
 
@@ -102,11 +123,20 @@ CHECK (twitch_user_id ~ '^\d+$');
 - ✅ Lock pessimista (`FOR UPDATE`) previne race conditions
 - ✅ Constraint única garante apenas 1 perfil ativo por `twitch_user_id`
 - ✅ `ON CONFLICT` em criação de perfil evita duplicatas
+- ✅ Índices parciais otimizam performance de busca
 
-### Crédito de Recompensas
-- ✅ `idempotency_key` em `add-rubini-coins`
-- ✅ `idempotency_key` em `award-reward`
+### Crédito de Recompensas (Rubini Coins)
+- ✅ `idempotency_key` obrigatório em todas as operações
+- ✅ Verificação de duplicatas com status `confirmado`
+- ✅ Registro de falhas com `error_message`
+- ✅ Índice específico para busca rápida por `idempotency_key`
+
+### Crédito de Recompensas (Tickets)
+- ✅ `idempotency_key` em `ticket_ledger` (novo)
 - ✅ Verificação de duplicatas antes de creditar
+- ✅ Validação de saldo não-negativo
+- ✅ Registro de falhas com status e mensagem de erro
+- ✅ Tratamento de exceções com rollback implícito
 
 ### Aplicação de Créditos Provisórios
 - ✅ Flag `aplicado` previne reaplicação
@@ -133,32 +163,42 @@ CHECK (twitch_user_id ~ '^\d+$');
    - ✅ `idempotency_key` previne crédito duplicado
    - ✅ Segundo POST retorna sucesso mas não credita novamente
 
-5. **Consolidação Automática de Duplicatas**
-   - ✅ Detecta perfis com mesmo `twitch_user_id`
-   - ✅ Migra todos os históricos
+5. **Consolidação Automática de Duplicatas** (Tempo Real)
+   - ✅ Detecta perfis com mesmo `twitch_user_id` em login
+   - ✅ Migra todos os históricos automaticamente
    - ✅ Soma saldos no perfil canônico
    - ✅ Desativa perfis duplicados
+   - ✅ Registra auditoria completa
+
+6. **Consolidação em Lote de Duplicatas** (Batch)
+   - ✅ Função `consolidate_duplicate_profiles()` para processar duplicatas existentes
+   - ✅ Pode ser executada por admins via edge function
+   - ✅ Retorna relatório detalhado de cada consolidação
+   - ✅ Idempotente - pode ser executada múltiplas vezes
 
 ## 📊 Pontos de Integração Tocados
 
 ### Tabelas do Banco
-- `profiles` (unique index, constraint)
-- `user_aliases` (novos registros)
-- `rubini_coins_balance` (consolidação)
-- `rubini_coins_history` (migração)
-- `tickets` (consolidação)
-- `ticket_ledger` (migração)
-- `daily_rewards_history` (migração)
-- `tibiatermo_user_games` (migração)
-- `spins` (migração)
-- `chat_messages` (migração)
-- `rubini_coins_resgates` (migração)
+- `profiles` (unique index, constraint de formato)
+- `user_aliases` (registro de mudanças de nome)
+- `rubini_coins_balance` (consolidação de saldos)
+- `rubini_coins_history` (migração, novos índices de performance)
+- `tickets` (consolidação de saldos)
+- `ticket_ledger` (migração, campos de idempotência adicionados)
+- `daily_rewards_history` (migração de histórico)
+- `tibiatermo_user_games` (migração de jogos)
+- `spins` (migração de roletas)
+- `chat_messages` (migração de mensagens)
+- `rubini_coins_resgates` (migração de resgates)
 - `raffles` (atualização de vencedor)
+- `profile_merge_audit` (auditoria de consolidações)
 
-### Edge Functions
-- `twitch-auth-exchange` (validação e normalização)
-- `twitch-auth-me` (validação de sessão)
-- `get_or_merge_profile_v2` (DB function)
+### Edge Functions e Database Functions
+- `twitch-auth-exchange` (validação e normalização de login)
+- `twitch-auth-me` (validação de sessão JWT)
+- `award-reward` (idempotência completa para tickets)
+- `get_or_merge_profile_v2` (consolidação automática em tempo real)
+- `consolidate_duplicate_profiles()` (consolidação batch de duplicatas existentes)
 
 ### Componentes Frontend
 - `AccountSettings.tsx` (identidade Twitch)
@@ -192,7 +232,26 @@ CHECK (twitch_user_id ~ '^\d+$');
 ### Compatibilidade
 ✅ Rotas e componentes atuais preservados, sem breaking changes
 
+## 📈 Melhorias de Performance
+
+### Índices Criados
+- ✅ `idx_profiles_twitch_user_id_active` - Busca única por twitch_user_id ativo
+- ✅ `idx_profiles_twitch_username_active` - Busca por username ativo
+- ✅ `idx_ticket_ledger_idempotency_key` - Verificação rápida de duplicatas (tickets)
+- ✅ `idx_ticket_ledger_status` - Queries filtradas por status
+- ✅ `idx_ticket_ledger_user_created` - Auditoria por usuário e data
+- ✅ `idx_rubini_coins_history_origem` - Queries filtradas por origem
+- ✅ `idx_rubini_coins_history_user_created` - Auditoria por usuário e data
+- ✅ `idx_rubini_coins_history_referencia_id` - Rastreamento por referência
+
+### Benefícios
+- 🚀 Redução no tempo de verificação de idempotência
+- 🚀 Queries de auditoria mais rápidas
+- 🚀 Busca por username case-insensitive otimizada
+- 🚀 Prevenção efetiva de duplicatas em race conditions
+
 ---
 
 **Status**: ✅ Implementação Completa  
-**Última Atualização**: 2025-10-23
+**Última Atualização**: 2025-10-24  
+**Versão**: 2.0 (inclui melhorias de ticket_ledger e consolidação batch)

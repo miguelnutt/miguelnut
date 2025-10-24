@@ -984,22 +984,40 @@ export type Database = {
       ticket_ledger: {
         Row: {
           created_at: string
+          error_message: string | null
           id: string
+          idempotency_key: string | null
           motivo: string
+          origem: string | null
+          referencia_id: string | null
+          retries: number | null
+          status: string | null
           user_id: string
           variacao: number
         }
         Insert: {
           created_at?: string
+          error_message?: string | null
           id?: string
+          idempotency_key?: string | null
           motivo: string
+          origem?: string | null
+          referencia_id?: string | null
+          retries?: number | null
+          status?: string | null
           user_id: string
           variacao: number
         }
         Update: {
           created_at?: string
+          error_message?: string | null
           id?: string
+          idempotency_key?: string | null
           motivo?: string
+          origem?: string | null
+          referencia_id?: string | null
+          retries?: number | null
+          status?: string | null
           user_id?: string
           variacao?: number
         }
@@ -1233,6 +1251,16 @@ export type Database = {
       }
     }
     Functions: {
+      consolidate_duplicate_profiles: {
+        Args: never
+        Returns: {
+          action_taken: string
+          canonical_id: string
+          duplicate_id: string
+          rubini_coins_consolidated: number
+          tickets_consolidated: number
+        }[]
+      }
       get_or_create_profile_by_name: {
         Args: { p_nome: string }
         Returns: string
@@ -1246,10 +1274,7 @@ export type Database = {
         }
         Returns: string
       }
-      has_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      has_admin_user: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
