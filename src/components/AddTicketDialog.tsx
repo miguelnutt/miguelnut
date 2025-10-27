@@ -90,17 +90,24 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
 
         toast.success(`${ticketsNum} tickets adicionados para ${profileData.nome || profileData.twitch_username}! Total: ${newAmount}`);
       } else {
-        // Criar novo perfil
+        // Criar novo perfil com UUID gerado
+        const newUserId = crypto.randomUUID();
+        
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert({ 
+            id: newUserId,
             nome,
-            twitch_username: nome.toLowerCase()
+            twitch_username: nome.toLowerCase(),
+            is_active: true
           })
           .select('id, nome')
           .single();
 
-        if (createError) throw createError;
+        if (createError) {
+          console.error("Erro ao criar perfil:", createError);
+          throw new Error(`Não foi possível criar o usuário: ${createError.message}`);
+        }
 
         userId = newProfile.id;
 
@@ -156,7 +163,7 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
               disabled={saving}
             />
             <p className="text-xs text-muted-foreground">
-              Se o usuário já existir, os tickets serão somados ao total atual
+              Se o usuário já existir, os tickets serão somados. Caso contrário, um novo perfil será criado automaticamente.
             </p>
           </div>
 
