@@ -104,6 +104,7 @@ const AdminDashboard = () => {
   
   // Estados para edição de saldo
   const [isEditingBalance, setIsEditingBalance] = useState(false);
+  const [editBalanceOpen, setEditBalanceOpen] = useState(false);
   const [editRubiniCoins, setEditRubiniCoins] = useState("");
   const [editTickets, setEditTickets] = useState("");
   const [balanceUpdateReason, setBalanceUpdateReason] = useState("");
@@ -410,6 +411,7 @@ const AdminDashboard = () => {
       });
 
       setIsEditingBalance(false);
+      setEditBalanceOpen(false);
       setBalanceUpdateReason("");
 
       toast({
@@ -436,6 +438,7 @@ const AdminDashboard = () => {
     setEditTickets(userBalance.tickets.toString());
     setBalanceUpdateReason("");
     setIsEditingBalance(false);
+    setEditBalanceOpen(false);
   };
 
   const filteredUsers = users.filter(user =>
