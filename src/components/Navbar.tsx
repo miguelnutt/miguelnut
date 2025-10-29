@@ -68,7 +68,7 @@ export const Navbar = () => {
   };
 
   const handleOpenAdminPanel = () => {
-    navigate("/admin");
+    navigate("/admin-dashboard");
   };
 
 
@@ -210,10 +210,10 @@ export const Navbar = () => {
                         size="sm"
                         onClick={handleOpenAdminPanel}
                         className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                        title="Console de Administração"
+                        title="Painel Administrativo"
                       >
                         <Shield className="mr-2 h-4 w-4" />
-                        Console Admin
+                        Painel Admin
                       </Button>
                     </>
                   )}
@@ -299,6 +299,16 @@ export const Navbar = () => {
               >
                 Jogos
               </Link>
+              {isAdmin && (
+                <Link
+                  to="/admin-dashboard"
+                  className="text-sm font-medium transition-colors hover:text-primary px-2 py-1 flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Shield className="h-4 w-4" />
+                  Painel Admin
+                </Link>
+              )}
               <Link
                 to="/history"
                 className="text-sm font-medium transition-colors hover:text-primary px-2 py-1"

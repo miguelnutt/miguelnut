@@ -32,7 +32,8 @@ export function StreakRanking() {
         return;
       }
       
-      setRankings(data);
+      // A função retorna os dados dentro de um objeto com a propriedade 'rankings'
+      setRankings(data.rankings || []);
     } catch (error: any) {
       console.error('Erro ao carregar ranking:', error);
       toast.error('Erro ao carregar ranking de sequências');
