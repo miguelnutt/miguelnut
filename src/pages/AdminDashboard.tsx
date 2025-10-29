@@ -12,8 +12,8 @@ import { Session } from "@supabase/supabase-js";
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
-  const { isAdmin } = useAdmin(session?.user ?? null);
   const [activeTab, setActiveTab] = useState("overview");
+  const { isAdmin, loading } = useAdmin(session?.user ?? null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -31,7 +31,7 @@ const AdminDashboard = () => {
 
   // Redirecionar se não for admin
   React.useEffect(() => {
-    if (!isAdmin) {
+    if (!loading && !isAdmin) {
       toast({
         title: "Acesso negado",
         description: "Você não tem permissão para acessar esta página.",
@@ -39,8 +39,12 @@ const AdminDashboard = () => {
       });
       navigate("/");
     }
-  }, [isAdmin, navigate]);
+  }, [isAdmin, loading, navigate]);
 
+  if (loading) {
+    return <div className="container mx-auto py-8 text-center">Verificando permissões...</div>;
+  }
+  
   if (!isAdmin) {
     return null;
   }
