@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Users, Coins, BarChart, Settings, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,16 +6,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "@/hooks/use-toast";
-
-// Importando os componentes dos módulos
-import UserManagement from "../components/admin/UserManagement";
-import EconomyManagement from "../components/admin/EconomyManagement";
-import LogsMonitoring from "../components/admin/LogsMonitoring";
+import { supabase } from "@/lib/supabase-helper";
+import { Session } from "@supabase/supabase-js";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAdmin();
+  const [session, setSession] = useState<Session | null>(null);
+  const { isAdmin } = useAdmin(session?.user ?? null);
   const [activeTab, setActiveTab] = useState("overview");
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Redirecionar se não for admin
   React.useEffect(() => {

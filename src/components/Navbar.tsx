@@ -67,6 +67,10 @@ export const Navbar = () => {
     navigate("/login");
   };
 
+  const handleOpenAdminPanel = () => {
+    navigate("/admin");
+  };
+
 
 
   return (
