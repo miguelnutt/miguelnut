@@ -95,18 +95,6 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
 
       toast.success(`${ticketsNum} tickets adicionados para ${profileData?.nome || profileData?.twitch_username || nome}! Total: ${newAmount}`);
 
-        // Salvar no ledger
-        await supabase
-          .from("ticket_ledger")
-          .insert({
-            user_id: userId,
-            variacao: ticketsNum,
-            motivo: `Usuário criado com ${ticketsNum} tickets`
-          });
-
-        toast.success(`Novo usuário ${nome} criado com ${ticketsNum} tickets!`);
-      }
-
       setNome("");
       setTickets("");
       onOpenChange(false);
