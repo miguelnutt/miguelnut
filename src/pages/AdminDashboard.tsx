@@ -27,7 +27,15 @@ import {
   Shuffle,
   History,
   Gamepad2,
-  Ticket
+  Ticket,
+  Save,
+  X,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle,
+  User,
+  Clock,
+  DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +44,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase-helper";
@@ -45,9 +55,13 @@ interface UserProfile {
   id: string;
   nome: string;
   twitch_username: string | null;
+  twitch_user_id: string | null;
   created_at: string;
   updated_at: string;
   last_login?: string;
+  is_active: boolean;
+  merged_into?: string | null;
+  display_name_canonical?: string | null;
 }
 
 interface UserBalance {
@@ -60,6 +74,15 @@ interface UserHistory {
   amount: number;
   description: string;
   created_at: string;
+  saldo_anterior?: number;
+  saldo_atual?: number;
+}
+
+interface UserStats {
+  total_spins: number;
+  total_games_played: number;
+  daily_login_streak: number;
+  last_daily_reward: string | null;
 }
 
 const AdminDashboard = () => {
@@ -76,10 +99,14 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [userBalance, setUserBalance] = useState<UserBalance | null>(null);
   const [userHistory, setUserHistory] = useState<UserHistory[]>([]);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
-  const [editBalanceOpen, setEditBalanceOpen] = useState(false);
-  const [newRubiniCoins, setNewRubiniCoins] = useState("");
-  const [newTickets, setNewTickets] = useState("");
+  
+  // Estados para edição de saldo
+  const [isEditingBalance, setIsEditingBalance] = useState(false);
+  const [editRubiniCoins, setEditRubiniCoins] = useState("");
+  const [editTickets, setEditTickets] = useState("");
+  const [balanceUpdateReason, setBalanceUpdateReason] = useState("");
 
   // Estados para a aba de economia
   const [economyData, setEconomyData] = useState({
@@ -146,25 +173,50 @@ const AdminDashboard = () => {
   const loadUsers = async () => {
     setUsersLoading(true);
     try {
+      // Buscar usuários únicos e ativos, sem duplicados
       const { data, error } = await supabase
         .from('profiles')
         .select(`
           id,
           nome,
           twitch_username,
+          twitch_user_id,
           created_at,
           updated_at,
-          user_daily_logins!inner(ultimo_login)
+          is_active,
+          merged_into,
+          display_name_canonical
         `)
         .eq('is_active', true)
+        .is('merged_into', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
 
-      const usersWithLastLogin = data?.map(user => ({
-        ...user,
-        last_login: user.user_daily_logins?.[0]?.ultimo_login || user.created_at
-      })) || [];
+      // Buscar último login para cada usuário (opcional, sem inner join)
+      const usersWithLastLogin = await Promise.all(
+        (data || []).map(async (user) => {
+          try {
+            const { data: loginData } = await supabase
+              .from('user_daily_logins')
+              .select('ultimo_login')
+              .eq('user_id', user.id)
+              .order('ultimo_login', { ascending: false })
+              .limit(1)
+              .single();
+
+            return {
+              ...user,
+              last_login: loginData?.ultimo_login || user.created_at
+            };
+          } catch {
+            return {
+              ...user,
+              last_login: user.created_at
+            };
+          }
+        })
+      );
 
       setUsers(usersWithLastLogin);
     } catch (error: any) {
@@ -182,6 +234,7 @@ const AdminDashboard = () => {
   const loadUserDetails = async (user: UserProfile) => {
     setUserDetailsLoading(true);
     setSelectedUser(user);
+    setIsEditingBalance(false);
     
     try {
       // Carregar saldos
@@ -198,18 +251,22 @@ const AdminDashboard = () => {
           .single()
       ]);
 
-      setUserBalance({
+      const balance = {
         rubini_coins: rubiniCoinsResult.data?.saldo || 0,
         tickets: ticketsResult.data?.tickets_atual || 0
-      });
+      };
+      
+      setUserBalance(balance);
+      setEditRubiniCoins(balance.rubini_coins.toString());
+      setEditTickets(balance.tickets.toString());
 
-      // Carregar histórico (últimas 50 transações)
+      // Carregar histórico completo (últimas 100 transações)
       const { data: historyData, error: historyError } = await supabase
         .from('rubini_coins_history')
-        .select('tipo_operacao, valor, descricao, created_at')
+        .select('tipo_operacao, valor, descricao, created_at, saldo_anterior, saldo_atual')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
 
       if (historyError) throw historyError;
 
@@ -217,10 +274,38 @@ const AdminDashboard = () => {
         type: item.tipo_operacao,
         amount: item.valor,
         description: item.descricao || '',
-        created_at: item.created_at
+        created_at: item.created_at,
+        saldo_anterior: item.saldo_anterior,
+        saldo_atual: item.saldo_atual
       })) || [];
 
       setUserHistory(formattedHistory);
+
+      // Carregar estatísticas do usuário
+      const [spinsResult, gamesResult, streakResult] = await Promise.all([
+        supabase
+          .from('spins')
+          .select('id')
+          .eq('user_id', user.id),
+        supabase
+          .from('tibiadle_user_games')
+          .select('id')
+          .eq('user_id', user.id),
+        supabase
+          .from('user_daily_logins')
+          .select('streak_atual, ultimo_login')
+          .eq('user_id', user.id)
+          .order('ultimo_login', { ascending: false })
+          .limit(1)
+          .single()
+      ]);
+
+      setUserStats({
+        total_spins: spinsResult.data?.length || 0,
+        total_games_played: gamesResult.data?.length || 0,
+        daily_login_streak: streakResult.data?.streak_atual || 0,
+        last_daily_reward: streakResult.data?.ultimo_login || null
+      });
 
     } catch (error: any) {
       console.error("Erro ao carregar detalhes do usuário:", error);
@@ -235,59 +320,105 @@ const AdminDashboard = () => {
   };
 
   const updateUserBalance = async () => {
-    if (!selectedUser || !userBalance) return;
+    if (!selectedUser || !userBalance || !session?.user) return;
+
+    // Validações
+    const newRubiniCoinsValue = parseInt(editRubiniCoins) || 0;
+    const newTicketsValue = parseInt(editTickets) || 0;
+    
+    if (newRubiniCoinsValue < 0 || newTicketsValue < 0) {
+      toast({
+        title: "Erro",
+        description: "Os valores não podem ser negativos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!balanceUpdateReason.trim()) {
+      toast({
+        title: "Erro",
+        description: "É obrigatório informar o motivo da alteração",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      const rubiniCoinsValue = parseInt(newRubiniCoins) || userBalance.rubini_coins;
-      const ticketsValue = parseInt(newTickets) || userBalance.tickets;
+      const rubiniCoinsDiff = newRubiniCoinsValue - userBalance.rubini_coins;
+      const ticketsDiff = newTicketsValue - userBalance.tickets;
 
-      // Atualizar Rubini Coins
-      const { error: rcError } = await supabase
-        .from('rubini_coins_balance')
-        .upsert({
-          user_id: selectedUser.id,
-          saldo: rubiniCoinsValue
-        });
+      // Atualizar Rubini Coins se houve mudança
+      if (rubiniCoinsDiff !== 0) {
+        const { error: rcError } = await supabase
+          .from('rubini_coins_balance')
+          .upsert({
+            user_id: selectedUser.id,
+            saldo: newRubiniCoinsValue
+          });
 
-      if (rcError) throw rcError;
+        if (rcError) throw rcError;
 
-      // Atualizar Tickets
-      const { error: ticketsError } = await supabase
-        .from('tickets')
-        .upsert({
-          user_id: selectedUser.id,
-          tickets_atual: ticketsValue
-        });
-
-      if (ticketsError) throw ticketsError;
-
-      // Registrar no histórico
-      if (rubiniCoinsValue !== userBalance.rubini_coins) {
+        // Registrar no histórico de Rubini Coins
         await supabase
           .from('rubini_coins_history')
           .insert({
             user_id: selectedUser.id,
             tipo_operacao: 'admin_adjustment',
-            valor: rubiniCoinsValue - userBalance.rubini_coins,
+            valor: rubiniCoinsDiff,
             saldo_anterior: userBalance.rubini_coins,
-            saldo_atual: rubiniCoinsValue,
-            descricao: 'Ajuste manual pelo administrador'
+            saldo_atual: newRubiniCoinsValue,
+            descricao: `Ajuste administrativo: ${balanceUpdateReason}`,
+            admin_user_id: session.user.id
           });
       }
 
+      // Atualizar Tickets se houve mudança
+      if (ticketsDiff !== 0) {
+        const { error: ticketsError } = await supabase
+          .from('tickets')
+          .upsert({
+            user_id: selectedUser.id,
+            tickets_atual: newTicketsValue
+          });
+
+        if (ticketsError) throw ticketsError;
+
+        // Registrar no histórico de tickets (se existir tabela)
+        try {
+          await supabase
+            .from('ticket_ledger')
+            .insert({
+              user_id: selectedUser.id,
+              tipo_operacao: 'admin_adjustment',
+              valor: ticketsDiff,
+              saldo_anterior: userBalance.tickets,
+              saldo_atual: newTicketsValue,
+              descricao: `Ajuste administrativo: ${balanceUpdateReason}`,
+              admin_user_id: session.user.id,
+              status: 'completed'
+            });
+        } catch (ticketLogError) {
+          console.warn("Erro ao registrar log de tickets:", ticketLogError);
+        }
+      }
+
+      // Atualizar estado local
       setUserBalance({
-        rubini_coins: rubiniCoinsValue,
-        tickets: ticketsValue
+        rubini_coins: newRubiniCoinsValue,
+        tickets: newTicketsValue
       });
 
-      setEditBalanceOpen(false);
-      setNewRubiniCoins("");
-      setNewTickets("");
+      setIsEditingBalance(false);
+      setBalanceUpdateReason("");
 
       toast({
         title: "Sucesso",
-        description: "Saldo atualizado com sucesso",
+        description: `Saldo atualizado com sucesso. ${rubiniCoinsDiff !== 0 ? `Rubini Coins: ${rubiniCoinsDiff > 0 ? '+' : ''}${rubiniCoinsDiff}` : ''} ${ticketsDiff !== 0 ? `Tickets: ${ticketsDiff > 0 ? '+' : ''}${ticketsDiff}` : ''}`,
       });
+
+      // Recarregar histórico para mostrar a nova transação
+      loadUserDetails(selectedUser);
 
     } catch (error: any) {
       console.error("Erro ao atualizar saldo:", error);
@@ -297,6 +428,14 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const cancelBalanceEdit = () => {
+    if (!userBalance) return;
+    setEditRubiniCoins(userBalance.rubini_coins.toString());
+    setEditTickets(userBalance.tickets.toString());
+    setBalanceUpdateReason("");
+    setIsEditingBalance(false);
   };
 
   const filteredUsers = users.filter(user =>
@@ -605,166 +744,362 @@ const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Tabela de usuários */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Todos os Usuários</CardTitle>
-                <CardDescription>Lista de usuários cadastrados no sistema</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar por nome ou username..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                  
-                  {usersLoading ? (
-                    <div className="text-center py-8">Carregando usuários...</div>
-                  ) : (
-                    <div className="border rounded-lg max-h-96 overflow-y-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>Username Twitch</TableHead>
-                            <TableHead>Último Acesso</TableHead>
-                            <TableHead>Ações</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredUsers.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell className="font-medium">{user.nome}</TableCell>
-                              <TableCell>{user.twitch_username || "N/A"}</TableCell>
-                              <TableCell>
-                                {new Date(user.last_login || user.created_at).toLocaleDateString('pt-BR')}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => loadUserDetails(user)}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Detalhes do usuário selecionado */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Detalhes do Usuário</CardTitle>
-                <CardDescription>
-                  {selectedUser ? `Informações de ${selectedUser.nome}` : "Selecione um usuário para ver os detalhes"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {userDetailsLoading ? (
-                  <div className="text-center py-8">Carregando detalhes...</div>
-                ) : selectedUser && userBalance ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Lista de usuários */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Usuários ({filteredUsers.length})
+                  </CardTitle>
+                  <CardDescription>Lista de usuários cadastrados no sistema</CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-4">
-                    {/* Saldos */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-yellow-600">{userBalance.rubini_coins}</div>
-                        <div className="text-sm text-muted-foreground">Rubini Coins</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">{userBalance.tickets}</div>
-                        <div className="text-sm text-muted-foreground">Tickets</div>
-                      </div>
+                    <div className="flex items-center space-x-2">
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar por nome ou username..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadUsers}
+                        disabled={usersLoading}
+                      >
+                        <RefreshCw className={`h-4 w-4 ${usersLoading ? 'animate-spin' : ''}`} />
+                      </Button>
                     </div>
-
-                    {/* Botão para editar saldo */}
-                    <Dialog open={editBalanceOpen} onOpenChange={setEditBalanceOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="w-full" variant="outline">
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar Saldo
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Editar Saldo - {selectedUser.nome}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="rubini-coins">Rubini Coins</Label>
-                            <Input
-                              id="rubini-coins"
-                              type="number"
-                              placeholder={userBalance.rubini_coins.toString()}
-                              value={newRubiniCoins}
-                              onChange={(e) => setNewRubiniCoins(e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="tickets">Tickets</Label>
-                            <Input
-                              id="tickets"
-                              type="number"
-                              placeholder={userBalance.tickets.toString()}
-                              value={newTickets}
-                              onChange={(e) => setNewTickets(e.target.value)}
-                            />
-                          </div>
-                          <Button onClick={updateUserBalance} className="w-full">
-                            Atualizar Saldo
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-
-                    {/* Histórico */}
-                    <div>
-                      <h4 className="font-semibold mb-2">Histórico Recente</h4>
-                      <div className="border rounded-lg max-h-48 overflow-y-auto">
-                        {userHistory.length > 0 ? (
-                          <div className="divide-y">
-                            {userHistory.map((item, index) => (
-                              <div key={index} className="p-3 text-sm">
-                                <div className="flex justify-between items-center">
-                                  <span className="font-medium">{item.type}</span>
-                                  <span className={`font-bold ${item.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {item.amount >= 0 ? '+' : ''}{item.amount}
-                                  </span>
+                    
+                    {usersLoading ? (
+                      <div className="text-center py-8">
+                        <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                        Carregando usuários...
+                      </div>
+                    ) : (
+                      <div className="border rounded-lg max-h-[600px] overflow-y-auto">
+                        <div className="divide-y">
+                          {filteredUsers.map((user) => (
+                            <div
+                              key={user.id}
+                              className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${
+                                selectedUser?.id === user.id ? 'bg-muted border-l-4 border-l-primary' : ''
+                              }`}
+                              onClick={() => loadUserDetails(user)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">{user.nome}</div>
+                                  <div className="text-sm text-muted-foreground truncate">
+                                    {user.twitch_username ? `@${user.twitch_username}` : "Sem Twitch"}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(user.last_login || user.created_at).toLocaleDateString('pt-BR')}
+                                  </div>
                                 </div>
-                                <div className="text-muted-foreground">{item.description}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {new Date(item.created_at).toLocaleString('pt-BR')}
+                                <div className="flex items-center gap-1">
+                                  {user.twitch_user_id && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Twitch
+                                    </Badge>
+                                  )}
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="p-4 text-center text-muted-foreground">
-                            Nenhum histórico encontrado
-                          </div>
-                        )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Painel de detalhes do usuário */}
+            <div className="lg:col-span-2">
+              {selectedUser ? (
+                <div className="space-y-6">
+                  {/* Cabeçalho do usuário */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-xl">{selectedUser.nome}</CardTitle>
+                            <CardDescription className="flex items-center gap-2">
+                              {selectedUser.twitch_username ? (
+                                <>
+                                  <Badge variant="secondary">@{selectedUser.twitch_username}</Badge>
+                                  {selectedUser.twitch_user_id && (
+                                    <Badge variant="outline">ID: {selectedUser.twitch_user_id}</Badge>
+                                  )}
+                                </>
+                              ) : (
+                                <Badge variant="destructive">Sem Twitch</Badge>
+                              )}
+                            </CardDescription>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loadUserDetails(selectedUser)}
+                          disabled={userDetailsLoading}
+                        >
+                          <RefreshCw className={`h-4 w-4 ${userDetailsLoading ? 'animate-spin' : ''}`} />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                  </Card>
+
+                  {userDetailsLoading ? (
+                    <Card>
+                      <CardContent className="py-12">
+                        <div className="text-center">
+                          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+                          <p>Carregando detalhes do usuário...</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <>
+                      {/* Informações básicas */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <User className="h-5 w-5" />
+                            Informações Básicas
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium text-muted-foreground">ID do Usuário</Label>
+                              <p className="font-mono text-sm">{selectedUser.id}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                              <p>
+                                <Badge variant={selectedUser.is_active ? "default" : "destructive"}>
+                                  {selectedUser.is_active ? "Ativo" : "Inativo"}
+                                </Badge>
+                              </p>
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-muted-foreground">Criado em</Label>
+                              <p className="text-sm">{new Date(selectedUser.created_at).toLocaleString('pt-BR')}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-muted-foreground">Última atualização</Label>
+                              <p className="text-sm">{new Date(selectedUser.updated_at).toLocaleString('pt-BR')}</p>
+                            </div>
+                            {selectedUser.last_login && (
+                              <div>
+                                <Label className="text-sm font-medium text-muted-foreground">Último acesso</Label>
+                                <p className="text-sm">{new Date(selectedUser.last_login).toLocaleString('pt-BR')}</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Saldos e edição */}
+                      <Card>
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                              <DollarSign className="h-5 w-5" />
+                              Saldos
+                            </CardTitle>
+                            {!isEditingBalance && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsEditingBalance(true)}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </Button>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {userBalance && (
+                            <div className="space-y-4">
+                              {isEditingBalance ? (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label htmlFor="edit-rubini-coins">Rubini Coins</Label>
+                                      <Input
+                                        id="edit-rubini-coins"
+                                        type="number"
+                                        min="0"
+                                        value={editRubiniCoins}
+                                        onChange={(e) => setEditRubiniCoins(e.target.value)}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-tickets">Tickets</Label>
+                                      <Input
+                                        id="edit-tickets"
+                                        type="number"
+                                        min="0"
+                                        value={editTickets}
+                                        onChange={(e) => setEditTickets(e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="balance-reason">Motivo da alteração *</Label>
+                                    <Input
+                                      id="balance-reason"
+                                      placeholder="Ex: Correção de bug, compensação, etc."
+                                      value={balanceUpdateReason}
+                                      onChange={(e) => setBalanceUpdateReason(e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button onClick={updateUserBalance} className="flex-1">
+                                      <Save className="h-4 w-4 mr-2" />
+                                      Salvar
+                                    </Button>
+                                    <Button variant="outline" onClick={cancelBalanceEdit}>
+                                      <X className="h-4 w-4 mr-2" />
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="text-center p-6 border rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
+                                    <div className="text-3xl font-bold text-yellow-600 mb-1">
+                                      {userBalance.rubini_coins.toLocaleString('pt-BR')}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">Rubini Coins</div>
+                                  </div>
+                                  <div className="text-center p-6 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                                    <div className="text-3xl font-bold text-blue-600 mb-1">
+                                      {userBalance.tickets.toLocaleString('pt-BR')}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">Tickets</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Estatísticas */}
+                      {userStats && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Activity className="h-5 w-5" />
+                              Estatísticas
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="text-center p-4 border rounded-lg">
+                                <div className="text-2xl font-bold text-purple-600">{userStats.total_spins}</div>
+                                <div className="text-sm text-muted-foreground">Spins</div>
+                              </div>
+                              <div className="text-center p-4 border rounded-lg">
+                                <div className="text-2xl font-bold text-green-600">{userStats.total_games_played}</div>
+                                <div className="text-sm text-muted-foreground">Jogos</div>
+                              </div>
+                              <div className="text-center p-4 border rounded-lg">
+                                <div className="text-2xl font-bold text-orange-600">{userStats.daily_login_streak}</div>
+                                <div className="text-sm text-muted-foreground">Sequência</div>
+                              </div>
+                              <div className="text-center p-4 border rounded-lg">
+                                <div className="text-sm font-bold text-indigo-600">
+                                  {userStats.last_daily_reward 
+                                    ? new Date(userStats.last_daily_reward).toLocaleDateString('pt-BR')
+                                    : 'Nunca'
+                                  }
+                                </div>
+                                <div className="text-sm text-muted-foreground">Último Login</div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Histórico */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <History className="h-5 w-5" />
+                            Histórico de Transações ({userHistory.length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="border rounded-lg max-h-96 overflow-y-auto">
+                            {userHistory.length > 0 ? (
+                              <div className="divide-y">
+                                {userHistory.map((item, index) => (
+                                  <div key={index} className="p-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <Badge variant="outline" className="text-xs">
+                                            {item.type}
+                                          </Badge>
+                                          <span className={`font-bold text-sm ${
+                                            item.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                                          }`}>
+                                            {item.amount >= 0 ? '+' : ''}{item.amount.toLocaleString('pt-BR')}
+                                          </span>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                                        {item.saldo_anterior !== undefined && item.saldo_atual !== undefined && (
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            Saldo: {item.saldo_anterior.toLocaleString('pt-BR')} → {item.saldo_atual.toLocaleString('pt-BR')}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground text-right">
+                                        {new Date(item.created_at).toLocaleString('pt-BR')}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-8 text-center text-muted-foreground">
+                                <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p>Nenhum histórico encontrado</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <h3 className="text-lg font-medium mb-2">Selecione um usuário</h3>
+                      <p>Clique em um usuário na lista ao lado para ver todos os detalhes</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Clique em um usuário na tabela ao lado para ver os detalhes
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </TabsContent>
 
