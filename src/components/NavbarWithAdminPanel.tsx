@@ -69,7 +69,15 @@ export const Navbar = () => {
           {isAdmin && (
             <>
               <AdminRubiniCoinsResgatesButton />
-
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/admin-dashboard")}
+                className="rounded-full"
+                title="Painel Admin"
+              >
+                <Shield className="h-5 w-5" />
+              </Button>
             </>
           )}
           <Button
@@ -105,7 +113,15 @@ export const Navbar = () => {
           {isAdmin && (
             <>
               <AdminRubiniCoinsResgatesButton />
-
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/admin-dashboard")}
+                className="rounded-full"
+                title="Painel Admin"
+              >
+                <Shield className="h-5 w-5" />
+              </Button>
             </>
           )}
           <Button
