@@ -11,7 +11,7 @@ import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { AdminRubiniCoinsResgatesButton } from "@/components/admin/AdminRubiniCoinsResgatesButton";
 import { useDailyRewardStatus } from "@/hooks/useDailyRewardStatus";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { AdminConsolePanel } from "@/components/AdminConsolePanel";
+
 import { Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { BetaBanner } from "@/components/BetaBanner";
@@ -21,7 +21,6 @@ export const Navbar = () => {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
-  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { status, sessionUserId, twitchUser, isAdmin, logout } = useAuth();
   
@@ -50,26 +49,7 @@ export const Navbar = () => {
     navigate("/login");
   };
 
-  const handleOpenAdminPanel = () => {
-    if (status !== 'ready') {
-      return; // Não abre se não estiver pronto
-    }
-    if (!isAdmin) {
-      return; // Só admin pode abrir
-    }
-    
-    // Verificar se está na rota raiz
-    if (window.location.pathname !== '/') {
-      toast({
-        title: "Console Admin indisponível",
-        description: "O Console de Administração só pode ser aberto a partir da página inicial.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setAdminPanelOpen(true);
-  };
+
 
   // Renderizar skeleton enquanto carrega
   const renderAuthSection = () => {
@@ -89,16 +69,7 @@ export const Navbar = () => {
           {isAdmin && (
             <>
               <AdminRubiniCoinsResgatesButton />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleOpenAdminPanel}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                title="Console de Administração"
-              >
-                <Shield className="mr-2 h-4 w-4" />
-                Console Admin
-              </Button>
+
             </>
           )}
           <Button
@@ -134,16 +105,7 @@ export const Navbar = () => {
           {isAdmin && (
             <>
               <AdminRubiniCoinsResgatesButton />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleOpenAdminPanel}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                title="Console de Administração"
-              >
-                <Shield className="mr-2 h-4 w-4" />
-                Console Admin
-              </Button>
+
             </>
           )}
           <Button
@@ -257,25 +219,7 @@ export const Navbar = () => {
         </div>
       </nav>
 
-      {/* Admin Panel Dialog */}
-      <Dialog open={adminPanelOpen} onOpenChange={setAdminPanelOpen}>
-        <DialogContent 
-          className="max-w-6xl max-h-[90vh] overflow-y-auto"
-        >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-purple-600" />
-              Console de Administração
-            </DialogTitle>
-            <DialogDescription>
-              Gerencie todas as configurações do sistema
-            </DialogDescription>
-          </DialogHeader>
-          {status === 'ready' && isAdmin && (
-            <AdminConsolePanel open={adminPanelOpen} onOpenChange={setAdminPanelOpen} />
-          )}
-        </DialogContent>
-      </Dialog>
+
 
       {/* Daily Reward Dialog */}
       {status === 'ready' && twitchUser && (

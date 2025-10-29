@@ -77,7 +77,7 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
 
       // Salvar no ledger com idempotency_key para evitar duplicatas
       const idempotencyKey = `add_tickets_${userId}_${Date.now()}`;
-      await supabase
+      const { error: ledgerError } = await supabase
         .from("ticket_ledger")
         .insert({
           user_id: userId,
@@ -85,6 +85,8 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
           motivo: `Adicionados ${ticketsNum} tickets manualmente`,
           idempotency_key: idempotencyKey
         });
+        
+      if (ledgerError) throw ledgerError;
 
       // Buscar nome do perfil para exibir na mensagem de sucesso
       const { data: profileData } = await supabase

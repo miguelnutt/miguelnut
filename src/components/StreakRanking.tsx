@@ -21,13 +21,18 @@ export function StreakRanking() {
     loadRankings();
   }, []);
 
-  const loadRankings = async () => {
+  const loadRanking = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('get-streak-ranking');
-
-      if (error) throw error;
-      setRankings(data.rankings || []);
+      
+      if (error) {
+        console.error('Erro ao carregar ranking:', error);
+        toast.error('Erro ao carregar ranking de sequências');
+        return;
+      }
+      
+      setRanking(data);
     } catch (error: any) {
       console.error('Erro ao carregar ranking:', error);
       toast.error('Erro ao carregar ranking de sequências');

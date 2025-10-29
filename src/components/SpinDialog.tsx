@@ -270,6 +270,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           if (syncError) {
             console.error("❌ Erro ao sincronizar pontos com StreamElements:", syncError);
             toast.error(`Erro ao sincronizar ${pontosGanhos} pontos de loja para ${nomeParaUsar} no StreamElements`);
+            throw syncError; // Lançar erro para garantir que a operação seja interrompida em caso de falha
           } else {
             console.log("✅ StreamElements sync bem-sucedido:", syncData);
             toast.success(`${nomeParaUsar} ganhou +${pontosGanhos} pontos de loja!`);
@@ -316,6 +317,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           if (rubiniError) {
             console.error("[Roulette] ❌ Erro ao creditar Rubini Coins:", rubiniError);
             toast.error("Erro ao creditar Rubini Coins. Operação registrada para reprocessamento.");
+            throw rubiniError; // Lançar erro para garantir que a operação seja interrompida em caso de falha
           } else if (data?.duplicated) {
             console.log("[Roulette] ⚠️ Operação duplicada detectada");
             toast.info(`${nomeParaUsar} já havia recebido estes ${rubiniGanhos} Rubini Coins`);
