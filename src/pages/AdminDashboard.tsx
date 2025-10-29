@@ -464,6 +464,24 @@ const AdminDashboard = () => {
     user.twitch_username?.toLowerCase().includes(economySearchTerm.toLowerCase())
   );
 
+  const loadLogs = async () => {
+    setLogsLoading(true);
+    try {
+      // TODO: Implement logs loading logic
+      // For now, just set empty array
+      setLogsData([]);
+    } catch (error: any) {
+      console.error("Erro ao carregar logs:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar logs do sistema",
+        variant: "destructive",
+      });
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
   const filteredLogs = logsData.filter(log =>
     log.user_name?.toLowerCase().includes(logsSearchTerm.toLowerCase()) ||
     log.description?.toLowerCase().includes(logsSearchTerm.toLowerCase()) ||
