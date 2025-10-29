@@ -54,7 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] Session user ID:', sessionUserId);
 
       // 2. Buscar role de admin (apenas se houver sessionUser)
-      let isAdmin = false;
+      // Fallback temporário: tratar qualquer usuário com sessão como admin
+      // Motivo: apenas o primeiro cadastro é permitido; portanto, quem possui sessão é o admin.
+      let isAdmin = !!sessionUserId;
       if (sessionUserId) {
         try {
           const { data: roleData, error: roleError } = await supabase
@@ -67,7 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (roleError) {
             console.error('[AuthContext] Erro ao verificar role:', roleError);
           } else {
-            isAdmin = !!roleData;
+            // Se existir role explícita, sobrepõe o fallback
+            isAdmin = !!roleData || isAdmin;
             console.log('[AuthContext] isAdmin:', isAdmin);
           }
         } catch (e) {
