@@ -12,18 +12,21 @@ import { Session } from "@supabase/supabase-js";
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const { isAdmin, loading } = useAdmin(session?.user ?? null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setSessionReady(true);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setSessionReady(true);
     });
 
     return () => subscription.unsubscribe();
@@ -31,7 +34,7 @@ const AdminDashboard = () => {
 
   // Redirecionar se não for admin
   React.useEffect(() => {
-    if (!loading && !isAdmin) {
+    if (sessionReady && !loading && !isAdmin) {
       toast({
         title: "Acesso negado",
         description: "Você não tem permissão para acessar esta página.",
@@ -39,9 +42,9 @@ const AdminDashboard = () => {
       });
       navigate("/");
     }
-  }, [isAdmin, loading, navigate]);
+  }, [sessionReady, isAdmin, loading, navigate]);
 
-  if (loading) {
+  if (!sessionReady || loading) {
     return <div className="container mx-auto py-8 text-center">Verificando permissões...</div>;
   }
   
