@@ -1395,5 +1395,175 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </TabsContent>
+      </Tabs>
 
-// ... existing code ...
+      {/* User Details Dialog */}
+      <Dialog open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Usuário</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Nome</Label>
+                  <div className="font-medium">{selectedUser.nome}</div>
+                </div>
+                <div>
+                  <Label>Username Twitch</Label>
+                  <div className="font-medium">{selectedUser.twitch_username || "N/A"}</div>
+                </div>
+                <div>
+                  <Label>Data de Cadastro</Label>
+                  <div className="font-medium">
+                    {new Date(selectedUser.created_at).toLocaleDateString('pt-BR')}
+                  </div>
+                </div>
+                <div>
+                  <Label>Último Login</Label>
+                  <div className="font-medium">
+                    {selectedUser.last_login 
+                      ? new Date(selectedUser.last_login).toLocaleDateString('pt-BR')
+                      : "N/A"
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {userBalance && (
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                  <div>
+                    <Label>Rubini Coins</Label>
+                    <div className="text-2xl font-bold text-yellow-600">{userBalance.rubini_coins}</div>
+                  </div>
+                  <div>
+                    <Label>Tickets</Label>
+                    <div className="text-2xl font-bold text-blue-600">{userBalance.tickets}</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button onClick={() => setEditBalanceOpen(true)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar Saldo
+                </Button>
+              </div>
+
+              {userHistory.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Histórico Recente</h4>
+                  <div className="border rounded-lg max-h-64 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Valor</TableHead>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead>Data</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userHistory.map((item, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{item.type}</TableCell>
+                            <TableCell>{item.amount}</TableCell>
+                            <TableCell>{item.description}</TableCell>
+                            <TableCell>
+                              {new Date(item.created_at).toLocaleDateString('pt-BR')}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Balance Dialog */}
+      <Dialog open={editBalanceOpen} onOpenChange={setEditBalanceOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Saldo do Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="rubini-coins">Rubini Coins</Label>
+              <Input
+                id="rubini-coins"
+                type="number"
+                value={newRubiniCoins}
+                onChange={(e) => setNewRubiniCoins(e.target.value)}
+                placeholder="Digite a quantidade de Rubini Coins"
+              />
+            </div>
+            <div>
+              <Label htmlFor="tickets">Tickets</Label>
+              <Input
+                id="tickets"
+                type="number"
+                value={newTickets}
+                onChange={(e) => setNewTickets(e.target.value)}
+                placeholder="Digite a quantidade de Tickets"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={updateUserBalance} className="flex-1">
+                Salvar Alterações
+              </Button>
+              <Button variant="outline" onClick={() => setEditBalanceOpen(false)}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Economy Edit Dialog */}
+      <Dialog open={economyEditOpen} onOpenChange={setEconomyEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Saldo - {selectedEconomyUser?.nome}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="economy-rubini-coins">Rubini Coins</Label>
+              <Input
+                id="economy-rubini-coins"
+                type="number"
+                value={newEconomyRubiniCoins}
+                onChange={(e) => setNewEconomyRubiniCoins(e.target.value)}
+                placeholder="Digite a quantidade de Rubini Coins"
+              />
+            </div>
+            <div>
+              <Label htmlFor="economy-tickets">Tickets</Label>
+              <Input
+                id="economy-tickets"
+                type="number"
+                value={newEconomyTickets}
+                onChange={(e) => setNewEconomyTickets(e.target.value)}
+                placeholder="Digite a quantidade de Tickets"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={updateEconomyUserBalance} className="flex-1">
+                Salvar Alterações
+              </Button>
+              <Button variant="outline" onClick={() => setEconomyEditOpen(false)}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminDashboard;
