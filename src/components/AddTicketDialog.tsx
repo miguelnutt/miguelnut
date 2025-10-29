@@ -38,88 +38,62 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
 
     setSaving(true);
     try {
-      // Buscar perfil por twitch_username primeiro (case-insensitive)
-      const { data: profileByTwitch } = await supabase
-        .from('profiles')
-        .select('id, nome, twitch_username')
-        .ilike('twitch_username', nome)
-        .maybeSingle();
+      // Usar a função get_or_merge_profile_v2 para buscar ou criar perfil
+      const { data: userId, error: profileError } = await supabase
+        .rpc('get_or_merge_profile_v2', {
+          p_twitch_user_id: null,
+          p_display_name: nome.trim(),
+          p_login: nome.trim().toLowerCase()
+        });
+
+      if (profileError || !userId) {
+        console.error("Erro ao obter/criar perfil:", profileError);
+        toast.error("Erro ao processar usuário");
+        setSaving(false);
+        return;
+      }
+
+      console.log("Perfil obtido/criado com sucesso. User ID:", userId);
       
-      // Se não encontrou por twitch_username, buscar por nome
-      const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
-        .from('profiles')
-        .select('id, nome, twitch_username')
-        .ilike('nome', nome)
+      // Buscar tickets atuais
+      const { data: currentTickets } = await supabase
+        .from("tickets")
+        .select("tickets_atual")
+        .eq("user_id", userId)
         .maybeSingle();
-      
-      let profileData = profileByTwitch || profileByName;
-      let userId: string;
 
-      if (profileData) {
-        // Perfil encontrado - somar tickets
-        userId = profileData.id;
-        
-        // Buscar tickets atuais
-        const { data: currentTickets } = await supabase
-          .from("tickets")
-          .select("tickets_atual")
-          .eq("user_id", userId)
-          .maybeSingle();
+      const currentAmount = currentTickets?.tickets_atual || 0;
+      const newAmount = currentAmount + ticketsNum;
 
-        const currentAmount = currentTickets?.tickets_atual || 0;
-        const newAmount = currentAmount + ticketsNum;
+      // Atualizar tickets
+      const { error: updateError } = await supabase
+        .from("tickets")
+        .upsert({
+          user_id: userId,
+          tickets_atual: newAmount
+        });
 
-        // Atualizar tickets
-        const { error: updateError } = await supabase
-          .from("tickets")
-          .upsert({
-            user_id: userId,
-            tickets_atual: newAmount
-          });
+      if (updateError) throw updateError;
 
-        if (updateError) throw updateError;
+      // Salvar no ledger com idempotency_key para evitar duplicatas
+      const idempotencyKey = `add_tickets_${userId}_${Date.now()}`;
+      await supabase
+        .from("ticket_ledger")
+        .insert({
+          user_id: userId,
+          variacao: ticketsNum,
+          motivo: `Adicionados ${ticketsNum} tickets manualmente`,
+          idempotency_key: idempotencyKey
+        });
 
-        // Salvar no ledger
-        await supabase
-          .from("ticket_ledger")
-          .insert({
-            user_id: userId,
-            variacao: ticketsNum,
-            motivo: `Adicionados ${ticketsNum} tickets manualmente`
-          });
+      // Buscar nome do perfil para exibir na mensagem de sucesso
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('nome, twitch_username')
+        .eq('id', userId)
+        .single();
 
-        toast.success(`${ticketsNum} tickets adicionados para ${profileData.nome || profileData.twitch_username}! Total: ${newAmount}`);
-      } else {
-        // Criar novo perfil com UUID gerado
-        const newUserId = crypto.randomUUID();
-        
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({ 
-            id: newUserId,
-            nome,
-            twitch_username: nome.toLowerCase(),
-            is_active: true
-          })
-          .select('id, nome')
-          .single();
-
-        if (createError) {
-          console.error("Erro ao criar perfil:", createError);
-          throw new Error(`Não foi possível criar o usuário: ${createError.message}`);
-        }
-
-        userId = newProfile.id;
-
-        // Criar tickets para o novo usuário
-        const { error: ticketsError } = await supabase
-          .from("tickets")
-          .insert({
-            user_id: userId,
-            tickets_atual: ticketsNum
-          });
-
-        if (ticketsError) throw ticketsError;
+      toast.success(`${ticketsNum} tickets adicionados para ${profileData?.nome || profileData?.twitch_username || nome}! Total: ${newAmount}`);
 
         // Salvar no ledger
         await supabase

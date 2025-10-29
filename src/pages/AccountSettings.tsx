@@ -559,14 +559,6 @@ export default function AccountSettings() {
                         <Label className="text-xs text-muted-foreground">Login Twitch</Label>
                         <p className="text-sm font-mono font-medium">@{twitchUser.login}</p>
                       </div>
-                      {twitchUser.twitch_user_id && (
-                        <div className="md:col-span-2">
-                          <Label className="text-xs text-muted-foreground">ID Canônico Twitch</Label>
-                          <p className="text-xs font-mono bg-muted px-2 py-1 rounded mt-1">
-                            {twitchUser.twitch_user_id}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
