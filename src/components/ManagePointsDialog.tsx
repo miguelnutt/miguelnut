@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { searchUsername, normalizeUsername } from "@/lib/username-utils";
 
 interface Profile {
   id: string;
@@ -112,8 +113,7 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
   };
 
   const filteredUsers = users.filter(user => {
-    const searchLower = searchTerm.toLowerCase();
-    return user.twitch_username?.toLowerCase().includes(searchLower);
+    return searchUsername(user.twitch_username || '', searchTerm);
   });
 
   return (
@@ -193,7 +193,7 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar usuário..."
+                  placeholder="@nome_do_usuario"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -220,7 +220,7 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
                         key={user.id}
                         className={selectedUser?.id === user.id ? "bg-muted" : ""}
                       >
-                        <TableCell className="font-medium">@{user.twitch_username}</TableCell>
+                        <TableCell className="font-medium">{normalizeUsername(user.twitch_username)}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             size="sm"

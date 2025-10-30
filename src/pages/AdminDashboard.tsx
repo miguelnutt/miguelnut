@@ -15,6 +15,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
+import { searchUsername, normalizeUsername } from "@/lib/username-utils";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -227,12 +228,10 @@ const AdminDashboard = () => {
 
     // Filtro por termo de busca (case insensitive)
     const searchTermMatch = !logsSearchTerm || [
-      log.user_name,
-      log.description,
-      log.log_type
-    ].some(field => 
-      field?.toLowerCase().includes(logsSearchTerm.toLowerCase())
-    );
+      log.user_name && searchUsername(log.user_name, logsSearchTerm),
+      log.description?.toLowerCase().includes(logsSearchTerm.toLowerCase()),
+      log.log_type?.toLowerCase().includes(logsSearchTerm.toLowerCase())
+    ].some(match => match);
 
     // Filtro por data
     const dateMatch = matchesDateFilter(log.created_at, logsDateFilter);
@@ -305,7 +304,7 @@ const AdminDashboard = () => {
                   <Search className="h-4 w-4 text-muted-foreground" />
                   <Input
                     id="log-search"
-                    placeholder="Buscar usuário ou descrição..."
+                    placeholder="@nome_do_usuario ou descrição..."
                     value={logsSearchTerm}
                     onChange={(e) => setLogsSearchTerm(e.target.value)}
                     className="flex-1"
@@ -408,7 +407,7 @@ const AdminDashboard = () => {
                             </span>
                           </TableCell>
                           <TableCell className="font-medium">
-                            {log.user_name || 'Sistema'}
+                            {log.user_name ? normalizeUsername(log.user_name) : 'Sistema'}
                           </TableCell>
                           <TableCell className="text-sm">
                             <div className="max-w-xl truncate">

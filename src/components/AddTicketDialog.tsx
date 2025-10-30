@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { z } from "zod";
+import { removeAtSymbol } from "@/lib/username-utils";
 
 interface AddTicketDialogProps {
   open: boolean;
@@ -38,12 +39,15 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
 
     setSaving(true);
     try {
+      // Remover @ do username se presente
+      const cleanUsername = removeAtSymbol(twitchUsername);
+      
       // Usar a função get_or_merge_profile_v2 para buscar ou criar perfil
       const { data: userId, error: profileError } = await supabase
         .rpc('get_or_merge_profile_v2', {
           p_twitch_user_id: null,
-          p_display_name: twitchUsername.trim(),
-          p_login: twitchUsername.trim().toLowerCase()
+          p_display_name: cleanUsername.trim(),
+          p_login: cleanUsername.trim().toLowerCase()
         });
 
       if (profileError || !userId) {
@@ -123,7 +127,7 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
               id="twitchUsername"
               value={twitchUsername}
               onChange={(e) => setTwitchUsername(e.target.value)}
-              placeholder="Digite o usuário Twitch"
+              placeholder="@nome_do_usuario"
               disabled={saving}
             />
             <p className="text-xs text-muted-foreground">

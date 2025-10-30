@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Coins, Search, Loader2, Plus, Minus, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { removeAtSymbol, searchUsername } from '@/lib/username-utils';
 
 export function AdminManageRubiniCoins() {
   const [buscaUsuario, setBuscaUsuario] = useState('');
@@ -27,9 +28,12 @@ export function AdminManageRubiniCoins() {
 
     setBuscando(true);
     try {
+      // Remover @ do username se presente
+      const cleanUsername = removeAtSymbol(buscaUsuario.trim());
+      
       // Usar edge function para resolver identidade canônica
       const { data, error } = await supabase.functions.invoke('resolve-user-identity', {
-        body: { searchTerm: buscaUsuario.trim() }
+        body: { searchTerm: cleanUsername }
       });
 
       if (error) throw error;
@@ -157,7 +161,7 @@ export function AdminManageRubiniCoins() {
             <div className="flex gap-2">
               <Input
                 id="busca-usuario"
-                placeholder="Digite o usuário Twitch..."
+                placeholder="@nome_do_usuario"
                 value={buscaUsuario}
                 onChange={(e) => setBuscaUsuario(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && buscarUsuario()}

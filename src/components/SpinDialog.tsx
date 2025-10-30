@@ -13,6 +13,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
+import { removeAtSymbol } from "@/lib/username-utils";
 
 interface Recompensa {
   tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
@@ -548,7 +549,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
     // Aguardar animação (duração configurada + 0.5s de suspense)
     const duracaoMs = (wheel?.duracao_spin || 4) * 1000;
     setTimeout(async () => {
-      const nomeParaExibir = nomeUsuario.trim() || "Visitante";
+      const nomeParaExibir = removeAtSymbol(nomeUsuario.trim()) || "Visitante";
       setNomeVencedor(nomeParaExibir);
       setResultado(sorteada);
       setSpinning(false);
@@ -697,7 +698,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
                   id="usuario"
                   value={nomeUsuario}
                   onChange={(e) => setNomeUsuario(e.target.value)}
-                  placeholder="Digite o usuário Twitch"
+                  placeholder="@nome_do_usuario"
                   disabled={spinning}
                 />
               </div>

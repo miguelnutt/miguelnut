@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { searchUsername, normalizeUsername } from "@/lib/username-utils";
 
 interface RewardClaim {
   id: string;
@@ -90,8 +91,7 @@ export function DailyRewardTodaySection() {
   const exportToCSV = () => {
     const filteredRewards = searchUser
       ? rewards.filter(r => 
-    
-          (r.twitch_username && r.twitch_username.toLowerCase().includes(searchUser.toLowerCase()))
+          r.twitch_username && searchUsername(r.twitch_username, searchUser)
         )
       : rewards;
 
@@ -116,8 +116,7 @@ export function DailyRewardTodaySection() {
 
   const filteredRewards = searchUser
     ? rewards.filter(r => 
-
-        (r.twitch_username && r.twitch_username.toLowerCase().includes(searchUser.toLowerCase()))
+        r.twitch_username && searchUsername(r.twitch_username, searchUser)
       )
     : rewards;
 
@@ -182,7 +181,7 @@ export function DailyRewardTodaySection() {
             </div>
 
             <Input
-              placeholder="Buscar por usuário..."
+              placeholder="@nome_do_usuario"
               value={searchUser}
               onChange={(e) => setSearchUser(e.target.value)}
             />
@@ -216,7 +215,7 @@ export function DailyRewardTodaySection() {
                         <TableCell className="font-bold">#{reward.posicao}</TableCell>
   
                         <TableCell className="text-muted-foreground">
-                          {reward.twitch_username || '-'}
+                          {reward.twitch_username ? normalizeUsername(reward.twitch_username) : '-'}
                         </TableCell>
                         <TableCell className="text-center">{reward.dia}º</TableCell>
                         <TableCell className="text-center font-semibold text-primary">

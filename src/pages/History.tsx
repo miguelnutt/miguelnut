@@ -29,10 +29,11 @@ import { useAdminMode } from "@/contexts/AdminModeContext";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { PromotionalBar } from "@/components/PromotionalBar";
+import { normalizeUsername, searchUsername } from "@/lib/username-utils";
 
 interface Spin {
   id: string;
-  twitch_username: string;
+  twitch_username?: string;
   tipo_recompensa: string;
   valor: string;
   created_at: string;
@@ -140,7 +141,7 @@ export default function History() {
 
     if (filters.usuario) {
       filtered = filtered.filter(s => 
-        s.twitch_username.toLowerCase().includes(filters.usuario.toLowerCase())
+        s.twitch_username && searchUsername(filters.usuario, s.twitch_username)
       );
     }
 
@@ -272,7 +273,7 @@ export default function History() {
                 <Label htmlFor="usuario">Usuário</Label>
                 <Input
                   id="usuario"
-                  placeholder="Nome do usuário"
+                  placeholder="@nome_do_usuario"
                   value={filters.usuario}
                   onChange={(e) => setFilters({ ...filters, usuario: e.target.value })}
                 />
@@ -326,7 +327,7 @@ export default function History() {
                     <TableBody>
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
-                          <TableCell className="font-medium whitespace-nowrap">@{spin.twitch_username}</TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsername(spin.twitch_username) || "@Usuário desconhecido"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.origem || spin.wheels?.nome || "-"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>
