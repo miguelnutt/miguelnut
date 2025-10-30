@@ -36,6 +36,7 @@ interface Raffle {
   participantes: any;
   tipo_premio: string;
   valor_premio: number;
+  nome?: string;
 }
 
 interface TicketHistory {
@@ -182,12 +183,19 @@ export default function Tickets() {
       // Últimos sorteios
       const { data: rafflesData, error: rafflesError } = await supabase
         .from("raffles")
-        .select("*")
+        .select(`
+          *,
+          profiles!raffles_vencedor_id_fkey(nome)
+        `)
         .order("created_at", { ascending: false })
         .limit(10);
 
       if (rafflesError) throw rafflesError;
-      setRaffles(rafflesData || []);
+      const rafflesWithNome = (rafflesData || []).map(raffle => ({
+        ...raffle,
+        nome: raffle.profiles?.nome
+      }));
+      setRaffles(rafflesWithNome);
 
       // Histórico de tickets ganhos na roleta
       const { data: spinsData, error: spinsError } = await supabase
@@ -737,7 +745,7 @@ export default function Tickets() {
                       <div className="flex items-start justify-between mb-2 gap-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Trophy className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span className="font-bold text-sm truncate">{raffle.nome_vencedor}</span>
+                          <span className="font-bold text-sm truncate">{normalizeUsernameWithFallback(raffle.nome_vencedor, raffle.nome)}</span>
                         </div>
                         {isAdmin && isAdminMode && (
                           <Button

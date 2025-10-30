@@ -2,6 +2,7 @@ import { Award, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-helper";
 import { useNavigate } from "react-router-dom";
+import { normalizeUsernameWithFallback } from "@/lib/utils";
 
 interface RewardItem {
   id: string;
@@ -10,6 +11,7 @@ interface RewardItem {
   valor: string;
   created_at: string;
   type: 'spin' | 'raffle';
+  nome?: string;
 }
 
 export function RecentRewards() {
@@ -35,24 +37,35 @@ export function RecentRewards() {
     try {
       const { data: spins } = await supabase
         .from("spins")
-        .select("*")
+        .select(`
+          *,
+          profiles!spins_user_id_fkey(nome)
+        `)
         .order("created_at", { ascending: false })
         .limit(10);
 
       const { data: raffles } = await supabase
         .from("raffles")
-        .select("*")
+        .select(`
+          *,
+          profiles!raffles_vencedor_id_fkey(nome)
+        `)
         .order("created_at", { ascending: false })
         .limit(10);
 
       const combined = [
-        ...(spins || []).map(s => ({ ...s, type: 'spin' as const })),
+        ...(spins || []).map(s => ({ 
+          ...s, 
+          type: 'spin' as const,
+          nome: s.profiles?.nome
+        })),
         ...(raffles || []).map(r => ({ 
           ...r, 
           type: 'raffle' as const,
           nome_usuario: r.nome_vencedor,
           tipo_recompensa: r.tipo_premio,
-          valor: r.valor_premio?.toString() || '0'
+          valor: r.valor_premio?.toString() || '0',
+          nome: r.profiles?.nome
         }))
       ].sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -102,7 +115,7 @@ export function RecentRewards() {
                     ) : (
                       <Trophy className="h-4 w-4 text-primary flex-shrink-0" />
                     )}
-                    <span className="text-sm font-medium whitespace-nowrap">{reward.nome_usuario}</span>
+                    <span className="text-sm font-medium whitespace-nowrap">{normalizeUsernameWithFallback(reward.nome_usuario, reward.nome)}</span>
                     <span className="text-sm text-muted-foreground whitespace-nowrap">
                       ({reward.tipo_recompensa}: {reward.valor})
                     </span>
@@ -116,7 +129,7 @@ export function RecentRewards() {
                     ) : (
                       <Trophy className="h-4 w-4 text-primary flex-shrink-0" />
                     )}
-                    <span className="text-sm font-medium whitespace-nowrap">{reward.nome_usuario}</span>
+                    <span className="text-sm font-medium whitespace-nowrap">{normalizeUsernameWithFallback(reward.nome_usuario, reward.nome)}</span>
                     <span className="text-sm text-muted-foreground whitespace-nowrap">
                       ({reward.tipo_recompensa}: {reward.valor})
                     </span>

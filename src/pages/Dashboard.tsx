@@ -28,17 +28,21 @@ interface Stats {
 interface RecentSpin {
   id: string;
   twitch_username: string;
+  nome_usuario: string;
   tipo_recompensa: string;
   valor: string;
   created_at: string;
+  nome?: string;
 }
 
 interface RecentRaffle {
   id: string;
   twitch_username: string;
+  nome_vencedor: string;
   created_at: string;
   tipo_premio: string;
   valor_premio: number;
+  nome?: string;
 }
 
 type PeriodType = "today" | "week" | "month" | "custom" | "all";
@@ -214,26 +218,42 @@ export default function Dashboard() {
       // Últimas recompensas
       let recentSpinsQuery = supabase
         .from("spins")
-        .select("*")
+        .select(`
+          *,
+          profiles!spins_user_id_fkey(nome)
+        `)
         .order("created_at", { ascending: false })
         .limit(5);
       if (startDate && endDate) {
         recentSpinsQuery = recentSpinsQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
       const { data: spinsData } = await recentSpinsQuery;
-      setRecentSpins(spinsData || []);
+      const spinsWithNome = (spinsData || []).map(spin => ({
+        ...spin,
+        twitch_username: spin.nome_usuario,
+        nome: spin.profiles?.nome
+      }));
+      setRecentSpins(spinsWithNome);
 
       // Últimos sorteios
       let recentRafflesQuery = supabase
         .from("raffles")
-        .select("*")
+        .select(`
+          *,
+          profiles!raffles_vencedor_id_fkey(nome)
+        `)
         .order("created_at", { ascending: false })
         .limit(5);
       if (startDate && endDate) {
         recentRafflesQuery = recentRafflesQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
       const { data: rafflesData } = await recentRafflesQuery;
-      setRecentRaffles(rafflesData || []);
+      const rafflesWithNome = (rafflesData || []).map(raffle => ({
+        ...raffle,
+        twitch_username: raffle.nome_vencedor,
+        nome: raffle.profiles?.nome
+      }));
+      setRecentRaffles(rafflesWithNome);
 
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
@@ -428,7 +448,7 @@ export default function Dashboard() {
                   {recentSpins.map((spin) => (
                     <div key={spin.id} className="flex justify-between items-center p-3 bg-gradient-card rounded-lg">
                       <div>
-                        <p className="font-medium">@{normalizeUsernameWithFallback(spin.twitch_username)}</p>
+                        <p className="font-medium">@{normalizeUsernameWithFallback(spin.twitch_username, spin.nome)}</p>
                         <p className="text-sm text-muted-foreground">
                           {spin.valor} {spin.tipo_recompensa}
                         </p>
@@ -457,7 +477,7 @@ export default function Dashboard() {
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center gap-2">
                           <Trophy className="h-5 w-5 text-primary" />
-                          <p className="font-medium">@{normalizeUsernameWithFallback(raffle.twitch_username)}</p>
+                          <p className="font-medium">@{normalizeUsernameWithFallback(raffle.twitch_username, raffle.nome)}</p>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(raffle.created_at)}
