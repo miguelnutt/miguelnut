@@ -15,6 +15,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
+import AddAdminMiguelnutt from "@/components/AddAdminMiguelnutt";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -115,6 +116,9 @@ const AdminDashboard = () => {
           Voltar para o site
         </Button>
       </div>
+
+      {/* Componente para adicionar admin */}
+      <AddAdminMiguelnutt />
 
       <Card>
         <CardHeader>
