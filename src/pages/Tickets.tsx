@@ -149,7 +149,7 @@ export default function Tickets() {
       }
 
       // Criar mapa de perfis simples
-      const profilesMap: Record<string, { id: string; nome: string }> = {};
+      const profilesMap: Record<string, { id: string; nome: string; twitch_username: string; nome_personagem?: string }> = {};
       profilesData.forEach((p: any) => {
         if (p && p.id) {
           profilesMap[p.id] = p;
@@ -250,7 +250,7 @@ export default function Tickets() {
       if (missingIds.length) {
         const { data: moreProfiles } = await supabase
           .from("profiles")
-          .select("id, nome, twitch_username")
+          .select("id, nome, twitch_username, nome_personagem")
           .in("id", missingIds);
         (moreProfiles || []).forEach((p: any) => {
           profilesMap[p.id] = p;

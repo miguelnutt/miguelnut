@@ -342,7 +342,7 @@ export default function History() {
                     <TableBody>
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
-                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsernameWithFallback(spin.twitch_username)}</TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsernameWithFallback(spin.twitch_username, null)}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.origem || spin.wheels?.nome || "-"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>
@@ -386,13 +386,13 @@ export default function History() {
                   <li>Excluir o histórico permanentemente</li>
                   <li>
                     <strong>Debitar -{spinToDelete?.spin.valor} pontos</strong> da conta do usuário{' '}
-                    <strong>{normalizeUsernameWithFallback(spinToDelete?.spin.nome_usuario)}</strong> na StreamElements
+                    <strong>{normalizeUsernameWithFallback(spinToDelete?.spin.nome_usuario, null)}</strong> na StreamElements
                   </li>
                 </ul>
               </div>
               
               <div className="text-sm text-muted-foreground">
-                <p><strong>Usuário:</strong> {normalizeUsernameWithFallback(spinToDelete?.spin.nome_usuario)}</p>
+                <p><strong>Usuário:</strong> {normalizeUsernameWithFallback(spinToDelete?.spin.nome_usuario, null)}</p>
                 <p><strong>Valor:</strong> {spinToDelete?.spin.valor} pontos</p>
                 <p><strong>Origem:</strong> {spinToDelete?.spin.origem || spinToDelete?.spin.wheels?.nome || "-"}</p>
                 <p><strong>Data:</strong> {spinToDelete?.spin.created_at && formatDate(spinToDelete.spin.created_at)}</p>

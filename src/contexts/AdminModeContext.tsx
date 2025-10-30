@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminModeContextType {
   isAdminMode: boolean;
@@ -10,7 +10,7 @@ interface AdminModeContextType {
 const AdminModeContext = createContext<AdminModeContextType | undefined>(undefined);
 
 export const AdminModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAdmin } = useAdmin();
+  const { isAdmin } = useAuth();
   const [isAdminMode, setIsAdminMode] = useState(false);
 
   // Reset to user mode when user is no longer admin

@@ -95,7 +95,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       if (profilesError) throw profilesError;
 
       // Criar mapa de perfis
-      const profilesMap: Record<string, { id: string; nome: string }> = {};
+      const profilesMap: Record<string, { id: string; nome: string; twitch_username: string; nome_personagem?: string }> = {};
       (profilesData || []).forEach(p => {
         if (p && p.id) {
           profilesMap[p.id] = p;

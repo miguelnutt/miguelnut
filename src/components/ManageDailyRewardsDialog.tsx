@@ -29,6 +29,7 @@ interface UserLogin {
   ultimo_login: string;
   profiles: {
     twitch_username: string;
+    nome: string;
   };
 }
 
@@ -60,7 +61,8 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
           dia_atual,
           ultimo_login,
           profiles (
-            twitch_username
+            twitch_username,
+            nome
           )
         `)
         .order('dia_atual', { ascending: false });

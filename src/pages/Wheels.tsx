@@ -365,7 +365,11 @@ export default function Wheels() {
         wheel={selectedWheel}
         testMode={testMode}
         loggedUser={sessionUser}
-        twitchUser={twitchUser}
+        twitchUser={twitchUser ? {
+          login: twitchUser.login,
+          id: twitchUser.twitch_user_id,
+          display_name: twitchUser.display_name
+        } : null}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAdminMode } from '@/contexts/AdminModeContext';
 
 interface AdminRouteProps {
@@ -8,7 +8,7 @@ interface AdminRouteProps {
 }
 
 export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
-  const { isAdmin } = useAdmin();
+  const { isAdmin } = useAuth();
   const { isAdminMode } = useAdminMode();
 
   if (!isAdmin || !isAdminMode) {

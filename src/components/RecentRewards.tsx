@@ -2,7 +2,7 @@ import { Award, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-helper";
 import { useNavigate } from "react-router-dom";
-import { normalizeUsernameWithFallback } from "@/lib/utils";
+import { normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface RewardItem {
   id: string;
