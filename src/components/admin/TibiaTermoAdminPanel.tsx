@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
+import { prepareUsernameForSearch } from "@/lib/username-utils";
 import { Loader2, Save, RefreshCw, Trash2 } from "lucide-react";
 import {
   Table,
@@ -264,10 +265,11 @@ export function TibiaTermoAdminPanel() {
 
     setResetting(true);
     try {
+      const searchTerm = prepareUsernameForSearch(resetUsername.trim());
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('twitch_username', resetUsername.toLowerCase())
+        .ilike('twitch_username', searchTerm)
         .maybeSingle();
 
       if (profileError) throw profileError;

@@ -34,15 +34,12 @@ import { normalizeUsernameWithFallback, searchUsername } from "@/lib/username-ut
 interface Spin {
   id: string;
   twitch_username?: string;
+  nome_usuario?: string;
   tipo_recompensa: string;
   valor: string;
   created_at: string;
   wheels: { nome: string } | null;
   origem?: string;
-  profiles?: {
-    twitch_username: string;
-    nome?: string;
-  };
 }
 
 export default function History() {
@@ -103,8 +100,7 @@ export default function History() {
         .from("spins")
         .select(`
           *,
-          wheels(nome),
-          profiles:user_id (twitch_username, nome)
+          wheels(nome)
         `)
         .order("created_at", { ascending: false });
 
@@ -113,10 +109,7 @@ export default function History() {
       // Buscar histórico do TibiaTermo
       const { data: tibiaTermoData, error: tibiaTermoError } = await supabase
         .from("tibiatermo_history")
-        .select(`
-          *,
-          profiles:user_id (twitch_username, nome)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (tibiaTermoError) throw tibiaTermoError;
@@ -130,7 +123,7 @@ export default function History() {
         created_at: item.created_at,
         wheels: item.wheels,
         origem: item.wheels?.nome || 'Roleta',
-        profiles: item.profiles
+        profiles: undefined // Não carregar profiles por enquanto
       }));
 
       // Mesclar dados do TibiaTermo
@@ -142,7 +135,7 @@ export default function History() {
         created_at: item.created_at,
         wheels: null,
         origem: 'TibiaTermo',
-        profiles: item.profiles
+        profiles: undefined // Não carregar profiles por enquanto
       }));
 
       const allHistory = [...spinsFormatted, ...tibiaTermoFormatted];
@@ -162,10 +155,8 @@ export default function History() {
 
     if (filters.usuario) {
       filtered = filtered.filter(s => {
-        const username = s.profiles?.twitch_username || s.twitch_username;
-        const nome = s.profiles?.nome;
-        return (username && searchUsername(filters.usuario, username)) ||
-               (nome && searchUsername(filters.usuario, nome));
+        const username = s.twitch_username;
+        return username && searchUsername(filters.usuario, username);
       });
     }
 
@@ -351,7 +342,7 @@ export default function History() {
                     <TableBody>
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
-                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsernameWithFallback(spin.profiles?.twitch_username || spin.twitch_username, spin.profiles?.nome)}</TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsernameWithFallback(spin.twitch_username)}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.origem || spin.wheels?.nome || "-"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>
@@ -395,13 +386,13 @@ export default function History() {
                   <li>Excluir o histórico permanentemente</li>
                   <li>
                     <strong>Debitar -{spinToDelete?.spin.valor} pontos</strong> da conta do usuário{' '}
-                    <strong>{spinToDelete?.spin.nome_usuario}</strong> na StreamElements
+                    <strong>{normalizeUsernameWithFallback(spinToDelete?.spin.nome_usuario)}</strong> na StreamElements
                   </li>
                 </ul>
               </div>
               
               <div className="text-sm text-muted-foreground">
-                <p><strong>Usuário:</strong> {spinToDelete?.spin.nome_usuario}</p>
+                <p><strong>Usuário:</strong> {normalizeUsernameWithFallback(spinToDelete?.spin.nome_usuario)}</p>
                 <p><strong>Valor:</strong> {spinToDelete?.spin.valor} pontos</p>
                 <p><strong>Origem:</strong> {spinToDelete?.spin.origem || spinToDelete?.spin.wheels?.nome || "-"}</p>
                 <p><strong>Data:</strong> {spinToDelete?.spin.created_at && formatDate(spinToDelete.spin.created_at)}</p>

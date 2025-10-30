@@ -581,10 +581,11 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         setCarregandoTickets(true);
         try {
           // Buscar perfil por twitch_username
+          const searchTerm = prepareUsernameForSearch(nomeParaExibir);
           const { data: profileData } = await supabase
             .from('profiles')
             .select('id')
-            .ilike('twitch_username', nomeParaExibir)
+            .ilike('twitch_username', searchTerm)
             .maybeSingle();
           
           if (profileData?.id) {
@@ -612,10 +613,11 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
           console.log("🎮 Buscando personagem para:", nomeParaExibir);
           
           // Buscar perfil ativo por twitch_username
+          const searchTerm = prepareUsernameForSearch(nomeParaExibir);
           const { data: profileData } = await supabase
             .from('profiles')
             .select('id, twitch_username, nome_personagem')
-            .ilike('twitch_username', nomeParaExibir)
+            .ilike('twitch_username', searchTerm)
             .eq('is_active', true)
             .maybeSingle();
           console.log("📋 Perfil encontrado:", profileData);

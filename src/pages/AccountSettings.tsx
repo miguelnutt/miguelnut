@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase-helper";
+import { prepareUsernameForSearch } from "@/lib/username-utils";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -130,10 +131,11 @@ export default function AccountSettings() {
       
       // 2. Fallback: Buscar por twitch_username (apenas se não achou por ID)
       if (!profile) {
+        const searchTerm = prepareUsernameForSearch(twitchUser.login);
         const { data: profileByUsername, error: usernameError } = await supabase
           .from('profiles')
           .select('id, nome_personagem')
-          .eq('twitch_username', twitchUser.login)
+          .ilike('twitch_username', searchTerm)
           .eq('is_active', true)
           .maybeSingle();
 

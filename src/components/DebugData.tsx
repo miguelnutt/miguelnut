@@ -45,19 +45,19 @@ export default function DebugData() {
       const { data: tibiaempregoSpins } = await supabase
         .from('spins')
         .select('*')
-        .eq('nome_usuario', 'tibiaemprego')
+        .ilike('nome_usuario', 'tibiaemprego')
         .order('created_at', { ascending: false });
 
       const { data: tibiaempregoTibiaTermoHistory } = await supabase
         .from('tibiatermo_history')
         .select('*')
-        .eq('nome_usuario', 'tibiaemprego')
+        .ilike('nome_usuario', 'tibiaemprego')
         .order('created_at', { ascending: false });
 
       const { data: tibiaempregoProfile } = await supabase
         .from('profiles')
         .select('*')
-        .or('nome.eq.tibiaemprego,twitch_username.eq.tibiaemprego,twitch_username.eq.@tibiaemprego')
+        .or('nome.ilike.tibiaemprego,twitch_username.ilike.tibiaemprego,twitch_username.ilike.@tibiaemprego')
         .maybeSingle();
 
       // Buscar tickets de hoje - mesma query que o WheelRanking usa
