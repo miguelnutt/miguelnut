@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Shield } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -69,15 +69,7 @@ export const Navbar = () => {
           {isAdmin && (
             <>
               <AdminRubiniCoinsResgatesButton />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/admin-dashboard")}
-                className="rounded-full"
-                title="Painel Admin"
-              >
-                <Shield className="h-5 w-5" />
-              </Button>
+
             </>
           )}
           <Button
@@ -113,15 +105,7 @@ export const Navbar = () => {
           {isAdmin && (
             <>
               <AdminRubiniCoinsResgatesButton />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/admin-dashboard")}
-                className="rounded-full"
-                title="Painel Admin"
-              >
-                <Shield className="h-5 w-5" />
-              </Button>
+
             </>
           )}
           <Button

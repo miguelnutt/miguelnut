@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Shield } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -67,9 +67,7 @@ export const Navbar = () => {
     navigate("/login");
   };
 
-  const handleOpenAdminPanel = () => {
-    navigate("/admin-dashboard");
-  };
+
 
 
 
@@ -164,16 +162,6 @@ export const Navbar = () => {
                   {isAdmin && (
                     <>
                       <AdminRubiniCoinsResgatesButton />
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => navigate("/admin-dashboard")}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                        title="Painel Administrativo"
-                      >
-                        <Shield className="mr-2 h-4 w-4" />
-                        Painel Admin
-                      </Button>
                     </>
                   )}
                   <Button
@@ -299,16 +287,7 @@ export const Navbar = () => {
               >
                 Jogos
               </Link>
-              {isAdmin && (
-                <Link
-                  to="/admin-dashboard"
-                  className="text-sm font-medium transition-colors hover:text-primary px-2 py-1 flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Shield className="h-4 w-4" />
-                  Painel Admin
-                </Link>
-              )}
+
               <Link
                 to="/history"
                 className="text-sm font-medium transition-colors hover:text-primary px-2 py-1"

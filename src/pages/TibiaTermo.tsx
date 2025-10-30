@@ -597,7 +597,7 @@ const TibiaTermo = () => {
               <div>
                 <h1 className="text-4xl font-bold text-foreground">TibiaTermo</h1>
                 <p className="text-muted-foreground">
-                  Painel de administração
+                  Jogo de adivinhação de palavras do Tibia
                 </p>
               </div>
               <Dialog open={showAdmin} onOpenChange={setShowAdmin}>

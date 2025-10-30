@@ -16,7 +16,7 @@ import Login from "./pages/Login";
 import AccountSettings from "./pages/AccountSettings";
 import TwitchCallback from "./pages/TwitchCallback";
 import SiteSettings from "./pages/SiteSettings";
-import AdminDashboard from "./pages/AdminDashboard";
+
 import NotFound from "./pages/NotFound";
 import { Footer } from "@/components/Footer";
 
@@ -42,7 +42,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/account" element={<AccountSettings />} />
               <Route path="/settings" element={<SiteSettings />} />
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+
               <Route path="/auth/twitch/callback" element={<TwitchCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
