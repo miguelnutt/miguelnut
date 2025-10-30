@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Fluxo Completo - Usuário e Award-Reward</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .info {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Teste Fluxo Completo - Usuário e Award-Reward</h1>
+        
+        <div>
+            <button id="testBtn" onclick="runCompleteTest()">Executar Teste Completo</button>
+            <button onclick="clearLog()">Limpar Log</button>
+        </div>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://qkwctrccuqkjygqurqxt.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrd2N0cmNjdXFranlncXVycXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzE5NzQsImV4cCI6MjA1MDU0Nzk3NH0.Ej3Ej3Ej3Ej3Ej3Ej3Ej3Ej3Ej3Ej3Ej3Ej3Ej3E'
+        );
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function runCompleteTest() {
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            
+            try {
+                clearLog();
+                log('🚀 Iniciando teste completo do fluxo...', 'info');
+                
+                // Gerar um nome de usuário único para o teste
+                const testUsername = `test_user_${Date.now()}`;
+                log(`📝 Usuário de teste: ${testUsername}`, 'info');
+                
+                // Passo 1: Resolver identidade do usuário (criar perfil temporário)
+                log('1️⃣ Testando resolve-user-identity...', 'info');
+                const { data: identityData, error: identityError } = await supabase.functions.invoke('resolve-user-identity', {
+                    body: {
+                        searchTerm: testUsername,
+                        twitch_user_id: null
+                    }
+                });
+
+                if (identityError) {
+                    log(`❌ Erro no resolve-user-identity: ${JSON.stringify(identityError)}`, 'error');
+                    return;
+                }
+
+                if (!identityData?.canonicalProfile) {
+                    log('❌ Perfil não foi criado', 'error');
+                    return;
+                }
+
+                const userId = identityData.canonicalProfile.id;
+                log(`✅ Perfil criado com sucesso! ID: ${userId}`, 'success');
+                
+                // Passo 2: Verificar se registros de tickets e rubini coins foram criados
+                log('2️⃣ Verificando criação de registros de saldo...', 'info');
+                
+                // Verificar tickets
+                const { data: ticketsData, error: ticketsError } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (ticketsError) {
+                    log(`❌ Erro ao buscar tickets: ${JSON.stringify(ticketsError)}`, 'error');
+                } else {
+                    log(`✅ Registro de tickets encontrado: ${JSON.stringify(ticketsData)}`, 'success');
+                }
+
+                // Verificar rubini coins
+                const { data: rubiniData, error: rubiniError } = await supabase
+                    .from('rubini_coins_balance')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (rubiniError) {
+                    log(`❌ Erro ao buscar rubini coins: ${JSON.stringify(rubiniError)}`, 'error');
+                } else {
+                    log(`✅ Registro de rubini coins encontrado: ${JSON.stringify(rubiniData)}`, 'success');
+                }
+
+                // Passo 3: Testar award-reward para tickets
+                log('3️⃣ Testando award-reward para tickets...', 'info');
+                const ticketsToAward = 50;
+                const idempotencyKey = `test_${Date.now()}_${Math.random()}`;
+                
+                const { data: awardData, error: awardError } = await supabase.functions.invoke('award-reward', {
+                    body: {
+                        userId: userId,
+                        type: 'tickets',
+                        value: ticketsToAward,
+                        source: 'test',
+                        idempotencyKey: idempotencyKey,
+                        reason: 'Teste de award-reward'
+                    }
+                });
+
+                if (awardError) {
+                    log(`❌ Erro no award-reward: ${JSON.stringify(awardError)}`, 'error');
+                } else {
+                    log(`✅ Award-reward executado com sucesso!`, 'success');
+                    log(`📊 Resposta: ${JSON.stringify(awardData)}`, 'info');
+                    
+                    if (awardData?.newBalance !== undefined) {
+                        log(`💰 Novo saldo de tickets: ${awardData.newBalance}`, 'success');
+                        
+                        // Verificar se o saldo foi realmente atualizado
+                        const { data: updatedTickets } = await supabase
+                            .from('tickets')
+                            .select('tickets_atual')
+                            .eq('user_id', userId)
+                            .single();
+                        
+                        if (updatedTickets && updatedTickets.tickets_atual === awardData.newBalance) {
+                            log(`✅ Saldo confirmado no banco: ${updatedTickets.tickets_atual}`, 'success');
+                        } else {
+                            log(`⚠️ Divergência no saldo! Esperado: ${awardData.newBalance}, Encontrado: ${updatedTickets?.tickets_atual}`, 'error');
+                        }
+                    }
+                }
+
+                // Passo 4: Verificar logs do ticket_ledger
+                log('4️⃣ Verificando logs do ticket_ledger...', 'info');
+                const { data: ledgerData, error: ledgerError } = await supabase
+                    .from('ticket_ledger')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .eq('idempotency_key', idempotencyKey);
+
+                if (ledgerError) {
+                    log(`❌ Erro ao buscar logs: ${JSON.stringify(ledgerError)}`, 'error');
+                } else {
+                    log(`✅ Logs encontrados: ${JSON.stringify(ledgerData)}`, 'success');
+                }
+
+                // Passo 5: Limpeza (opcional)
+                log('5️⃣ Limpando dados de teste...', 'info');
+                await cleanup(userId, idempotencyKey);
+                
+                log('🎉 Teste completo finalizado!', 'success');
+                
+            } catch (error) {
+                log(`💥 Erro inesperado: ${error.message}`, 'error');
+                console.error('Erro completo:', error);
+            } finally {
+                testBtn.disabled = false;
+            }
+        }
+
+        async function cleanup(userId, idempotencyKey) {
+            try {
+                // Remover logs do ledger
+                await supabase
+                    .from('ticket_ledger')
+                    .delete()
+                    .eq('user_id', userId);
+
+                // Remover registros de saldo
+                await supabase
+                    .from('tickets')
+                    .delete()
+                    .eq('user_id', userId);
+
+                await supabase
+                    .from('rubini_coins_balance')
+                    .delete()
+                    .eq('user_id', userId);
+
+                // Remover perfil temporário
+                await supabase
+                    .from('profiles')
+                    .delete()
+                    .eq('id', userId);
+
+                log('🧹 Limpeza concluída', 'success');
+            } catch (error) {
+                log(`⚠️ Erro na limpeza: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

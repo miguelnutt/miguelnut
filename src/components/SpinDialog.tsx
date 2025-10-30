@@ -528,7 +528,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         return;
       }
 
-      // Se ganhou Pontos de Loja, sincronizar com StreamElements
+      // Se ganhou Pontos de Loja, usar serviço unificado award-reward
       console.log("🔍 Verificando tipo de recompensa:", resultado.tipo);
       
       if (resultado.tipo === "Pontos de Loja") {
@@ -553,38 +553,41 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         console.log("✅ Spin salvo com sucesso", spinData);
 
         const pontosGanhos = parseInt(resultado.valor) || 0;
+        const idempotencyKey = `spin-${spinData.id}-store-points`;
         
-        console.log(`🎯 INICIANDO sincronização de Pontos de Loja:`, {
+        console.log(`🎯 INICIANDO concessão de Pontos de Loja via award-reward:`, {
           pontosGanhos,
           nomeParaUsar,
           tipo: resultado.tipo,
           userId,
+          idempotencyKey,
           hasTemporaryProfile: !profileData?.twitch_user_id
         });
         
         try {
-          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
+          const { data: awardData, error: awardError } = await supabase.functions.invoke('award-reward', {
             body: {
-              username: nomeParaUsar,
-              points: pontosGanhos,
-              tipo_operacao: profileData?.twitch_user_id ? 'spin' : 'spin_temporary_profile',
-              referencia_id: spinData.id, // Usar o ID do spin salvo
-              user_id: userId
+              userId,
+              type: 'store_points',
+              value: pontosGanhos,
+              source: 'roulette',
+              idempotencyKey,
+              reason: `Ganhou ${pontosGanhos} ponto(s) de loja na roleta ${wheel.nome}`
             }
           });
           
-          console.log("📡 Resposta da sincronização:", { syncData, syncError });
+          console.log("📡 Resposta do award-reward:", { awardData, awardError });
           
-          if (syncError) {
-            console.error("❌ Erro ao sincronizar pontos com StreamElements:", syncError);
-            toast.error(`Erro ao sincronizar ${pontosGanhos} pontos de loja para ${nomeParaUsar} no StreamElements`);
+          if (awardError) {
+            console.error("❌ Erro ao conceder pontos de loja:", awardError);
+            toast.error(`Erro ao conceder ${pontosGanhos} pontos de loja para ${nomeParaUsar}`);
             
             // Spin já foi salvo anteriormente, apenas log para auditoria
-            console.log("📝 Spin já salvo para auditoria mesmo com erro no StreamElements");
+            console.log("📝 Spin já salvo para auditoria mesmo com erro no award-reward");
             
-            throw syncError;
+            throw awardError;
           } else {
-            console.log("✅ StreamElements sync bem-sucedido:", syncData);
+            console.log("✅ Pontos de loja concedidos com sucesso:", awardData);
             
             // Indicar se foi para perfil temporário
             const successMessage = profileData?.twitch_user_id 
@@ -593,9 +596,9 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
             
             toast.success(successMessage);
           }
-        } catch (seError: any) {
-          console.error("❌ Erro ao chamar função de sincronização StreamElements:", seError);
-          toast.error(`Falha ao sincronizar pontos com StreamElements: ${seError.message}`);
+        } catch (awardError: any) {
+          console.error("❌ Erro ao chamar função award-reward:", awardError);
+          toast.error(`Falha ao conceder pontos de loja: ${awardError.message}`);
         }
         
         setShowResultDialog(false);

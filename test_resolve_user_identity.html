@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste resolve-user-identity</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste resolve-user-identity</h1>
+    <p>Este teste verifica se a função resolve-user-identity está criando perfis temporários com registros de tickets corretamente.</p>
+
+    <div class="test-section info">
+        <h3>Configuração</h3>
+        <p>Testando com usuário fictício: <strong>teste_usuario_temporario_123</strong></p>
+        <button onclick="testarResolveUserIdentity()">🚀 Executar Teste</button>
+        <button onclick="limparTeste()">🧹 Limpar Dados de Teste</button>
+    </div>
+
+    <div id="resultado" class="test-section" style="display: none;">
+        <h3>Resultado do Teste</h3>
+        <div id="resultado-conteudo"></div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const supabaseUrl = 'https://qkwctrccuqkjygqurqxt.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrd2N0cmNjdXFranlncXVycXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NjIxMjIsImV4cCI6MjA3NjEzODEyMn0.ZV3xFFv5JGqntrvKp0xq3kSMhHbfYA3daRZNy--blUE';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        const usuarioTeste = 'teste_usuario_temporario_123';
+
+        async function testarResolveUserIdentity() {
+            const resultadoDiv = document.getElementById('resultado');
+            const conteudoDiv = document.getElementById('resultado-conteudo');
+            
+            resultadoDiv.style.display = 'block';
+            conteudoDiv.innerHTML = '<p>🔄 Executando teste...</p>';
+
+            try {
+                console.log('🧪 Iniciando teste resolve-user-identity');
+
+                // 1. Chamar resolve-user-identity
+                console.log('📞 Chamando resolve-user-identity...');
+                const { data: resolveData, error: resolveError } = await supabase.functions.invoke('resolve-user-identity', {
+                    body: { searchTerm: usuarioTeste }
+                });
+
+                if (resolveError) {
+                    throw new Error(`Erro ao chamar resolve-user-identity: ${resolveError.message}`);
+                }
+
+                console.log('✅ resolve-user-identity executado:', resolveData);
+
+                // 2. Verificar se o perfil foi criado
+                const profileId = resolveData.canonicalProfile?.id;
+                if (!profileId) {
+                    throw new Error('Perfil não foi criado');
+                }
+
+                // 3. Verificar se o registro de tickets foi criado
+                console.log('🎫 Verificando registro de tickets...');
+                const { data: ticketData, error: ticketError } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .eq('user_id', profileId)
+                    .single();
+
+                // 4. Verificar se o registro de rubini coins foi criado
+                console.log('💰 Verificando registro de rubini coins...');
+                const { data: rubiniData, error: rubiniError } = await supabase
+                    .from('rubini_coins_balance')
+                    .select('*')
+                    .eq('user_id', profileId)
+                    .single();
+
+                // 5. Montar resultado
+                let resultado = '<div class="success"><h4>✅ Teste Concluído com Sucesso!</h4>';
+                
+                resultado += '<h5>📋 Perfil Criado:</h5>';
+                resultado += `<pre>${JSON.stringify(resolveData.canonicalProfile, null, 2)}</pre>`;
+                
+                if (ticketData) {
+                    resultado += '<h5>🎫 Registro de Tickets:</h5>';
+                    resultado += `<pre>${JSON.stringify(ticketData, null, 2)}</pre>`;
+                } else {
+                    resultado += '<h5>❌ Registro de Tickets:</h5>';
+                    resultado += `<p>Erro: ${ticketError?.message || 'Não encontrado'}</p>`;
+                }
+                
+                if (rubiniData) {
+                    resultado += '<h5>💰 Registro de Rubini Coins:</h5>';
+                    resultado += `<pre>${JSON.stringify(rubiniData, null, 2)}</pre>`;
+                } else {
+                    resultado += '<h5>❌ Registro de Rubini Coins:</h5>';
+                    resultado += `<p>Erro: ${rubiniError?.message || 'Não encontrado'}</p>`;
+                }
+
+                resultado += '</div>';
+                conteudoDiv.innerHTML = resultado;
+
+            } catch (error) {
+                console.error('❌ Erro no teste:', error);
+                conteudoDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Erro no Teste</h4>
+                        <p><strong>Erro:</strong> ${error.message}</p>
+                        <p><strong>Detalhes:</strong> Verifique o console do navegador para mais informações.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function limparTeste() {
+            try {
+                console.log('🧹 Limpando dados de teste...');
+
+                // Buscar perfil de teste
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('nome', usuarioTeste);
+
+                if (profiles && profiles.length > 0) {
+                    for (const profile of profiles) {
+                        // Deletar registros relacionados
+                        await supabase.from('tickets').delete().eq('user_id', profile.id);
+                        await supabase.from('rubini_coins_balance').delete().eq('user_id', profile.id);
+                        await supabase.from('profiles').delete().eq('id', profile.id);
+                    }
+                }
+
+                alert('✅ Dados de teste limpos com sucesso!');
+                document.getElementById('resultado').style.display = 'none';
+            } catch (error) {
+                console.error('❌ Erro ao limpar:', error);
+                alert(`❌ Erro ao limpar dados: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

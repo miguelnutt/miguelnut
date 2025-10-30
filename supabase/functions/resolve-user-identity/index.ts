@@ -127,6 +127,40 @@ serve(async (req) => {
         nome: canonicalProfile.nome,
         isTemporary: true
       });
+
+      // Criar registros de saldo zerados para o novo perfil temporário
+      try {
+        // Criar registro de tickets
+        const { error: ticketsError } = await supabaseClient
+          .from('tickets')
+          .insert({
+            user_id: canonicalProfile.id,
+            tickets_atual: 0
+          });
+
+        if (ticketsError) {
+          console.warn('⚠️ Erro ao criar registro de tickets para perfil temporário:', ticketsError);
+        } else {
+          console.log('✅ Registro de tickets criado para perfil temporário');
+        }
+
+        // Criar registro de rubini coins
+        const { error: rubiniError } = await supabaseClient
+          .from('rubini_coins_balance')
+          .insert({
+            user_id: canonicalProfile.id,
+            saldo: 0
+          });
+
+        if (rubiniError) {
+          console.warn('⚠️ Erro ao criar registro de rubini coins para perfil temporário:', rubiniError);
+        } else {
+          console.log('✅ Registro de rubini coins criado para perfil temporário');
+        }
+      } catch (balanceError) {
+        console.warn('⚠️ Erro ao criar registros de saldo para perfil temporário:', balanceError);
+        // Não falhar a operação por causa disso, apenas logar
+      }
     }
 
     if (!canonicalProfile) {
