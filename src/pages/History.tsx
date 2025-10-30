@@ -223,6 +223,8 @@ export default function History() {
 
         if (data?.reverted) {
           toast.success(data.message || "Histórico apagado e pontos estornados na StreamElements!");
+        } else if (data?.insufficientBalance) {
+          toast.warning(data.message || "Histórico apagado, mas usuário não tinha saldo suficiente na StreamElements para débito!");
         } else {
           toast.success(data.message || "Histórico apagado com sucesso!");
         }

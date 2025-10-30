@@ -415,39 +415,56 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
 
           console.log(`✅ [DEBUG] Tickets awarded via unified service:`, awardData);
           
-          // Atualizar o saldo de tickets na interface com retry para garantir sincronização
+          // Usar o saldo retornado pelo award-reward diretamente para garantir precisão
           console.log('🔄 [DEBUG] Atualizando saldo de tickets...');
-          let tentativas = 0;
-          const maxTentativas = 3;
-          
-          while (tentativas < maxTentativas) {
-             try {
-               const ticketsAnteriores = ticketsAtuais;
-               await buscarTicketsAtuais(nomeParaUsar);
-               console.log(`✅ [DEBUG] Saldo atualizado na tentativa ${tentativas + 1}. Anterior: ${ticketsAnteriores}, Atual: ${ticketsAtuais}`);
-               
-               // Verificar se o saldo foi realmente atualizado
-                if (ticketsAtuais !== null && ticketsAtuais >= (ticketsAnteriores || 0) + ticketsGanhos) {
-                  console.log('✅ [DEBUG] Confirmado: saldo de tickets atualizado corretamente');
-                  break;
-                } else if (tentativas === maxTentativas - 1) {
-                  console.warn('⚠️ [DEBUG] Saldo pode não ter sido atualizado corretamente após todas as tentativas');
-                  // Como fallback, usar o saldo retornado pelo award-reward
-                  if (awardData?.newBalance !== undefined) {
-                    console.log('🔄 [DEBUG] Usando saldo do award-reward como fallback:', awardData.newBalance);
-                    setTicketsAtuais(awardData.newBalance);
+          if (awardData?.newBalance !== undefined) {
+            console.log('✅ [DEBUG] Usando saldo do award-reward:', awardData.newBalance);
+            setTicketsAtuais(awardData.newBalance);
+          } else {
+            // Fallback: buscar o saldo atual com retry
+            let tentativas = 0;
+            const maxTentativas = 3;
+            
+            while (tentativas < maxTentativas) {
+              try {
+                tentativas++;
+                console.log(`🔄 [DEBUG] Tentativa ${tentativas} de buscar saldo atualizado...`);
+                
+                // Aguardar um pouco para garantir que a transação foi processada
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Buscar o saldo atualizado diretamente do banco
+                const { data: identityData } = await supabase.functions.invoke('resolve-user-identity', {
+                  body: {
+                    searchTerm: prepareUsernameForSearch(nomeParaUsar),
+                    twitch_user_id: twitchUser?.id || null
                   }
+                });
+
+                if (identityData?.canonicalProfile) {
+                  const { data: ticketsData } = await supabase
+                    .from('tickets')
+                    .select('tickets_atual')
+                    .eq('user_id', identityData.canonicalProfile.id)
+                    .maybeSingle();
+                  
+                  const novoSaldo = ticketsData?.tickets_atual || 0;
+                  console.log(`✅ [DEBUG] Saldo encontrado na tentativa ${tentativas}:`, novoSaldo);
+                  setTicketsAtuais(novoSaldo);
+                  break;
                 }
-               
-               break;
-             } catch (error) {
-               tentativas++;
-               console.warn(`⚠️ [DEBUG] Erro na tentativa ${tentativas} de atualizar saldo:`, error);
-               if (tentativas < maxTentativas) {
-                 await new Promise(resolve => setTimeout(resolve, 500)); // Aguarda 500ms antes da próxima tentativa
-               }
-             }
-           }
+              } catch (error) {
+                console.warn(`⚠️ [DEBUG] Erro na tentativa ${tentativas}:`, error);
+                if (tentativas === maxTentativas) {
+                  console.error('❌ [DEBUG] Falha ao atualizar saldo após todas as tentativas');
+                  // Como último recurso, calcular o saldo esperado
+                  const saldoEsperado = (ticketsAtuais || 0) + ticketsGanhos;
+                  console.log('🔄 [DEBUG] Usando saldo calculado como fallback:', saldoEsperado);
+                  setTicketsAtuais(saldoEsperado);
+                }
+              }
+            }
+          }
           
           // Indicar se foi para perfil temporário
           const successMessage = profileData?.twitch_user_id 

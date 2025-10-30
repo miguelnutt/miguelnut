@@ -175,6 +175,43 @@ Deno.serve(async (req) => {
 
       if (syncError) {
         console.error('[RevertStorePoints] Erro ao enviar estorno:', syncError);
+        
+        // Verificar se é erro de saldo insuficiente
+        const errorMessage = syncError.message || '';
+        const isInsufficientBalance = errorMessage.includes('Saldo insuficiente') || 
+                                    errorMessage.includes('insufficient balance') ||
+                                    syncData?.details?.includes('Saldo insuficiente');
+        
+        if (isInsufficientBalance) {
+          // Para saldo insuficiente, deletar o histórico mesmo assim mas informar o problema
+          const { error: deleteError } = await supabase
+            .from('spins')
+            .delete()
+            .eq('id', spinId);
+
+          if (deleteError) {
+            console.error('[RevertStorePoints] Erro ao deletar spin após saldo insuficiente:', deleteError);
+            return new Response(
+              JSON.stringify({ 
+                error: 'Saldo insuficiente na StreamElements e erro ao deletar histórico',
+                details: `StreamElements: ${errorMessage}, Delete: ${deleteError.message}`
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            );
+          }
+
+          return new Response(
+            JSON.stringify({ 
+              success: true,
+              reverted: false,
+              insufficientBalance: true,
+              message: `Histórico deletado, mas não foi possível debitar ${pontosOriginal} pontos da StreamElements (saldo insuficiente do usuário ${username})`
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Para outros erros, retornar erro normal
         return new Response(
           JSON.stringify({ 
             error: 'Erro ao processar estorno na StreamElements',
