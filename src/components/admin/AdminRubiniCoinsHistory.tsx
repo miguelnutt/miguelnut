@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { normalizeUsername } from "@/lib/username-utils";
+import { normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface HistoryItem {
   id: string;
@@ -24,6 +24,7 @@ interface HistoryItem {
   created_at: string;
   profiles?: {
     twitch_username: string;
+    nome?: string;
   };
 }
 
@@ -40,7 +41,7 @@ export function AdminRubiniCoinsHistory() {
         .from("rubini_coins_history")
         .select(`
           *,
-          profiles:user_id (twitch_username)
+          profiles:user_id (twitch_username, nome)
         `)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -111,7 +112,7 @@ export function AdminRubiniCoinsHistory() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">
-                        {normalizeUsername(item.profiles?.twitch_username)}
+                        {normalizeUsernameWithFallback(item.profiles?.twitch_username, item.profiles?.nome)}
                       </p>
                       <span
                         className={`text-sm font-bold ${

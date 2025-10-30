@@ -29,7 +29,7 @@ import { useAdminMode } from "@/contexts/AdminModeContext";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { PromotionalBar } from "@/components/PromotionalBar";
-import { normalizeUsername, searchUsername } from "@/lib/username-utils";
+import { normalizeUsernameWithFallback, searchUsername } from "@/lib/username-utils";
 
 interface Spin {
   id: string;
@@ -39,6 +39,10 @@ interface Spin {
   created_at: string;
   wheels: { nome: string } | null;
   origem?: string;
+  profiles?: {
+    twitch_username: string;
+    nome?: string;
+  };
 }
 
 export default function History() {
@@ -99,7 +103,8 @@ export default function History() {
         .from("spins")
         .select(`
           *,
-          wheels(nome)
+          wheels(nome),
+          profiles:user_id (twitch_username, nome)
         `)
         .order("created_at", { ascending: false });
 
@@ -108,7 +113,10 @@ export default function History() {
       // Buscar histórico do TibiaTermo
       const { data: tibiaTermoData, error: tibiaTermoError } = await supabase
         .from("tibiatermo_history")
-        .select("*")
+        .select(`
+          *,
+          profiles:user_id (twitch_username, nome)
+        `)
         .order("created_at", { ascending: false });
 
       if (tibiaTermoError) throw tibiaTermoError;
@@ -121,18 +129,20 @@ export default function History() {
         valor: item.valor,
         created_at: item.created_at,
         wheels: item.wheels,
-        origem: item.wheels?.nome || 'Roleta'
+        origem: item.wheels?.nome || 'Roleta',
+        profiles: item.profiles
       }));
 
       // Mesclar dados do TibiaTermo
       const tibiaTermoFormatted = (tibiaTermoData || []).map(item => ({
         id: item.id,
-        twitch_username: item.twitch_username,
+        twitch_username: item.nome_usuario, // TibiaTermo usa nome_usuario
         tipo_recompensa: item.tipo_recompensa,
         valor: item.valor.toString(),
         created_at: item.created_at,
         wheels: null,
-        origem: 'TibiaTermo'
+        origem: 'TibiaTermo',
+        profiles: item.profiles
       }));
 
       const allHistory = [...spinsFormatted, ...tibiaTermoFormatted];
@@ -151,9 +161,12 @@ export default function History() {
     let filtered = [...spins];
 
     if (filters.usuario) {
-      filtered = filtered.filter(s => 
-        s.twitch_username && searchUsername(filters.usuario, s.twitch_username)
-      );
+      filtered = filtered.filter(s => {
+        const username = s.profiles?.twitch_username || s.twitch_username;
+        const nome = s.profiles?.nome;
+        return (username && searchUsername(filters.usuario, username)) ||
+               (nome && searchUsername(filters.usuario, nome));
+      });
     }
 
     if (filters.tipo) {
@@ -338,7 +351,7 @@ export default function History() {
                     <TableBody>
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
-                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsername(spin.twitch_username)}</TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsernameWithFallback(spin.profiles?.twitch_username || spin.twitch_username, spin.profiles?.nome)}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.origem || spin.wheels?.nome || "-"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>
