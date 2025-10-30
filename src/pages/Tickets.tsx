@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/lib/supabase-helper";
+import { normalizeUsername } from "@/lib/username-utils";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import { RaffleDialog } from "@/components/RaffleDialog";
@@ -498,7 +499,7 @@ export default function Tickets() {
                             </span>
                             <div>
                               <div className="font-medium text-base flex items-center gap-2">
-                                @{String(item.twitch_username || "Usuário desconhecido")}
+                                {normalizeUsername(item.twitch_username) || "@Usuário desconhecido"}
                               </div>
                               <div className="text-sm text-muted-foreground">{item.tickets_atual} tickets</div>
                             </div>
@@ -589,7 +590,7 @@ export default function Tickets() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => removeUser(item.user_id, String(item.twitch_username || "Usuário desconhecido"))}
+                              onClick={() => removeUser(item.user_id, normalizeUsername(item.twitch_username) || "@Usuário desconhecido")}
                               className="flex-1"
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
@@ -623,7 +624,7 @@ export default function Tickets() {
                               </TableCell>
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
-                                  @{String(item.twitch_username || "Usuário desconhecido")}
+                                  {normalizeUsername(item.twitch_username) || "@Usuário desconhecido"}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">{item.tickets_atual}</TableCell>
@@ -715,7 +716,7 @@ export default function Tickets() {
                                       <Button
                                         size="sm"
                                         variant="destructive"
-                                        onClick={() => removeUser(item.user_id, String(item.twitch_username || "Usuário desconhecido"))}
+                                        onClick={() => removeUser(item.user_id, normalizeUsername(item.twitch_username) || "@Usuário desconhecido")}
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Remover Usuário

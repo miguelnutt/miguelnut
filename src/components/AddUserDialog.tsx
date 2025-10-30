@@ -55,12 +55,10 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
     try {
       console.log("Obtendo ou criando perfil para:", nome.trim());
       
-      // Usar a função get_or_merge_profile_v2 para buscar ou criar automaticamente
+      // Usar a função get_or_create_profile_by_name para buscar ou criar automaticamente
       const { data: userId, error: profileError } = await supabase
-        .rpc('get_or_merge_profile_v2', {
-          p_twitch_user_id: null,
-          p_display_name: nome.trim(),
-          p_login: nome.trim().toLowerCase()
+        .rpc('get_or_create_profile_by_name', {
+          p_nome: nome.trim()
         });
 
       if (profileError || !userId) {

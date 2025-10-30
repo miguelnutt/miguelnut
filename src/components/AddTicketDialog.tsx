@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { z } from "zod";
-import { removeAtSymbol } from "@/lib/username-utils";
+import { prepareUsernameForSearch } from "@/lib/username-utils";
 
 interface AddTicketDialogProps {
   open: boolean;
@@ -39,15 +39,13 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
 
     setSaving(true);
     try {
-      // Remover @ do username se presente
-      const cleanUsername = removeAtSymbol(twitchUsername);
+      // Preparar username para busca (remove @ se presente)
+      const cleanUsername = prepareUsernameForSearch(twitchUsername);
       
-      // Usar a função get_or_merge_profile_v2 para buscar ou criar perfil
+      // Usar a função get_or_create_profile_by_name para buscar ou criar perfil
       const { data: userId, error: profileError } = await supabase
-        .rpc('get_or_merge_profile_v2', {
-          p_twitch_user_id: null,
-          p_display_name: cleanUsername.trim(),
-          p_login: cleanUsername.trim().toLowerCase()
+        .rpc('get_or_create_profile_by_name', {
+          p_nome: cleanUsername
         });
 
       if (profileError || !userId) {

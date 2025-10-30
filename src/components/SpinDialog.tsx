@@ -13,7 +13,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
-import { removeAtSymbol } from "@/lib/username-utils";
+import { removeAtSymbol, prepareUsernameForSearch } from "@/lib/username-utils";
 
 interface Recompensa {
   tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
@@ -137,9 +137,10 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
       
       // Usar a edge function resolve-user-identity para obter o perfil canônico
       // Se o usuário estiver logado, usar o twitch_user_id para garantir que encontre o perfil correto
+      const searchTermWithAt = prepareUsernameForSearch(nomeParaUsar);
       const { data: identityData, error: identityError } = await supabase.functions.invoke('resolve-user-identity', {
         body: {
-          searchTerm: nomeParaUsar,
+          searchTerm: searchTermWithAt,
           twitch_user_id: twitchUser?.id || null
         }
       });

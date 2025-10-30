@@ -32,6 +32,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { prepareUsernameForSearch } from "@/lib/username-utils";
 
 const TibiaTermo = () => {
   const navigate = useNavigate();
@@ -494,7 +495,7 @@ const TibiaTermo = () => {
             'Authorization': `Bearer ${token}`,
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ searchTerm: resetUsername.trim() }),
+          body: JSON.stringify({ searchTerm: prepareUsernameForSearch(resetUsername.trim()) }),
         }
       );
 

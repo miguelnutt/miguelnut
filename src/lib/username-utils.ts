@@ -66,3 +66,22 @@ export function searchUsername(searchTerm: string | null | undefined, username: 
   
   return cleanUsername.includes(cleanSearch);
 }
+
+/**
+ * Prepara um username para busca no banco de dados, garantindo que tenha @
+ * @param username - Username digitado pelo usuário (pode ou não ter @)
+ * @returns Username com @ para busca no banco
+ */
+export function prepareUsernameForSearch(username: string | null | undefined): string {
+  if (!username) return "";
+  
+  const trimmed = username.trim();
+  
+  // Se já tem @, retorna como está
+  if (trimmed.startsWith("@")) {
+    return trimmed;
+  }
+  
+  // Adiciona @ no início para busca no banco
+  return `@${trimmed}`;
+}
