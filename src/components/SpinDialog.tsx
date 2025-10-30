@@ -101,12 +101,6 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-  }, []);
-
-  useEffect(() => {
     if (!open) {
       setNomeUsuario("");
       setResultado(null);

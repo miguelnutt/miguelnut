@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase-helper";
 import { useTwitchStatus } from "@/contexts/TwitchStatusContext";
-import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import { Loader2, Radio, Edit } from "lucide-react";
 import { toast } from "sonner";
-import { User } from "@supabase/supabase-js";
 import { StreakRanking } from "@/components/StreakRanking";
 import { RecentRewards } from "@/components/RecentRewards";
 import { PromotionalBar } from "@/components/PromotionalBar";
@@ -19,8 +18,7 @@ import { PromotionalBar } from "@/components/PromotionalBar";
 const DEFAULT_VIDEO_ID = "EeF3UTkCoxY";
 
 export default function Index() {
-  const [user, setUser] = useState<User | null>(null);
-  const { isAdmin } = useAdmin(user);
+  const { isAdmin } = useAuth();
   const { isAdminMode } = useAdminMode();
   const { isLive, loading: twitchLoading } = useTwitchStatus();
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>(DEFAULT_VIDEO_ID);
@@ -29,12 +27,6 @@ export default function Index() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newVideoUrl, setNewVideoUrl] = useState("");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-  }, []);
 
   useEffect(() => {
     fetchSettings();

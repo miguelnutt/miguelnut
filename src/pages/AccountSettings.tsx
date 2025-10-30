@@ -17,7 +17,6 @@ import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { PromotionalBar } from "@/components/PromotionalBar";
 import { RubiniCoinsResgateDialog } from "@/components/RubiniCoinsResgateDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RubiniCoinsDebug from "@/components/RubiniCoinsDebug";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -1046,9 +1045,6 @@ export default function AccountSettings() {
           }}
         />
       )}
-      
-      {/* Componente de debug temporário - remover após análise */}
-      <RubiniCoinsDebug />
     </>
   );
 }

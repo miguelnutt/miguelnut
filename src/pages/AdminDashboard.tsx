@@ -221,7 +221,7 @@ const AdminDashboard = () => {
     return typeMatch && searchTermMatch && dateMatch;
   });
 
-  if (!sessionReady || loading) {
+  if (loading) {
     return <div className="container mx-auto py-8 text-center">Verificando permissões...</div>;
   }
   

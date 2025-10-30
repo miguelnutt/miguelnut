@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
 import profileImage from "@/assets/profile-miguelnut.png";
 import { useTwitchStatus } from "@/contexts/TwitchStatusContext";
-import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
@@ -28,8 +28,7 @@ export const Navbar = () => {
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
   
-  // Sempre chamar useAdmin, mas passar user correto
-  const { isAdmin, loading: adminLoading } = useAdmin(session?.user ?? null);
+  const { isAdmin } = useAuth();
   const { isAdminMode, toggleAdminMode, canUseAdminMode } = useAdminMode();
   
   // Verificar status da recompensa diária - só quando auth terminar de carregar
