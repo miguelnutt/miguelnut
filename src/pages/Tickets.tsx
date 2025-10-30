@@ -183,17 +183,27 @@ export default function Tickets() {
       // Últimos sorteios
       const { data: rafflesData, error: rafflesError } = await supabase
         .from("raffles")
-        .select(`
-          *,
-          profiles!raffles_vencedor_id_fkey(nome)
-        `)
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
 
       if (rafflesError) throw rafflesError;
+      
+      // Buscar perfis dos vencedores dos sorteios
+      const vencedorIds = (rafflesData || []).map(raffle => raffle.vencedor_id).filter(Boolean);
+      const { data: vencedorProfilesData } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", vencedorIds);
+      
+      const vencedorProfilesMap = (vencedorProfilesData || []).reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>);
+      
       const rafflesWithNome = (rafflesData || []).map(raffle => ({
         ...raffle,
-        nome: raffle.profiles?.nome
+        nome: raffle.vencedor_id ? vencedorProfilesMap[raffle.vencedor_id]?.nome : null
       }));
       setRaffles(rafflesWithNome);
 

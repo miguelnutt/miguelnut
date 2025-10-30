@@ -218,40 +218,60 @@ export default function Dashboard() {
       // Últimas recompensas
       let recentSpinsQuery = supabase
         .from("spins")
-        .select(`
-          *,
-          profiles!spins_user_id_fkey(nome)
-        `)
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(5);
       if (startDate && endDate) {
         recentSpinsQuery = recentSpinsQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
       const { data: spinsData } = await recentSpinsQuery;
+      
+      // Buscar perfis dos usuários dos spins
+      const userIds = (spinsData || []).map(spin => spin.user_id).filter(Boolean);
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", userIds);
+      
+      const profilesMap = (profilesData || []).reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>);
+      
       const spinsWithNome = (spinsData || []).map(spin => ({
         ...spin,
         twitch_username: spin.nome_usuario,
-        nome: spin.profiles?.nome
+        nome: spin.user_id ? profilesMap[spin.user_id]?.nome : null
       }));
       setRecentSpins(spinsWithNome);
 
       // Últimos sorteios
       let recentRafflesQuery = supabase
         .from("raffles")
-        .select(`
-          *,
-          profiles!raffles_vencedor_id_fkey(nome)
-        `)
+        .select("*")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(10);
       if (startDate && endDate) {
         recentRafflesQuery = recentRafflesQuery.gte("created_at", startDate).lte("created_at", endDate);
       }
       const { data: rafflesData } = await recentRafflesQuery;
+      
+      // Buscar perfis dos usuários dos sorteios
+      const raffleUserIds = (rafflesData || []).map(raffle => raffle.vencedor_id).filter(Boolean);
+      const { data: raffleProfilesData } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", raffleUserIds);
+      
+      const raffleProfilesMap = (raffleProfilesData || []).reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>);
+      
       const rafflesWithNome = (rafflesData || []).map(raffle => ({
         ...raffle,
         twitch_username: raffle.nome_vencedor,
-        nome: raffle.profiles?.nome
+        nome: raffle.vencedor_id ? raffleProfilesMap[raffle.vencedor_id]?.nome : null
       }));
       setRecentRaffles(rafflesWithNome);
 

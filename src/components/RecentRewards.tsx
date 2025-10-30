@@ -37,27 +37,45 @@ export function RecentRewards() {
     try {
       const { data: spins } = await supabase
         .from("spins")
-        .select(`
-          *,
-          profiles!spins_user_id_fkey(nome)
-        `)
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
 
       const { data: raffles } = await supabase
         .from("raffles")
-        .select(`
-          *,
-          profiles!raffles_vencedor_id_fkey(nome)
-        `)
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
+
+      // Buscar perfis dos usuários dos spins
+      const spinUserIds = (spins || []).map(spin => spin.user_id).filter(Boolean);
+      const { data: spinProfilesData } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", spinUserIds);
+      
+      const spinProfilesMap = (spinProfilesData || []).reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Buscar perfis dos vencedores dos sorteios
+      const raffleUserIds = (raffles || []).map(raffle => raffle.vencedor_id).filter(Boolean);
+      const { data: raffleProfilesData } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", raffleUserIds);
+      
+      const raffleProfilesMap = (raffleProfilesData || []).reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>);
 
       const combined = [
         ...(spins || []).map(s => ({ 
           ...s, 
           type: 'spin' as const,
-          nome: s.profiles?.nome
+          nome: s.user_id ? spinProfilesMap[s.user_id]?.nome : null
         })),
         ...(raffles || []).map(r => ({ 
           ...r, 
@@ -65,7 +83,7 @@ export function RecentRewards() {
           nome_usuario: r.nome_vencedor,
           tipo_recompensa: r.tipo_premio,
           valor: r.valor_premio?.toString() || '0',
-          nome: r.profiles?.nome
+          nome: r.vencedor_id ? raffleProfilesMap[r.vencedor_id]?.nome : null
         }))
       ].sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
