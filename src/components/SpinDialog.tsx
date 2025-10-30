@@ -59,6 +59,37 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
   const [ticketsAtuais, setTicketsAtuais] = useState<number | null>(null);
   const [carregandoTickets, setCarregandoTickets] = useState(false);
 
+  // Função para buscar tickets atuais do usuário
+  const buscarTicketsAtuais = async (nomeUsuario: string) => {
+    setCarregandoTickets(true);
+    try {
+      // Buscar perfil por twitch_username
+      const searchTerm = prepareUsernameForSearch(nomeUsuario);
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('twitch_username', searchTerm)
+        .maybeSingle();
+      
+      if (profileData?.id) {
+        const { data: ticketsData } = await supabase
+          .from('tickets')
+          .select('tickets_atual')
+          .eq('user_id', profileData.id)
+          .maybeSingle();
+        
+        setTicketsAtuais(ticketsData?.tickets_atual || 0);
+      } else {
+        setTicketsAtuais(0); // Novo usuário
+      }
+    } catch (error) {
+      console.error("Erro ao buscar tickets:", error);
+      setTicketsAtuais(null);
+    } finally {
+      setCarregandoTickets(false);
+    }
+  };
+
   // Inicializar áudio de recompensa
   useEffect(() => {
     rewardAudioRef.current = new Audio(rewardSound);
@@ -341,6 +372,9 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
 
           console.log(`Tickets awarded via unified service:`, awardData);
           
+          // Atualizar o saldo de tickets na interface
+          await buscarTicketsAtuais(nomeParaUsar);
+          
           // Indicar se foi para perfil temporário
           const successMessage = profileData?.twitch_user_id 
             ? `${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Novo saldo: ${awardData.newBalance})`
@@ -578,33 +612,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
       
       // Se for Tickets, buscar tickets atuais do usuário
       if (sorteada.tipo === "Tickets" && !isModoTeste) {
-        setCarregandoTickets(true);
-        try {
-          // Buscar perfil por twitch_username
-          const searchTerm = prepareUsernameForSearch(nomeParaExibir);
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id')
-            .ilike('twitch_username', searchTerm)
-            .maybeSingle();
-          
-          if (profileData?.id) {
-            const { data: ticketsData } = await supabase
-              .from('tickets')
-              .select('tickets_atual')
-              .eq('user_id', profileData.id)
-              .maybeSingle();
-            
-            setTicketsAtuais(ticketsData?.tickets_atual || 0);
-          } else {
-            setTicketsAtuais(0); // Novo usuário
-          }
-        } catch (error) {
-          console.error("Erro ao buscar tickets:", error);
-          setTicketsAtuais(null);
-        } finally {
-          setCarregandoTickets(false);
-        }
+        await buscarTicketsAtuais(nomeParaExibir);
       }
       
       // Se for Rubini Coins, buscar nome do personagem

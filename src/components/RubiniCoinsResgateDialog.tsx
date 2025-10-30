@@ -41,15 +41,15 @@ export function RubiniCoinsResgateDialog({
 
   const carregarPersonagens = async () => {
     try {
-      // SEMPRE buscar perfil ativo para garantir consistência
+      // Buscar perfil por userId independentemente do status is_active
+      // pois usuários podem ter personagem cadastrado mesmo sem perfil ativo
       const { data: profile } = await supabase
         .from('profiles')
         .select('nome_personagem')
         .eq('id', userId)
-        .eq('is_active', true)
         .maybeSingle();
 
-      if (profile?.nome_personagem) {
+      if (profile?.nome_personagem && profile.nome_personagem.trim() !== '') {
         setPersonagens([profile.nome_personagem]);
         setPersonagem(profile.nome_personagem);
       } else {
@@ -58,6 +58,8 @@ export function RubiniCoinsResgateDialog({
       }
     } catch (error) {
       console.error('Erro ao carregar personagens:', error);
+      setPersonagens([]);
+      setPersonagem('');
     }
   };
 

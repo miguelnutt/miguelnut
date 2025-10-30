@@ -85,7 +85,53 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Deletar o histórico
+    // 4. Se for Pontos de Loja e tem user_id, processar débito na StreamElements
+    if (historyRecord.tipo === 'Pontos de Loja' && historyRecord.user_id) {
+      const pontos = Math.abs(historyRecord.variacao) || 0; // Usar valor absoluto
+      
+      // Buscar informações do usuário para obter o username
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('twitch_username, nome')
+        .eq('id', historyRecord.user_id)
+        .single();
+
+      if (profile && profile.twitch_username) {
+        try {
+          // Enviar débito para StreamElements (valor negativo para remover pontos)
+          const { error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
+            body: {
+              username: profile.twitch_username,
+              user_id: historyRecord.user_id,
+              points: -pontos, // Valor negativo para debitar
+              tipo_operacao: 'estorno_historico',
+              referencia_id: historyId,
+              reason: `Histórico deletado: -${pontos} pontos de loja`
+            }
+          });
+
+          if (syncError) {
+            console.error('Erro ao debitar pontos na StreamElements:', syncError);
+            return new Response(
+              JSON.stringify({ error: 'Erro ao debitar pontos na StreamElements' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            );
+          }
+
+          console.log(`Pontos debitados na StreamElements: user ${profile.twitch_username}, débito: -${pontos}`);
+        } catch (error) {
+          console.error('Erro ao processar débito de pontos:', error);
+          return new Response(
+            JSON.stringify({ error: 'Erro ao processar débito de pontos' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+          );
+        }
+      } else {
+        console.log(`Usuário sem twitch_username, não é possível debitar pontos: user_id ${historyRecord.user_id}`);
+      }
+    }
+
+    // 5. Deletar o registro do histórico
     const { error: deleteError } = await supabase
       .from('rubini_coins_history')
       .delete()
@@ -99,10 +145,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Histórico deletado com sucesso: ${historyId}`);
+    console.log(`✅ Histórico ${historyId} deletado com sucesso`);
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true, 
+        message: historyRecord.tipo === 'Pontos de Loja' && historyRecord.user_id 
+          ? 'Histórico deletado e pontos debitados na StreamElements com sucesso'
+          : 'Histórico deletado com sucesso',
+        balanceUpdated: historyRecord.user_id ? true : false,
+        newBalance: historyRecord.user_id ? novoSaldo : null,
+        streamElementsDebited: historyRecord.tipo === 'Pontos de Loja' && historyRecord.user_id
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
