@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -7,6 +7,7 @@ import { Session } from "@supabase/supabase-js";
 import profileImage from "@/assets/profile-miguelnut.png";
 import { useTwitchStatus } from "@/contexts/TwitchStatusContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
 import { TwitchLoginButton } from "@/components/TwitchLoginButton";
@@ -29,6 +30,7 @@ export const Navbar = () => {
   
   // Sempre chamar useAdmin, mas passar user correto
   const { isAdmin, loading: adminLoading } = useAdmin(session?.user ?? null);
+  const { isAdminMode } = useAdminMode();
   
   // Verificar status da recompensa diária - só quando auth terminar de carregar
   const { hasRewardAvailable, forceRefresh } = useDailyRewardStatus(
@@ -159,9 +161,18 @@ export const Navbar = () => {
               ) : twitchUser ? (
                 <>
                   <UserBadge user={twitchUser} onLogout={twitchLogout} />
-                  {isAdmin && (
+                  {isAdmin && isAdminMode && (
                     <>
                       <AdminRubiniCoinsResgatesButton />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate("/admin-dashboard")}
+                        className="flex items-center gap-2"
+                      >
+                        <Shield className="h-4 w-4" />
+                        Dashboard Admin
+                      </Button>
                     </>
                   )}
                   <Button
@@ -190,9 +201,18 @@ export const Navbar = () => {
                 </>
               ) : session ? (
                 <>
-                  {isAdmin && (
+                  {isAdmin && isAdminMode && (
                     <>
                       <AdminRubiniCoinsResgatesButton />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate("/admin-dashboard")}
+                        className="flex items-center gap-2"
+                      >
+                        <Shield className="h-4 w-4" />
+                        Dashboard Admin
+                      </Button>
                     </>
                   )}
                   <Button
@@ -299,10 +319,21 @@ export const Navbar = () => {
                   ) : twitchUser ? (
                   <div className="flex flex-col gap-2">
                     <UserBadge user={twitchUser} onLogout={twitchLogout} />
-                    {isAdmin && (
+                    {isAdmin && isAdminMode && (
                       <>
                         <div className="w-full">
                           <AdminRubiniCoinsResgatesButton />
+                        </div>
+                        <div className="w-full">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate("/admin-dashboard")}
+                            className="flex items-center gap-2 w-full"
+                          >
+                            <Shield className="h-4 w-4" />
+                            Dashboard Admin
+                          </Button>
                         </div>
                       </>
                     )}
@@ -336,12 +367,22 @@ export const Navbar = () => {
                   </div>
                 ) : session ? (
                   <>
-                    {isAdmin && (
+                    {isAdmin && isAdminMode && (
                       <>
                         <div className="w-full">
                           <AdminRubiniCoinsResgatesButton />
                         </div>
-
+                        <div className="w-full">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate("/admin-dashboard")}
+                            className="flex items-center gap-2 w-full"
+                          >
+                            <Shield className="h-4 w-4" />
+                            Dashboard Admin
+                          </Button>
+                        </div>
                       </>
                     )}
                     <Button
