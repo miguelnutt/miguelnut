@@ -28,8 +28,7 @@ interface DuplicateGroup {
   count: number;
   profiles: Array<{
     id: string;
-    nome: string;
-    twitch_username: string | null;
+    twitch_username: string;
     twitch_user_id: string | null;
     created_at: string;
   }>;
@@ -254,8 +253,7 @@ export function ProfileConsolidation() {
                         <div className="space-y-1">
                           {group.profiles.map(p => (
                             <div key={p.id} className="text-sm">
-                              <span className="font-medium">{p.nome}</span>
-                              {p.twitch_username && <span className="text-muted-foreground"> (@{p.twitch_username})</span>}
+                              <span className="font-medium">@{p.twitch_username}</span>
                             </div>
                           ))}
                         </div>
@@ -299,8 +297,7 @@ export function ProfileConsolidation() {
                       .filter(p => p.id === canonicalId)
                       .map(p => (
                         <div key={p.id} className="space-y-1">
-                          <p className="font-medium">{p.nome}</p>
-                          {p.twitch_username && <p className="text-sm text-muted-foreground">@{p.twitch_username}</p>}
+                          <p className="font-medium">@{p.twitch_username}</p>
                           <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
                         </div>
                       ))}
@@ -319,8 +316,7 @@ export function ProfileConsolidation() {
                       .filter(p => p.id === duplicateId)
                       .map(p => (
                         <div key={p.id} className="space-y-1">
-                          <p className="font-medium">{p.nome}</p>
-                          {p.twitch_username && <p className="text-sm text-muted-foreground">@{p.twitch_username}</p>}
+                          <p className="font-medium">@{p.twitch_username}</p>
                           <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
                         </div>
                       ))}

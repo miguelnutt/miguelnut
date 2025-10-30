@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     // Buscar perfil para obter twitch_username (ou nome como fallback)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('twitch_username, nome, is_temporary')
+      .select('twitch_username, nome')
       .eq('id', userId)
       .maybeSingle();
 
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[${requestId}] Using username: ${username} (temporary: ${profile.is_temporary || false})`);
+    console.log(`[${requestId}] Using username: ${username}`);
 
     // ROUTING por tipo de recompensa
     if (type === 'store_points') {

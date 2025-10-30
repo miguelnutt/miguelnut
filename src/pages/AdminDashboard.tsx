@@ -92,28 +92,28 @@ const AdminDashboard = () => {
         // Rubini Coins
         supabase
           .from('rubini_coins_history')
-          .select('*, profiles(nome, twitch_username)')
+          .select('*, profiles(twitch_username)')
           .order('created_at', { ascending: false })
           .limit(200),
         
         // Tickets
         supabase
           .from('ticket_ledger')
-          .select('*, profiles(nome, twitch_username)')
+          .select('*, profiles(twitch_username)')
           .order('created_at', { ascending: false })
           .limit(200),
         
         // Daily Rewards
         supabase
           .from('daily_rewards_history')
-          .select('*, profiles(nome, twitch_username)')
+          .select('*, profiles(twitch_username)')
           .order('created_at', { ascending: false })
           .limit(200),
         
         // TibiaTermo
         supabase
           .from('tibiatermo_history')
-          .select('*, profiles(nome, twitch_username)')
+          .select('*, profiles(twitch_username)')
           .order('created_at', { ascending: false })
           .limit(200)
       ]);
@@ -143,7 +143,7 @@ const AdminDashboard = () => {
             id: `rc_${log.id}`,
             created_at: log.created_at,
             log_type: 'Rubini Coins',
-            user_name: log.profiles?.nome || log.profiles?.twitch_username || 'Usuário desconhecido',
+            user_name: log.profiles?.twitch_username || 'Usuário desconhecido',
             description: log.motivo || 'Transação de Rubini Coins',
             amount: log.variacao || 0
           });
@@ -157,7 +157,7 @@ const AdminDashboard = () => {
             id: `tk_${log.id}`,
             created_at: log.created_at,
             log_type: 'Tickets',
-            user_name: log.profiles?.nome || log.profiles?.twitch_username || 'Usuário desconhecido',
+            user_name: log.profiles?.twitch_username || 'Usuário desconhecido',
             description: log.motivo || 'Transação de Tickets',
             amount: log.variacao || 0
           });
@@ -171,7 +171,7 @@ const AdminDashboard = () => {
             id: `dr_${log.id}`,
             created_at: log.created_at,
             log_type: 'Daily Rewards',
-            user_name: log.profiles?.nome || log.profiles?.twitch_username || 'Usuário desconhecido',
+            user_name: log.profiles?.twitch_username || 'Usuário desconhecido',
             description: `Recompensa diária: ${log.tipo_recompensa} - ${log.valor_recompensa}`,
             amount: log.valor_recompensa || 0
           });
@@ -185,7 +185,7 @@ const AdminDashboard = () => {
             id: `tt_${log.id}`,
             created_at: log.created_at,
             log_type: 'TibiaTermo',
-            user_name: log.profiles?.nome || log.profiles?.twitch_username || 'Usuário desconhecido',
+            user_name: log.profiles?.twitch_username || 'Usuário desconhecido',
             description: `TibiaTermo: ${log.acertou ? 'Acertou' : 'Errou'} - Palavra: ${log.palavra_tentativa}`,
             amount: log.pontos_ganhos || 0
           });

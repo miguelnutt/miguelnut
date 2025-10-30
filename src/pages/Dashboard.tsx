@@ -25,7 +25,7 @@ interface Stats {
 
 interface RecentSpin {
   id: string;
-  nome_usuario: string;
+  twitch_username: string;
   tipo_recompensa: string;
   valor: string;
   created_at: string;
@@ -33,7 +33,7 @@ interface RecentSpin {
 
 interface RecentRaffle {
   id: string;
-  nome_vencedor: string;
+  twitch_username: string;
   created_at: string;
   tipo_premio: string;
   valor_premio: number;
@@ -426,7 +426,7 @@ export default function Dashboard() {
                   {recentSpins.map((spin) => (
                     <div key={spin.id} className="flex justify-between items-center p-3 bg-gradient-card rounded-lg">
                       <div>
-                        <p className="font-medium">{spin.nome_usuario}</p>
+                        <p className="font-medium">@{spin.twitch_username}</p>
                         <p className="text-sm text-muted-foreground">
                           {spin.valor} {spin.tipo_recompensa}
                         </p>
@@ -455,7 +455,7 @@ export default function Dashboard() {
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center gap-2">
                           <Trophy className="h-5 w-5 text-primary" />
-                          <p className="font-medium">{raffle.nome_vencedor}</p>
+                          <p className="font-medium">@{raffle.twitch_username}</p>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(raffle.created_at)}

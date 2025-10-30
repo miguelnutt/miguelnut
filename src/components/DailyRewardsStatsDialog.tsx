@@ -15,7 +15,6 @@ interface DailyRewardsStatsDialogProps {
 interface RewardClaim {
   id: string;
   user_id: string;
-  nome: string;
   twitch_username: string | null;
   dia: number;
   pontos: number;
@@ -120,8 +119,7 @@ export function DailyRewardsStatsDialog({ open, onOpenChange }: DailyRewardsStat
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-16">Posição</TableHead>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Twitch</TableHead>
+                        <TableHead>Usuário</TableHead>
                         <TableHead className="text-center">Dia</TableHead>
                         <TableHead className="text-center">Pontos</TableHead>
                         <TableHead>Horário</TableHead>
@@ -131,9 +129,8 @@ export function DailyRewardsStatsDialog({ open, onOpenChange }: DailyRewardsStat
                       {stats.rewards.map((reward) => (
                         <TableRow key={reward.id}>
                           <TableCell className="font-bold">#{reward.posicao}</TableCell>
-                          <TableCell>{reward.nome}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {reward.twitch_username || '-'}
+                          <TableCell>
+                            @{reward.twitch_username || 'Desconhecido'}
                           </TableCell>
                           <TableCell className="text-center">{reward.dia}º</TableCell>
                           <TableCell className="text-center font-semibold">

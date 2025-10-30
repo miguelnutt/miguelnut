@@ -14,12 +14,12 @@ interface AddTicketDialogProps {
 }
 
 const addTicketSchema = z.object({
-  nome: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)"),
+  twitch_username: z.string().trim().min(1, "Usuário Twitch é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)"),
   tickets: z.number().int().positive("Quantidade deve ser maior que zero").max(10000, "Quantidade máxima é 10000")
 });
 
 export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDialogProps) {
-  const [nome, setNome] = useState("");
+  const [twitchUsername, setTwitchUsername] = useState("");
   const [tickets, setTickets] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -27,7 +27,7 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
     const ticketsNum = parseInt(tickets);
     
     const validation = addTicketSchema.safeParse({ 
-      nome,
+      twitch_username: twitchUsername,
       tickets: ticketsNum 
     });
     
@@ -42,8 +42,8 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
       const { data: userId, error: profileError } = await supabase
         .rpc('get_or_merge_profile_v2', {
           p_twitch_user_id: null,
-          p_display_name: nome.trim(),
-          p_login: nome.trim().toLowerCase()
+          p_display_name: twitchUsername.trim(),
+          p_login: twitchUsername.trim().toLowerCase()
         });
 
       if (profileError || !userId) {
@@ -91,13 +91,13 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
       // Buscar nome do perfil para exibir na mensagem de sucesso
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('nome, twitch_username')
+        .select('twitch_username')
         .eq('id', userId)
         .single();
 
-      toast.success(`${ticketsNum} tickets adicionados para ${profileData?.nome || profileData?.twitch_username || nome}! Total: ${newAmount}`);
+      toast.success(`${ticketsNum} tickets adicionados para @${profileData?.twitch_username || twitchUsername}! Total: ${newAmount}`);
 
-      setNome("");
+      setTwitchUsername("");
       setTickets("");
       onOpenChange(false);
       onSuccess();
@@ -118,12 +118,12 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome do Usuário (Twitch)</Label>
+            <Label htmlFor="twitchUsername">Usuário Twitch</Label>
             <Input
-              id="nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Digite o nome do usuário"
+              id="twitchUsername"
+              value={twitchUsername}
+              onChange={(e) => setTwitchUsername(e.target.value)}
+              placeholder="Digite o usuário Twitch"
               disabled={saving}
             />
             <p className="text-xs text-muted-foreground">
@@ -156,7 +156,7 @@ export function AddTicketDialog({ open, onOpenChange, onSuccess }: AddTicketDial
           </Button>
           <Button
             onClick={handleAdd}
-            disabled={saving || !nome.trim() || !tickets}
+            disabled={saving || !twitchUsername.trim() || !tickets}
             className="bg-gradient-primary"
           >
             {saving ? "Adicionando..." : "Adicionar"}

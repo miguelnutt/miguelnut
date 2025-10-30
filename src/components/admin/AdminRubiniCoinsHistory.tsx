@@ -22,7 +22,7 @@ interface HistoryItem {
   motivo: string;
   created_at: string;
   profiles?: {
-    nome: string;
+    twitch_username: string;
   };
 }
 
@@ -39,7 +39,7 @@ export function AdminRubiniCoinsHistory() {
         .from("rubini_coins_history")
         .select(`
           *,
-          profiles:user_id (nome)
+          profiles:user_id (twitch_username)
         `)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -110,7 +110,7 @@ export function AdminRubiniCoinsHistory() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">
-                        {item.profiles?.nome || "Usuário Desconhecido"}
+                        @{item.profiles?.twitch_username || "Usuário Desconhecido"}
                       </p>
                       <span
                         className={`text-sm font-bold ${

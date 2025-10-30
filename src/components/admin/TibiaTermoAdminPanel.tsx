@@ -40,7 +40,7 @@ interface RewardConfig {
 
 interface ParticipacaoHoje {
   user_id: string;
-  nome_usuario: string;
+  twitch_username: string;
   created_at: string;
   acertou: boolean | null;
   num_tentativas: number | null;
@@ -139,7 +139,7 @@ export function TibiaTermoAdminPanel() {
           created_at,
           acertou,
           num_tentativas,
-          profiles!inner(nome, twitch_username)
+          profiles!inner(twitch_username)
         `)
         .eq('data_jogo', dateStr);
 
@@ -147,7 +147,7 @@ export function TibiaTermoAdminPanel() {
       
       const participacoes = (data || []).map((item: any) => ({
         user_id: item.user_id,
-        nome_usuario: item.profiles?.twitch_username || item.profiles?.nome || 'Desconhecido',
+        twitch_username: item.profiles?.twitch_username || 'Desconhecido',
         created_at: item.created_at,
         acertou: item.acertou,
         num_tentativas: item.num_tentativas,
@@ -533,7 +533,7 @@ export function TibiaTermoAdminPanel() {
                   <TableBody>
                     {participacoesHoje.map((p) => (
                       <TableRow key={p.user_id}>
-                        <TableCell>{p.nome_usuario}</TableCell>
+                        <TableCell>@{p.twitch_username}</TableCell>
                         <TableCell>{new Date(p.created_at).toLocaleTimeString('pt-BR')}</TableCell>
                         <TableCell>
                           {p.acertou === null ? 'Jogando' : p.acertou ? '✅ Acertou' : '❌ Errou'}

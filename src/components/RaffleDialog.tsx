@@ -13,7 +13,7 @@ import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp
 
 interface Participante {
   user_id: string;
-  nome: string;
+  twitch_username: string;
   tickets: number;
   nome_personagem?: string;
 }
@@ -87,9 +87,9 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       const userIds = (ticketsData || []).map(t => t.user_id);
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, nome, nome_personagem, twitch_username, is_temporary")
+        .select("id, nome_personagem, twitch_username")
         .in("id", userIds)
-        .eq("is_active", true); // Incluir apenas perfis ativos (incluindo temporários)
+        .eq("is_active", true);
 
       if (profilesError) throw profilesError;
 
@@ -106,13 +106,13 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
         const profile = profilesMap[t.user_id];
         console.log("Processando participante:", {
           user_id: t.user_id,
-          nome: profile?.nome,
+          twitch_username: profile?.twitch_username,
           nome_personagem: profile?.nome_personagem,
           tickets: t.tickets_atual
         });
         return {
           user_id: t.user_id,
-          nome: profile?.nome || "Usuário desconhecido",
+          twitch_username: profile?.twitch_username || "Usuário desconhecido",
           tickets: t.tickets_atual,
           nome_personagem: profile?.nome_personagem || undefined
         };
@@ -227,7 +227,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
         setCarregandoPontos(true);
         try {
           const { data, error } = await supabase.functions.invoke('get-streamelements-points', {
-            body: { username: vencedorSorteado.nome }
+            body: { username: vencedorSorteado.twitch_username }
           });
           
           if (!error && data?.points !== undefined) {
@@ -264,7 +264,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
     try {
       // Se for modo teste, apenas fechar
       if (isModoTeste) {
-        toast.success(`🎮 TESTE: ${vencedor.nome} ganhou o sorteio!`, {
+        toast.success(`🎮 TESTE: ${vencedor.twitch_username} ganhou o sorteio!`, {
           description: "Modo simulação - tickets não foram zerados e nada foi salvo"
         });
         setShowResultDialog(false);
@@ -277,12 +277,12 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
         .from("raffles")
         .insert({
           vencedor_id: vencedor.user_id,
-          nome_vencedor: vencedor.nome,
+          nome_vencedor: vencedor.twitch_username,
           tipo_premio: tipoPremio,
           valor_premio: valorPremio,
           participantes: participantes.map(p => ({
             user_id: p.user_id,
-            nome: p.nome,
+            twitch_username: p.twitch_username,
             tickets: p.tickets
           }))
         })
@@ -296,7 +296,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
             body: {
-              username: vencedor.nome,
+              username: vencedor.twitch_username,
               points: valorPremio,
               tipo_operacao: 'raffle',
               referencia_id: raffleData.id,
@@ -306,7 +306,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           
           if (syncError) throw syncError;
           
-          console.log(`StreamElements sync com logs: ${vencedor.nome} ganhou ${valorPremio} pontos de loja`);
+          console.log(`StreamElements sync com logs: ${vencedor.twitch_username} ganhou ${valorPremio} pontos de loja`);
         } catch (seError: any) {
           console.error("StreamElements sync error:", seError);
           toast.error("Erro ao sincronizar pontos com StreamElements");
@@ -330,7 +330,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
             console.error("Erro ao adicionar Rubini Coins:", rubiniError);
             toast.warning("Rubini Coins não foram adicionados automaticamente");
           } else {
-            console.log(`Rubini Coins adicionados: ${vencedor.nome} ganhou ${valorPremio} RC`);
+            console.log(`Rubini Coins adicionados: ${vencedor.twitch_username} ganhou ${valorPremio} RC`);
           }
         } catch (rcError: any) {
           console.error("Erro ao adicionar Rubini Coins:", rcError);
@@ -354,7 +354,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           motivo: "Ganhou sorteio - tickets zerados"
         });
 
-      toast.success(`Prêmio entregue: ${valorPremio} ${tipoPremio} para ${vencedor.nome}!`);
+      toast.success(`Prêmio entregue: ${valorPremio} ${tipoPremio} para ${vencedor.twitch_username}!`);
       setShowResultDialog(false);
       onOpenChange(false);
       onSuccess();
@@ -496,7 +496,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                       />
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="font-medium">{p.nome}</span>
+                          <span className="font-medium">@{p.twitch_username}</span>
                           <span className="text-sm font-semibold text-primary">
                             {probabilidade}%
                           </span>
@@ -557,7 +557,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                 {isModoTeste ? "🎮 Teste!" : "Vencedor!"}
               </h2>
               <p className="text-xl font-semibold text-foreground">
-                {vencedor?.nome}
+                @{vencedor?.twitch_username}
               </p>
               <p className="text-sm text-muted-foreground">
                 Tinha {vencedor?.tickets} {vencedor?.tickets === 1 ? "ticket" : "tickets"}

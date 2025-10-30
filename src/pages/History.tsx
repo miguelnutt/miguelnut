@@ -32,7 +32,7 @@ import { PromotionalBar } from "@/components/PromotionalBar";
 
 interface Spin {
   id: string;
-  nome_usuario: string;
+  twitch_username: string;
   tipo_recompensa: string;
   valor: string;
   created_at: string;
@@ -115,7 +115,7 @@ export default function History() {
       // Mesclar os dados
       const tibiaTermoFormatted = (tibiaTermoData || []).map(item => ({
         id: item.id,
-        nome_usuario: item.nome_usuario,
+        twitch_username: item.twitch_username,
         tipo_recompensa: item.tipo_recompensa,
         valor: item.valor.toString(),
         created_at: item.created_at,
@@ -140,7 +140,7 @@ export default function History() {
 
     if (filters.usuario) {
       filtered = filtered.filter(s => 
-        s.nome_usuario.toLowerCase().includes(filters.usuario.toLowerCase())
+        s.twitch_username.toLowerCase().includes(filters.usuario.toLowerCase())
       );
     }
 
@@ -326,7 +326,7 @@ export default function History() {
                     <TableBody>
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
-                          <TableCell className="font-medium whitespace-nowrap">{spin.nome_usuario}</TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">@{spin.twitch_username}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.origem || spin.wheels?.nome || "-"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>

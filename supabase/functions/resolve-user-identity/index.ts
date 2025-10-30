@@ -103,18 +103,17 @@ serve(async (req) => {
           twitch_username: searchTerm.toLowerCase(),
           display_name_canonical: searchTerm,
           is_active: true,
-          is_temporary: true, // Flag para indicar que é um perfil temporário
           created_via: 'prize_delivery' // Indicar como foi criado
         })
         .select('id, nome, twitch_username, twitch_user_id, display_name_canonical, is_active')
         .single();
 
       if (createError) {
-        console.error('❌ Erro ao criar perfil temporário:', createError);
+        console.error('❌ Erro ao criar perfil:', createError);
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'Erro ao criar perfil temporário para usuário',
+            error: 'Erro ao criar perfil para usuário',
             canonicalProfile: null,
             hasDuplicates: false
           }),
@@ -123,7 +122,7 @@ serve(async (req) => {
       }
 
       canonicalProfile = newProfile;
-      console.log(`✅ Perfil temporário criado com sucesso:`, {
+      console.log(`✅ Perfil criado com sucesso:`, {
         id: canonicalProfile.id,
         nome: canonicalProfile.nome,
         isTemporary: true

@@ -20,7 +20,6 @@ interface RCLog {
   error_message: string | null;
   idempotency_key: string | null;
   profiles?: {
-    nome: string;
     twitch_username: string;
   };
 }
@@ -64,8 +63,7 @@ export function RubiniCoinsMonitor() {
 
     if (usernameFilter.trim()) {
       filtered = filtered.filter(l => 
-        l.profiles?.twitch_username?.toLowerCase().includes(usernameFilter.toLowerCase()) ||
-        l.profiles?.nome?.toLowerCase().includes(usernameFilter.toLowerCase())
+        l.profiles?.twitch_username?.toLowerCase().includes(usernameFilter.toLowerCase())
       );
     }
 
@@ -82,7 +80,7 @@ export function RubiniCoinsMonitor() {
         .from('rubini_coins_history')
         .select(`
           *,
-          profiles:user_id (nome, twitch_username)
+          profiles:user_id (twitch_username)
         `)
         .gte('created_at', dataLimite.toISOString())
         .order('created_at', { ascending: false });
@@ -264,7 +262,7 @@ export function RubiniCoinsMonitor() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="font-medium">
-                            {log.profiles?.twitch_username || 'N/A'}
+                            @{log.profiles?.twitch_username || 'N/A'}
                           </span>
                           <Badge variant={isSuccess ? "default" : "destructive"}>
                             {isSuccess ? 'Confirmado' : 'Falha'}

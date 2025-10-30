@@ -23,7 +23,6 @@ import {
 
 interface Profile {
   id: string;
-  nome: string;
   twitch_username: string;
 }
 
@@ -51,9 +50,9 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, nome, twitch_username')
+        .select('id, twitch_username')
         .not('twitch_username', 'is', null)
-        .order('nome', { ascending: true });
+        .order('twitch_username', { ascending: true });
 
       if (error) throw error;
       setUsers(data || []);
@@ -114,10 +113,7 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
 
   const filteredUsers = users.filter(user => {
     const searchLower = searchTerm.toLowerCase();
-    return (
-      user.nome?.toLowerCase().includes(searchLower) ||
-      user.twitch_username?.toLowerCase().includes(searchLower)
-    );
+    return user.twitch_username?.toLowerCase().includes(searchLower);
   });
 
   return (
@@ -141,7 +137,7 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
               <div className="space-y-2">
                 <Label>Usuário Selecionado</Label>
                 <Input
-                  value={selectedUser ? `${selectedUser.nome} (${selectedUser.twitch_username})` : "Nenhum"}
+                  value={selectedUser ? `@${selectedUser.twitch_username}` : "Nenhum"}
                   disabled
                   className="bg-muted"
                 />
@@ -214,7 +210,6 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
                       <TableHead>Username Twitch</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -225,8 +220,7 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
                         key={user.id}
                         className={selectedUser?.id === user.id ? "bg-muted" : ""}
                       >
-                        <TableCell className="font-medium">{user.nome}</TableCell>
-                        <TableCell>{user.twitch_username}</TableCell>
+                        <TableCell className="font-medium">@{user.twitch_username}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             size="sm"

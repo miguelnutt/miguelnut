@@ -36,7 +36,7 @@ interface SpinDialogProps {
 
 
 const spinInputSchema = z.object({
-  nomeUsuario: z.string().trim().min(1, "Nome do usuário é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)")
+  nomeUsuario: z.string().trim().min(1, "Usuário Twitch é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)")
 });
 
 export function SpinDialog({ open, onOpenChange, wheel, testMode = false, loggedUser, twitchUser }: SpinDialogProps) {
@@ -252,14 +252,14 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
       if (identityData.canonicalProfile && !identityData.canonicalProfile.twitch_user_id) {
         console.log("[Roulette] 🆕 Perfil temporário criado/usado para:", {
           userId,
-          nome: profileData.nome,
+          twitch_username: profileData.twitch_username,
           isTemporary: true
         });
       }
       
       console.log("[Roulette] ✅ Perfil canônico resolvido:", {
         userId,
-        nome: profileData.nome,
+        twitch_username: profileData.twitch_username,
         twitch_user_id: profileData.twitch_user_id,
         hasDuplicates: identityData.hasDuplicates
       });
@@ -271,7 +271,6 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         console.log("🎮 Verificando personagem para Rubini Coins");
         console.log("📋 Dados do perfil:", {
           id: profileData?.id,
-          nome: profileData?.nome,
           twitch_username: profileData?.twitch_username,
           nome_personagem: profileData?.nome_personagem
         });
@@ -284,7 +283,6 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
           setNomePersonagem("NÃO CADASTRADO");
           console.log("⚠️ Personagem NÃO CADASTRADO");
           console.log("   - User ID:", userId);
-          console.log("   - Nome:", profileData?.nome);
           console.log("   - Twitch Username:", profileData?.twitch_username);
         }
       }
@@ -294,7 +292,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
       console.log("💾 Salvando spin:", {
         tipo: tipoParaSalvar,
         valor: resultado.valor,
-        nome: nomeParaUsar,
+        nome_usuario: nomeParaUsar,
         userId
       });
       
@@ -580,20 +578,12 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
       if (sorteada.tipo === "Tickets" && !isModoTeste) {
         setCarregandoTickets(true);
         try {
-          // Buscar perfil por twitch_username ou nome
-          const { data: profileByTwitch } = await supabase
+          // Buscar perfil por twitch_username
+          const { data: profileData } = await supabase
             .from('profiles')
             .select('id')
             .ilike('twitch_username', nomeParaExibir)
             .maybeSingle();
-          
-          const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
-            .from('profiles')
-            .select('id')
-            .ilike('nome', nomeParaExibir)
-            .maybeSingle();
-          
-          const profileData = profileByTwitch || profileByName;
           
           if (profileData?.id) {
             const { data: ticketsData } = await supabase
@@ -619,23 +609,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         try {
           console.log("🎮 Buscando personagem para:", nomeParaExibir);
           
-          // Buscar perfil ativo por twitch_username primeiro
-          const { data: profileByTwitch } = await supabase
+          // Buscar perfil ativo por twitch_username
+          const { data: profileData } = await supabase
             .from('profiles')
-            .select('id, nome, twitch_username, nome_personagem')
+            .select('id, twitch_username, nome_personagem')
             .ilike('twitch_username', nomeParaExibir)
             .eq('is_active', true)
             .maybeSingle();
-          
-          // Se não encontrou por twitch_username, buscar por nome
-          const { data: profileByName } = profileByTwitch ? { data: null } : await supabase
-            .from('profiles')
-            .select('id, nome, twitch_username, nome_personagem')
-            .ilike('nome', nomeParaExibir)
-            .eq('is_active', true)
-            .maybeSingle();
-          
-          const profileData = profileByTwitch || profileByName;
           console.log("📋 Perfil encontrado:", profileData);
           
           if (profileData?.nome_personagem) {
@@ -680,7 +660,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
               {isModoTeste ? "🎮 Teste: " : "Girar: "}{wheel?.nome}
             </DialogTitle>
             <p id="spin-dialog-description" className="sr-only">
-              Insira o nome do usuário e gire a roleta para sortear uma recompensa
+              Insira o usuário Twitch e gire a roleta para sortear uma recompensa
             </p>
           </DialogHeader>
 
@@ -712,12 +692,12 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
 
             {!isModoTeste && (
               <div>
-                <Label htmlFor="usuario">Nome do Usuário</Label>
+                <Label htmlFor="usuario">Usuário Twitch</Label>
                 <Input
                   id="usuario"
                   value={nomeUsuario}
                   onChange={(e) => setNomeUsuario(e.target.value)}
-                  placeholder="Digite o nome do usuário"
+                  placeholder="Digite o usuário Twitch"
                   disabled={spinning}
                 />
               </div>

@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase-helper";
 import { Trophy, Coins } from "lucide-react";
 
 interface RankingData {
-  nome_usuario: string;
+  twitch_username: string;
   total: number;
 }
 
@@ -130,7 +130,7 @@ export function WheelRanking() {
       });
 
       const pontosRanking = Array.from(pontosMap.entries())
-        .map(([nome_usuario, total]) => ({ nome_usuario, total }))
+        .map(([twitch_username, total]) => ({ twitch_username, total }))
         .sort((a, b) => b.total - a.total)
         .slice(0, 10); // Top 10
 
@@ -184,7 +184,7 @@ export function WheelRanking() {
       });
 
       const rubiniRanking = Array.from(rubiniMap.entries())
-        .map(([nome_usuario, total]) => ({ nome_usuario, total }))
+        .map(([twitch_username, total]) => ({ twitch_username, total }))
         .sort((a, b) => b.total - a.total)
         .slice(0, 10); // Top 10
 
@@ -244,7 +244,7 @@ export function WheelRanking() {
       });
 
       const ticketsRankingData = Array.from(ticketsMap.entries())
-        .map(([nome_usuario, total]) => ({ nome_usuario, total }))
+        .map(([twitch_username, total]) => ({ twitch_username, total }))
         .sort((a, b) => b.total - a.total)
         .slice(0, 10); // Top 10
 
@@ -286,14 +286,14 @@ export function WheelRanking() {
         </TableHeader>
         <TableBody>
           {data.map((item, index) => (
-            <TableRow key={item.nome_usuario}>
+            <TableRow key={item.twitch_username}>
               <TableCell className="font-medium">
                 {index + 1 === 1 && "🥇"}
                 {index + 1 === 2 && "🥈"}
                 {index + 1 === 3 && "🥉"}
                 {index + 1 > 3 && index + 1}
               </TableCell>
-              <TableCell>{item.nome_usuario}</TableCell>
+              <TableCell>@{item.twitch_username}</TableCell>
               <TableCell className="text-right font-semibold">
                 {item.total.toLocaleString()}
               </TableCell>

@@ -24,9 +24,8 @@ import { PromotionalBar } from "@/components/PromotionalBar";
 
 interface TicketRanking {
   user_id: string;
-  nome: string;
+  twitch_username: string;
   tickets_atual: number;
-  is_temporary: boolean;
 }
 
 interface Raffle {
@@ -133,9 +132,9 @@ export default function Tickets() {
         try {
           const { data: batchProfiles, error: batchError } = await supabase
             .from("profiles")
-            .select("id, nome, nome_personagem, twitch_username, is_temporary")
+            .select("id, nome, nome_personagem, twitch_username")
             .in("id", batch)
-            .eq("is_active", true); // Incluir apenas perfis ativos (incluindo temporários)
+            .eq("is_active", true);
 
           if (batchError) {
             console.error(`Erro ao buscar lote ${i / batchSize + 1}:`, batchError);
@@ -162,19 +161,10 @@ export default function Tickets() {
           let displayName = "Usuário desconhecido";
           
           if (profile) {
-            // Verificar se os campos são strings válidas
-            const nome = profile.nome;
-            const nomePersonagem = profile.nome_personagem;
+            // Usar apenas twitch_username
             const twitchUsername = profile.twitch_username;
             
-            // Verificação de tipos realizada
-            
-            // Priorizar nome, depois nome_personagem, depois twitch_username
-            if (nome && typeof nome === 'string' && nome.trim() !== '') {
-              displayName = String(nome).trim();
-            } else if (nomePersonagem && typeof nomePersonagem === 'string' && nomePersonagem.trim() !== '') {
-              displayName = String(nomePersonagem).trim();
-            } else if (twitchUsername && typeof twitchUsername === 'string' && twitchUsername.trim() !== '') {
+            if (twitchUsername && typeof twitchUsername === 'string' && twitchUsername.trim() !== '') {
               displayName = String(twitchUsername).trim();
             }
           } else {
@@ -193,9 +183,8 @@ export default function Tickets() {
 
           const rankingItem = {
             user_id: safeUserId,
-            nome: safeDisplayName,
-            tickets_atual: safeTicketsAtual,
-            is_temporary: profile?.is_temporary || false
+            twitch_username: safeDisplayName,
+            tickets_atual: safeTicketsAtual
           };
 
           // Campos do ranking validados
@@ -509,12 +498,7 @@ export default function Tickets() {
                             </span>
                             <div>
                               <div className="font-medium text-base flex items-center gap-2">
-                                {String(item.nome || "Usuário desconhecido")}
-                                {item.is_temporary && (
-                                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full border border-orange-200">
-                                    Temporário
-                                  </span>
-                                )}
+                                @{String(item.twitch_username || "Usuário desconhecido")}
                               </div>
                               <div className="text-sm text-muted-foreground">{item.tickets_atual} tickets</div>
                             </div>
@@ -605,7 +589,7 @@ export default function Tickets() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => removeUser(item.user_id, String(item.nome || "Usuário desconhecido"))}
+                              onClick={() => removeUser(item.user_id, String(item.twitch_username || "Usuário desconhecido"))}
                               className="flex-1"
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
@@ -639,12 +623,7 @@ export default function Tickets() {
                               </TableCell>
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
-                                  {String(item.nome || "Usuário desconhecido")}
-                                  {item.is_temporary && (
-                                    <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full border border-orange-200">
-                                      Temporário
-                                    </span>
-                                  )}
+                                  @{String(item.twitch_username || "Usuário desconhecido")}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">{item.tickets_atual}</TableCell>
@@ -736,7 +715,7 @@ export default function Tickets() {
                                       <Button
                                         size="sm"
                                         variant="destructive"
-                                        onClick={() => removeUser(item.user_id, String(item.nome || "Usuário desconhecido"))}
+                                        onClick={() => removeUser(item.user_id, String(item.twitch_username || "Usuário desconhecido"))}
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Remover Usuário

@@ -22,7 +22,7 @@ interface AddUserDialogProps {
 }
 
 const addUserSchema = z.object({
-  nome: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)"),
+  nome: z.string().trim().min(1, "Usuário Twitch é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)"),
   ticketsIniciais: z.number().int("Tickets deve ser um número inteiro").min(0, "Tickets não pode ser negativo").max(100000, "Valor muito alto"),
   motivo: z.string().trim().max(500, "Motivo muito longo (máximo 500 caracteres)").optional()
 });
@@ -140,12 +140,12 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome do Usuário *</Label>
+            <Label htmlFor="nome">Usuário Twitch *</Label>
             <Input
               id="nome"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex: João Silva"
+              placeholder="Ex: joaosilva123"
               disabled={loading}
               required
             />

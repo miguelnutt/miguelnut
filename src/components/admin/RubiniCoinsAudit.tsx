@@ -24,7 +24,6 @@ interface AuditEvent {
   retries: number;
   referencia_id: string | null;
   profiles?: {
-    nome: string;
     twitch_username: string;
   };
 }
@@ -109,7 +108,6 @@ export function RubiniCoinsAudit() {
         .select(`
           *,
           profiles:user_id (
-            nome,
             twitch_username
           )
         `)
@@ -141,14 +139,13 @@ export function RubiniCoinsAudit() {
 
       let filteredData = data || [];
       
-      // Filtro de busca por nome/username
+      // Filtro de busca por username
       if (searchTerm) {
         filteredData = filteredData.filter(event => {
           const profile = event.profiles as any;
-          const nome = profile?.nome?.toLowerCase() || '';
           const twitch = profile?.twitch_username?.toLowerCase() || '';
           const search = searchTerm.toLowerCase();
-          return nome.includes(search) || twitch.includes(search);
+          return twitch.includes(search);
         });
       }
 
@@ -190,7 +187,7 @@ export function RubiniCoinsAudit() {
       ['Data/Hora', 'Usuário', 'Origem', 'Valor', 'Status', 'Motivo', 'Erro', 'Tentativas'].join(','),
       ...events.map(event => {
         const profile = event.profiles as any;
-        const username = profile?.twitch_username || profile?.nome || 'Desconhecido';
+        const username = profile?.twitch_username || 'Desconhecido';
         const dataHora = format(new Date(event.created_at), 'dd/MM/yyyy HH:mm:ss');
         
         return [
@@ -256,7 +253,7 @@ export function RubiniCoinsAudit() {
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="search"
-                placeholder="Nome ou username..."
+                placeholder="Username..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
@@ -351,7 +348,7 @@ export function RubiniCoinsAudit() {
               ) : (
                 events.map((event) => {
                   const profile = event.profiles as any;
-                  const username = profile?.twitch_username || profile?.nome || 'Desconhecido';
+                  const username = profile?.twitch_username || 'Desconhecido';
                   
                   return (
                     <TableRow key={event.id}>

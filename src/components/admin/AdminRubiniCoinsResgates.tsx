@@ -164,7 +164,7 @@ export function AdminRubiniCoinsResgates() {
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
                           <span className="text-muted-foreground">Usuário:</span>{' '}
-                          {resgate.profiles?.nome || resgate.profiles?.twitch_username || 'Desconhecido'}
+                          @{resgate.profiles?.twitch_username || 'Desconhecido'}
                         </div>
                         <div>
                           <span className="text-muted-foreground">Quantidade:</span>{' '}

@@ -21,7 +21,7 @@ export function AdminManageRubiniCoins() {
 
   const buscarUsuario = async () => {
     if (!buscaUsuario.trim()) {
-      toast.error('Digite um nome de usuário para buscar');
+      toast.error('Digite um usuário Twitch para buscar');
       return;
     }
 
@@ -47,7 +47,6 @@ export function AdminManageRubiniCoins() {
 
       setUsuarioSelecionado({
         id: profile.id,
-        nome: profile.display_name_canonical || profile.nome,
         twitch_username: profile.twitch_username,
         twitch_user_id: profile.twitch_user_id,
         aliases: data.aliases,
@@ -57,7 +56,7 @@ export function AdminManageRubiniCoins() {
 
       setSaldoAtual(consolidatedBalance);
 
-      let successMessage = `Usuário encontrado: ${profile.display_name_canonical || profile.nome}`;
+      let successMessage = `Usuário encontrado: @${profile.twitch_username}`;
       if (data.hasDuplicates) {
         successMessage += ` (⚠️ ${data.duplicateProfiles.length} duplicatas - saldo consolidado)`;
       }
@@ -127,8 +126,8 @@ export function AdminManageRubiniCoins() {
       setDialogConfirmacao(false);
 
       const mensagem = tipoOperacao === 'adicionar' 
-        ? `✅ +${quantidade} Rubini Coins adicionados ao usuário ${usuarioSelecionado.nome || usuarioSelecionado.twitch_username}`
-        : `✅ -${quantidade} Rubini Coins removidos do usuário ${usuarioSelecionado.nome || usuarioSelecionado.twitch_username}`;
+        ? `✅ +${quantidade} Rubini Coins adicionados ao usuário @${usuarioSelecionado.twitch_username}`
+        : `✅ -${quantidade} Rubini Coins removidos do usuário @${usuarioSelecionado.twitch_username}`;
       
       toast.success(mensagem);
     } catch (error: any) {
@@ -158,7 +157,7 @@ export function AdminManageRubiniCoins() {
             <div className="flex gap-2">
               <Input
                 id="busca-usuario"
-                placeholder="Digite o nome ou usuário Twitch..."
+                placeholder="Digite o usuário Twitch..."
                 value={buscaUsuario}
                 onChange={(e) => setBuscaUsuario(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && buscarUsuario()}
@@ -184,11 +183,8 @@ export function AdminManageRubiniCoins() {
                 <User className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-semibold">
-                    {usuarioSelecionado.nome || usuarioSelecionado.twitch_username}
+                    @{usuarioSelecionado.twitch_username}
                   </p>
-                  {usuarioSelecionado.twitch_username && usuarioSelecionado.nome && (
-                    <p className="text-sm text-muted-foreground">@{usuarioSelecionado.twitch_username}</p>
-                  )}
                 </div>
               </div>
 
@@ -270,7 +266,7 @@ export function AdminManageRubiniCoins() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Usuário:</span>
                 <span className="font-semibold">
-                  {usuarioSelecionado?.nome || usuarioSelecionado?.twitch_username}
+                  @{usuarioSelecionado?.twitch_username}
                 </span>
               </div>
               <div className="flex justify-between">

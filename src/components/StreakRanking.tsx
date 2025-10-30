@@ -7,8 +7,7 @@ import { toast } from "sonner";
 interface StreakRanking {
   posicao: number;
   user_id: string;
-  nome: string;
-  twitch_username: string | null;
+  twitch_username: string;
   dias_consecutivos: number;
   ultimo_resgate: string;
 }
@@ -74,10 +73,7 @@ export function StreakRanking() {
                     {rank.posicao !== 1 && `${rank.posicao}º`}
                   </div>
                   <div>
-                    <p className="font-medium">{rank.nome}</p>
-                    {rank.twitch_username && (
-                      <p className="text-xs text-muted-foreground">@{rank.twitch_username}</p>
-                    )}
+                    <p className="font-medium">@{rank.twitch_username}</p>
                   </div>
                 </div>
                 <div className="text-right">

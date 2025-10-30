@@ -27,7 +27,6 @@ interface UserLogin {
   dia_atual: number;
   ultimo_login: string;
   profiles: {
-    nome: string;
     twitch_username: string;
   };
 }
@@ -60,7 +59,6 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
           dia_atual,
           ultimo_login,
           profiles (
-            nome,
             twitch_username
           )
         `)
@@ -110,7 +108,7 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
   const filteredUsers = users.filter(user => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      user.profiles?.nome?.toLowerCase().includes(searchLower) ||
+
       user.profiles?.twitch_username?.toLowerCase().includes(searchLower)
     );
   });
@@ -135,7 +133,7 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nome ou username..."
+                  placeholder="Buscar por username..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -163,7 +161,7 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
                     {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
-                          {user.profiles?.nome || "Sem nome"}
+                          @{user.profiles?.twitch_username || "Sem username"}
                         </TableCell>
                         <TableCell>
                           {user.profiles?.twitch_username || "N/A"}
@@ -176,7 +174,7 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleReset(user.user_id, user.profiles?.nome || "usuário")}
+                            onClick={() => handleReset(user.user_id, user.profiles?.twitch_username || "usuário")}
                             disabled={resetting === user.user_id}
                           >
                             {resetting === user.user_id ? (

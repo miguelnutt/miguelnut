@@ -23,7 +23,6 @@ import {
 interface RewardClaim {
   id: string;
   user_id: string;
-  nome: string;
   twitch_username: string | null;
   dia: number;
   pontos: number;
@@ -91,21 +90,20 @@ export function DailyRewardTodaySection() {
   const exportToCSV = () => {
     const filteredRewards = searchUser
       ? rewards.filter(r => 
-          r.nome.toLowerCase().includes(searchUser.toLowerCase()) ||
+    
           (r.twitch_username && r.twitch_username.toLowerCase().includes(searchUser.toLowerCase()))
         )
       : rewards;
 
     const csvContent = [
-      ['Posição', 'Nome', 'Twitch', 'Dia', 'Pontos', 'Horário'],
+      ['Posição', 'Twitch', 'Dia', 'Pontos', 'Horário'],
       ...filteredRewards.map(r => [
-        r.posicao,
-        r.nome,
-        r.twitch_username || '-',
-        r.dia,
-        r.pontos,
-        r.created_at
-      ])
+          r.posicao,
+          r.twitch_username || 'N/A',
+          r.dia,
+          r.pontos,
+          new Date(r.created_at).toLocaleString('pt-BR')
+        ])
     ].map(row => row.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -118,7 +116,7 @@ export function DailyRewardTodaySection() {
 
   const filteredRewards = searchUser
     ? rewards.filter(r => 
-        r.nome.toLowerCase().includes(searchUser.toLowerCase()) ||
+
         (r.twitch_username && r.twitch_username.toLowerCase().includes(searchUser.toLowerCase()))
       )
     : rewards;
@@ -205,7 +203,7 @@ export function DailyRewardTodaySection() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-16">Posição</TableHead>
-                      <TableHead>Nome</TableHead>
+      
                       <TableHead>Twitch</TableHead>
                       <TableHead className="text-center">Dia</TableHead>
                       <TableHead className="text-center">Pontos</TableHead>
@@ -216,7 +214,7 @@ export function DailyRewardTodaySection() {
                     {filteredRewards.map((reward) => (
                       <TableRow key={reward.id}>
                         <TableCell className="font-bold">#{reward.posicao}</TableCell>
-                        <TableCell>{reward.nome}</TableCell>
+  
                         <TableCell className="text-muted-foreground">
                           {reward.twitch_username || '-'}
                         </TableCell>
