@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { User } from "@supabase/supabase-js";
 import { PromotionalBar } from "@/components/PromotionalBar";
 import DebugData from "@/components/DebugData";
-import { TicketRankingDebug } from "@/components/TicketRankingDebug";
+import TicketRankingDebug from "@/components/TicketRankingDebug";
 
 interface Stats {
   totalSpins: number;
