@@ -30,7 +30,9 @@ serve(async (req) => {
   try {
     const { username, points, tipo_operacao = 'manual', referencia_id, user_id }: SyncRequest = await req.json();
     
-    console.log(`🔄 Sincronizando ${points} pontos para: ${username}`);
+    const operacao = points >= 0 ? 'creditando' : 'debitando';
+    const valorAbsoluto = Math.abs(points);
+    console.log(`🔄 Sincronizando (${operacao} ${valorAbsoluto} pontos) para: ${username}`);
 
     if (!STREAMELEMENTS_JWT || !CHANNEL_ID) {
       console.error('❌ StreamElements credentials not configured');
@@ -80,6 +82,13 @@ serve(async (req) => {
           const saldoAntesData = await saldoAntesResponse.json();
           saldoAntes = saldoAntesData.points || 0;
           console.log(`💰 Saldo ANTES (tentativa ${tentativaAtual}): ${saldoAntes} pontos`);
+          
+          // Verificar se há saldo suficiente para débito
+          if (points < 0 && saldoAntes < Math.abs(points)) {
+            ultimoErro = `Saldo insuficiente: usuário tem ${saldoAntes} pontos, tentando debitar ${Math.abs(points)}`;
+            console.error(`❌ ${ultimoErro}`);
+            break; // Não tentar novamente se não há saldo suficiente
+          }
         }
 
         // 2️⃣ ADICIONAR PONTOS
@@ -106,7 +115,8 @@ serve(async (req) => {
         }
 
         const addData = await addResponse.json();
-        console.log(`✅ Pontos adicionados (tentativa ${tentativaAtual}):`, addData);
+        const operacaoLog = points >= 0 ? 'creditados' : 'debitados';
+        console.log(`✅ Pontos ${operacaoLog} (tentativa ${tentativaAtual}):`, addData);
 
         // 3️⃣ AGUARDAR E VERIFICAR SALDO DEPOIS
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -132,10 +142,13 @@ serve(async (req) => {
             const diferencaReal = saldoDepois - saldoAntes;
             saldoVerificado = diferencaReal === diferencaEsperada;
             
-            console.log(`🔍 Verificação (tentativa ${tentativaAtual}): Esperado +${diferencaEsperada}, Real +${diferencaReal}, Verificado: ${saldoVerificado}`);
+            // Melhorar log para mostrar corretamente valores negativos
+            const sinalEsperado = diferencaEsperada >= 0 ? '+' : '';
+            const sinalReal = diferencaReal >= 0 ? '+' : '';
+            console.log(`🔍 Verificação (tentativa ${tentativaAtual}): Esperado ${sinalEsperado}${diferencaEsperada}, Real ${sinalReal}${diferencaReal}, Verificado: ${saldoVerificado}`);
             
             if (!saldoVerificado && tentativaAtual < MAX_TENTATIVAS) {
-              ultimoErro = `Verificação falhou: esperado +${diferencaEsperada}, obtido +${diferencaReal}`;
+              ultimoErro = `Verificação falhou: esperado ${sinalEsperado}${diferencaEsperada}, obtido ${sinalReal}${diferencaReal}`;
               console.warn(`⚠️ ${ultimoErro}. Tentando novamente...`);
               await new Promise(resolve => setTimeout(resolve, 2000));
               continue;

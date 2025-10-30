@@ -61,25 +61,31 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
   const buscarTicketsAtuais = async (nomeUsuario: string) => {
     setCarregandoTickets(true);
     try {
-      // Buscar perfil por twitch_username
+      // Usar resolve-user-identity para garantir consistência com o processamento de prêmios
       const searchTerm = prepareUsernameForSearch(nomeUsuario);
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id')
-        .ilike('twitch_username', searchTerm)
+      const { data: identityData, error: identityError } = await supabase.functions.invoke('resolve-user-identity', {
+        body: {
+          searchTerm: searchTerm,
+          twitch_user_id: twitchUser?.id || null
+        }
+      });
+
+      if (identityError || !identityData?.canonicalProfile) {
+        console.log("Usuário não encontrado ou erro ao resolver identidade:", identityError);
+        setTicketsAtuais(0); // Novo usuário
+        return;
+      }
+
+      const userId = identityData.canonicalProfile.id;
+      
+      // Buscar tickets do usuário resolvido
+      const { data: ticketsData } = await supabase
+        .from('tickets')
+        .select('tickets_atual')
+        .eq('user_id', userId)
         .maybeSingle();
       
-      if (profileData?.id) {
-        const { data: ticketsData } = await supabase
-          .from('tickets')
-          .select('tickets_atual')
-          .eq('user_id', profileData.id)
-          .maybeSingle();
-        
-        setTicketsAtuais(ticketsData?.tickets_atual || 0);
-      } else {
-        setTicketsAtuais(0); // Novo usuário
-      }
+      setTicketsAtuais(ticketsData?.tickets_atual || 0);
     } catch (error) {
       console.error("Erro ao buscar tickets:", error);
       setTicketsAtuais(null);

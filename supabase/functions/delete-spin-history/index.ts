@@ -156,6 +156,8 @@ Deno.serve(async (req) => {
               username: profile.twitch_username,
               user_id: spinRecord.user_id,
               points: -pontos, // Valor negativo para debitar
+              tipo_operacao: 'estorno_spin',
+              referencia_id: spinId,
               reason: `Histórico deletado: -${pontos} pontos`
             }
           });

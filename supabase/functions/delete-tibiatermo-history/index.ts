@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
               body: {
                 username: username,
                 points: pontosReverso,
-                tipo_operacao: 'store_points_reversal',
+                tipo_operacao: 'estorno_tibiatermo',
                 referencia_id: idempotencyKey,
                 user_id: historyRecord.user_id
               }
