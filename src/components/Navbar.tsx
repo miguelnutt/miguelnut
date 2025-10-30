@@ -193,16 +193,6 @@ export const Navbar = () => {
                   {isAdmin && (
                     <>
                       <AdminRubiniCoinsResgatesButton />
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleOpenAdminPanel}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                        title="Painel Administrativo"
-                      >
-                        <Shield className="mr-2 h-4 w-4" />
-                        Painel Admin
-                      </Button>
                     </>
                   )}
                   <Button
@@ -314,17 +304,6 @@ export const Navbar = () => {
                         <div className="w-full">
                           <AdminRubiniCoinsResgatesButton />
                         </div>
-                        <Button
-                          variant="default"
-                          onClick={() => {
-                            handleOpenAdminPanel();
-                            setMobileMenuOpen(false);
-                          }}
-                          className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                        >
-                          <Shield className="mr-2 h-4 w-4" />
-                          Console Admin
-                        </Button>
                       </>
                     )}
                     <Button
@@ -362,17 +341,7 @@ export const Navbar = () => {
                         <div className="w-full">
                           <AdminRubiniCoinsResgatesButton />
                         </div>
-                        <Button
-                          variant="default"
-                          onClick={() => {
-                            handleOpenAdminPanel();
-                            setMobileMenuOpen(false);
-                          }}
-                          className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                        >
-                          <Shield className="mr-2 h-4 w-4" />
-                          Console Admin
-                        </Button>
+
                       </>
                     )}
                     <Button
