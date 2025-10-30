@@ -48,7 +48,7 @@ CREATE TABLE public.wheels (
 CREATE TABLE public.spins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   wheel_id UUID REFERENCES public.wheels(id) ON DELETE CASCADE NOT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   nome_usuario TEXT NOT NULL,
   tipo_recompensa TEXT NOT NULL,
   valor TEXT NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE public.spins (
 
 -- Create tickets table
 CREATE TABLE public.tickets (
-  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
   tickets_atual INTEGER NOT NULL DEFAULT 0,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -65,7 +65,7 @@ CREATE TABLE public.tickets (
 -- Create ticket_ledger table
 CREATE TABLE public.ticket_ledger (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   variacao INTEGER NOT NULL,
   motivo TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -74,7 +74,7 @@ CREATE TABLE public.ticket_ledger (
 -- Create raffles table
 CREATE TABLE public.raffles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  vencedor_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  vencedor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   nome_vencedor TEXT NOT NULL,
   participantes JSONB NOT NULL DEFAULT '[]'::jsonb,
   observacoes TEXT,
