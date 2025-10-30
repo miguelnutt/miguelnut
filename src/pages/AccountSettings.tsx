@@ -335,14 +335,34 @@ export default function AccountSettings() {
       return;
     }
     
-    if (!nomePersonagem.trim()) {
+    const nomeParaValidar = nomePersonagem.trim();
+    
+    if (!nomeParaValidar) {
       toast.error("Por favor, digite o nome do personagem");
+      return;
+    }
+    
+    // Validações adicionais
+    if (nomeParaValidar.length < 2) {
+      toast.error("O nome do personagem deve ter pelo menos 2 caracteres");
+      return;
+    }
+    
+    if (nomeParaValidar.length > 50) {
+      toast.error("O nome do personagem deve ter no máximo 50 caracteres");
+      return;
+    }
+    
+    // Permitir apenas letras, números, espaços e alguns caracteres especiais comuns
+    const nomeValido = /^[a-zA-ZÀ-ÿ0-9\s\-_\.]+$/.test(nomeParaValidar);
+    if (!nomeValido) {
+      toast.error("O nome do personagem contém caracteres inválidos. Use apenas letras, números, espaços, hífen, underscore ou ponto.");
       return;
     }
 
     setSavingPersonagem(true);
     try {
-      console.log("Salvando personagem via edge function:", nomePersonagem.trim());
+      console.log("Salvando personagem via edge function:", nomeParaValidar);
       
       const twitchToken = localStorage.getItem('twitch_token');
       if (!twitchToken) {
@@ -360,7 +380,7 @@ export default function AccountSettings() {
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            nome_personagem: nomePersonagem.trim()
+            nome_personagem: nomeParaValidar
           }),
         }
       );
@@ -373,16 +393,33 @@ export default function AccountSettings() {
       }
       
       // Atualizar estado SEM recarregar
-      const nomeParaSalvar = nomePersonagem.trim();
-      setPersonagemSalvo(nomeParaSalvar);
-      setNomePersonagem(nomeParaSalvar);
+      setPersonagemSalvo(nomeParaValidar);
+      setNomePersonagem(nomeParaValidar);
       setEditandoPersonagem(false);
       
-      console.log("Personagem salvo com sucesso:", nomeParaSalvar);
+      console.log("Personagem salvo com sucesso:", nomeParaValidar);
       toast.success("Nome do personagem salvo!");
     } catch (error: any) {
       console.error("Erro ao salvar personagem:", error);
-      toast.error("Erro ao salvar: " + error.message);
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = "Erro ao salvar nome do personagem";
+      
+      if (error.message) {
+        if (error.message.includes("JWT")) {
+          errorMessage = "Erro de autenticação. Tente fazer login novamente.";
+        } else if (error.message.includes("permission") || error.message.includes("RLS")) {
+          errorMessage = "Erro de permissão. Tente novamente em alguns instantes.";
+        } else if (error.message.includes("network") || error.message.includes("fetch")) {
+          errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
+        } else if (error.message.includes("validation")) {
+          errorMessage = "Nome do personagem inválido. Use apenas letras, números e espaços.";
+        } else {
+          errorMessage = `Erro: ${error.message}`;
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSavingPersonagem(false);
     }

@@ -65,45 +65,78 @@ Deno.serve(async (req) => {
       nome_personagem: nome_personagem.trim()
     });
 
-    // Buscar perfil existente (apenas perfis ativos)
-    const { data: existingProfile } = await supabase
+    // Buscar perfil existente (incluindo inativos para melhor debug)
+    const { data: existingProfile, error: selectError } = await supabase
       .from('profiles')
-      .select('id, nome_personagem')
+      .select('id, nome_personagem, is_active')
       .eq('twitch_username', twitchUser.login as string)
-      .eq('is_active', true)
       .maybeSingle();
 
+    if (selectError) {
+      console.error('Erro ao buscar perfil existente:', selectError);
+      throw new Error(`Erro ao buscar perfil: ${selectError.message}`);
+    }
+
+    console.log('Perfil encontrado:', existingProfile);
+
     if (existingProfile) {
-      // Atualizar perfil existente
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ nome_personagem: nome_personagem.trim() })
-        .eq('id', existingProfile.id);
+      // Verificar se o perfil está ativo
+      if (!existingProfile.is_active) {
+        console.log('Reativando perfil inativo:', existingProfile.id);
+        // Reativar perfil e atualizar nome do personagem
+        const { error: reactivateError } = await supabase
+          .from('profiles')
+          .update({ 
+            nome_personagem: nome_personagem.trim(),
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingProfile.id);
 
-      if (updateError) {
-        console.error('Erro ao atualizar perfil:', updateError);
-        throw updateError;
+        if (reactivateError) {
+          console.error('Erro ao reativar perfil:', reactivateError);
+          throw new Error(`Erro ao reativar perfil: ${reactivateError.message}`);
+        }
+
+        console.log('Perfil reativado e atualizado:', existingProfile.id);
+      } else {
+        // Atualizar perfil existente ativo
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            nome_personagem: nome_personagem.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingProfile.id);
+
+        if (updateError) {
+          console.error('Erro ao atualizar perfil:', updateError);
+          throw new Error(`Erro ao atualizar perfil: ${updateError.message}`);
+        }
+
+        console.log('Perfil atualizado:', existingProfile.id);
       }
-
-      console.log('Perfil atualizado:', existingProfile.id);
     } else {
       // Criar novo perfil com UUID gerado
       const newId = crypto.randomUUID();
+      console.log('Criando novo perfil com ID:', newId);
+      
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
           id: newId,
           nome: (twitchUser.display_name as string) || (twitchUser.login as string),
           twitch_username: twitchUser.login as string,
-          nome_personagem: nome_personagem.trim()
+          nome_personagem: nome_personagem.trim(),
+          is_active: true
         });
 
       if (insertError) {
         console.error('Erro ao criar perfil:', insertError);
-        throw insertError;
+        throw new Error(`Erro ao criar perfil: ${insertError.message}`);
       }
 
-      console.log('Novo perfil criado para:', twitchUser.login);
+      console.log('Novo perfil criado para:', twitchUser.login, 'com ID:', newId);
     }
 
     return new Response(
