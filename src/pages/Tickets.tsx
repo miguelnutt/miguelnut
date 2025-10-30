@@ -165,16 +165,19 @@ export default function Tickets() {
           
           if (profile) {
             // Priorizar nome, depois nome_personagem, depois twitch_username
-            if (profile.nome && profile.nome.trim() !== '') {
-              displayName = profile.nome;
-            } else if (profile.nome_personagem && profile.nome_personagem.trim() !== '') {
-              displayName = profile.nome_personagem;
-            } else if (profile.twitch_username && profile.twitch_username.trim() !== '') {
-              displayName = profile.twitch_username;
+            if (profile.nome && typeof profile.nome === 'string' && profile.nome.trim() !== '') {
+              displayName = String(profile.nome).trim();
+            } else if (profile.nome_personagem && typeof profile.nome_personagem === 'string' && profile.nome_personagem.trim() !== '') {
+              displayName = String(profile.nome_personagem).trim();
+            } else if (profile.twitch_username && typeof profile.twitch_username === 'string' && profile.twitch_username.trim() !== '') {
+              displayName = String(profile.twitch_username).trim();
             }
           } else {
             console.log("Perfil não encontrado para user_id:", t.user_id);
           }
+
+          // Garantir que displayName seja sempre uma string
+          displayName = String(displayName || "Usuário desconhecido");
 
           return {
             user_id: t.user_id,
@@ -184,6 +187,7 @@ export default function Tickets() {
         })
         .filter((r: TicketRanking) => r.tickets_atual > 0);
 
+      console.log("Ranking final:", rankingList.slice(0, 3)); // Log dos primeiros 3 para debug
       setRanking(rankingList);
 
       // Últimos sorteios
@@ -477,7 +481,7 @@ export default function Tickets() {
                               {index > 2 && `${index + 1}º`}
                             </span>
                             <div>
-                              <div className="font-medium text-base">{item.nome}</div>
+                              <div className="font-medium text-base">{String(item.nome || "Usuário desconhecido")}</div>
                               <div className="text-sm text-muted-foreground">{item.tickets_atual} tickets</div>
                             </div>
                           </div>
@@ -599,7 +603,7 @@ export default function Tickets() {
                                 {index === 2 && "🥉"}
                                 {index > 2 && `${index + 1}º`}
                               </TableCell>
-                              <TableCell className="font-medium">{item.nome}</TableCell>
+                              <TableCell className="font-medium">{String(item.nome || "Usuário desconhecido")}</TableCell>
                               <TableCell className="text-right">{item.tickets_atual}</TableCell>
                             </TableRow>
                             {isAdmin && isAdminMode && (
