@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Tickets - Brux0D</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .highlight {
+            background-color: #ffeb3b !important;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Tickets - Usuário Brux0D</h1>
+        <p>Diagnóstico específico para identificar problemas com tickets do usuário Brux0D</p>
+        
+        <button onclick="runFullDiagnosis()" id="diagnosisBtn">Executar Diagnóstico Completo</button>
+        <button onclick="clearResults()">Limpar Resultados</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://qkwctrccuqkjygqurqxt.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrd2N0cmNjdXFranlncXVycXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NjIxMjIsImV4cCI6MjA3NjEzODEyMn0.ZV3xFFv5JGqntrvKp0xq3kSMhHbfYA3daRZNy--blUE';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function addResult(title, content, type = 'result') {
+            const resultsDiv = document.getElementById('results');
+            const section = document.createElement('div');
+            section.className = 'section';
+            section.innerHTML = `
+                <h3>${title}</h3>
+                <div class="${type}">${content}</div>
+            `;
+            resultsDiv.appendChild(section);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function runFullDiagnosis() {
+            const btn = document.getElementById('diagnosisBtn');
+            btn.disabled = true;
+            btn.textContent = 'Executando...';
+            
+            clearResults();
+            
+            try {
+                await step1_findProfiles();
+                await step2_checkTickets();
+                await step3_checkTicketLedger();
+                await step4_checkSpins();
+                await step5_simulateLogin();
+            } catch (error) {
+                addResult('❌ Erro no Diagnóstico', `Erro: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Executar Diagnóstico Completo';
+            }
+        }
+
+        async function step1_findProfiles() {
+            addResult('🔍 Etapa 1: Buscar Perfis do Usuário', 'Procurando todos os perfis relacionados ao usuário Brux0D...');
+            
+            // Buscar por username (case insensitive)
+            const { data: profiles, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .or('twitch_username.ilike.%brux0d%,nome.ilike.%brux0d%,display_name_canonical.ilike.%brux0d%')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                addResult('❌ Erro ao buscar perfis', error.message, 'error');
+                return;
+            }
+
+            if (!profiles || profiles.length === 0) {
+                addResult('⚠️ Nenhum perfil encontrado', 'Não foi encontrado nenhum perfil para Brux0D', 'warning');
+                return;
+            }
+
+            let tableHtml = `
+                <table>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Twitch Username</th>
+                        <th>Twitch User ID</th>
+                        <th>Ativo</th>
+                        <th>Criado em</th>
+                        <th>Merged Into</th>
+                    </tr>
+            `;
+
+            profiles.forEach(profile => {
+                const isActive = profile.is_active ? '✅' : '❌';
+                const rowClass = profile.is_active ? 'highlight' : '';
+                tableHtml += `
+                    <tr class="${rowClass}">
+                        <td>${profile.id}</td>
+                        <td>${profile.nome || '-'}</td>
+                        <td>${profile.twitch_username || '-'}</td>
+                        <td>${profile.twitch_user_id || '-'}</td>
+                        <td>${isActive}</td>
+                        <td>${new Date(profile.created_at).toLocaleString()}</td>
+                        <td>${profile.merged_into || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += '</table>';
+
+            const activeProfiles = profiles.filter(p => p.is_active);
+            const inactiveProfiles = profiles.filter(p => !p.is_active);
+
+            addResult('✅ Perfis Encontrados', 
+                `Total: ${profiles.length} perfis\n` +
+                `Ativos: ${activeProfiles.length}\n` +
+                `Inativos: ${inactiveProfiles.length}\n\n` +
+                tableHtml, 'success');
+
+            // Salvar IDs para próximas etapas
+            window.profileIds = profiles.map(p => p.id);
+            window.activeProfileIds = activeProfiles.map(p => p.id);
+        }
+
+        async function step2_checkTickets() {
+            if (!window.profileIds || window.profileIds.length === 0) {
+                addResult('⚠️ Etapa 2: Verificar Tickets', 'Nenhum perfil encontrado para verificar tickets', 'warning');
+                return;
+            }
+
+            addResult('🎫 Etapa 2: Verificar Tickets', 'Verificando tickets em todos os perfis...');
+
+            const { data: tickets, error } = await supabase
+                .from('tickets')
+                .select('*')
+                .in('user_id', window.profileIds);
+
+            if (error) {
+                addResult('❌ Erro ao buscar tickets', error.message, 'error');
+                return;
+            }
+
+            if (!tickets || tickets.length === 0) {
+                addResult('⚠️ Nenhum ticket encontrado', 'Não foram encontrados tickets em nenhum perfil', 'warning');
+                return;
+            }
+
+            let tableHtml = `
+                <table>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Tickets Atual</th>
+                        <th>Perfil Ativo?</th>
+                        <th>Criado em</th>
+                        <th>Atualizado em</th>
+                    </tr>
+            `;
+
+            let totalTickets = 0;
+            let ticketsInActiveProfile = 0;
+
+            tickets.forEach(ticket => {
+                const isActiveProfile = window.activeProfileIds.includes(ticket.user_id);
+                const rowClass = isActiveProfile ? 'highlight' : '';
+                totalTickets += ticket.tickets_atual;
+                if (isActiveProfile) ticketsInActiveProfile += ticket.tickets_atual;
+
+                tableHtml += `
+                    <tr class="${rowClass}">
+                        <td>${ticket.user_id}</td>
+                        <td>${ticket.tickets_atual}</td>
+                        <td>${isActiveProfile ? '✅' : '❌'}</td>
+                        <td>${new Date(ticket.created_at).toLocaleString()}</td>
+                        <td>${new Date(ticket.updated_at).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += '</table>';
+
+            const resultType = ticketsInActiveProfile > 0 ? 'success' : 'warning';
+            addResult('🎫 Tickets Encontrados', 
+                `Total de tickets: ${totalTickets}\n` +
+                `Tickets em perfil ativo: ${ticketsInActiveProfile}\n` +
+                `Tickets em perfis inativos: ${totalTickets - ticketsInActiveProfile}\n\n` +
+                tableHtml, resultType);
+        }
+
+        async function step3_checkTicketLedger() {
+            if (!window.profileIds || window.profileIds.length === 0) {
+                addResult('⚠️ Etapa 3: Verificar Histórico de Tickets', 'Nenhum perfil encontrado', 'warning');
+                return;
+            }
+
+            addResult('📊 Etapa 3: Verificar Histórico de Tickets', 'Verificando histórico de tickets...');
+
+            const { data: ledger, error } = await supabase
+                .from('ticket_ledger')
+                .select('*')
+                .in('user_id', window.profileIds)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) {
+                addResult('❌ Erro ao buscar histórico', error.message, 'error');
+                return;
+            }
+
+            if (!ledger || ledger.length === 0) {
+                addResult('⚠️ Nenhum histórico encontrado', 'Não foi encontrado histórico de tickets', 'warning');
+                return;
+            }
+
+            let tableHtml = `
+                <table>
+                    <tr>
+                        <th>Data</th>
+                        <th>User ID</th>
+                        <th>Tipo</th>
+                        <th>Quantidade</th>
+                        <th>Saldo Anterior</th>
+                        <th>Saldo Novo</th>
+                        <th>Descrição</th>
+                    </tr>
+            `;
+
+            ledger.forEach(entry => {
+                const isActiveProfile = window.activeProfileIds.includes(entry.user_id);
+                const rowClass = isActiveProfile ? 'highlight' : '';
+
+                tableHtml += `
+                    <tr class="${rowClass}">
+                        <td>${new Date(entry.created_at).toLocaleString()}</td>
+                        <td>${entry.user_id}</td>
+                        <td>${entry.tipo}</td>
+                        <td>${entry.quantidade}</td>
+                        <td>${entry.saldo_anterior}</td>
+                        <td>${entry.saldo_novo}</td>
+                        <td>${entry.descricao || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += '</table>';
+
+            addResult('📊 Histórico de Tickets', 
+                `Últimas ${ledger.length} transações:\n\n` + tableHtml, 'success');
+        }
+
+        async function step4_checkSpins() {
+            if (!window.profileIds || window.profileIds.length === 0) {
+                addResult('⚠️ Etapa 4: Verificar Spins', 'Nenhum perfil encontrado', 'warning');
+                return;
+            }
+
+            addResult('🎰 Etapa 4: Verificar Spins que Geraram Tickets', 'Verificando spins...');
+
+            const { data: spins, error } = await supabase
+                .from('spins')
+                .select('*')
+                .in('user_id', window.profileIds)
+                .contains('premio', { tipo: 'Tickets' })
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (error) {
+                addResult('❌ Erro ao buscar spins', error.message, 'error');
+                return;
+            }
+
+            if (!spins || spins.length === 0) {
+                addResult('⚠️ Nenhum spin com tickets encontrado', 'Não foram encontrados spins que geraram tickets', 'warning');
+                return;
+            }
+
+            let tableHtml = `
+                <table>
+                    <tr>
+                        <th>Data</th>
+                        <th>User ID</th>
+                        <th>Prêmio</th>
+                        <th>Perfil Ativo?</th>
+                    </tr>
+            `;
+
+            spins.forEach(spin => {
+                const isActiveProfile = window.activeProfileIds.includes(spin.user_id);
+                const rowClass = isActiveProfile ? 'highlight' : '';
+
+                tableHtml += `
+                    <tr class="${rowClass}">
+                        <td>${new Date(spin.created_at).toLocaleString()}</td>
+                        <td>${spin.user_id}</td>
+                        <td>${JSON.stringify(spin.premio)}</td>
+                        <td>${isActiveProfile ? '✅' : '❌'}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += '</table>';
+
+            addResult('🎰 Spins com Tickets', 
+                `Últimos ${spins.length} spins que geraram tickets:\n\n` + tableHtml, 'success');
+        }
+
+        async function step5_simulateLogin() {
+            addResult('🔐 Etapa 5: Simular Lógica de Login', 'Simulando a lógica de carregamento de dados...');
+
+            // Simular busca por twitch_user_id (se houver)
+            const activeProfile = window.activeProfileIds && window.activeProfileIds[0];
+            if (!activeProfile) {
+                addResult('⚠️ Simulação de Login', 'Nenhum perfil ativo encontrado para simular', 'warning');
+                return;
+            }
+
+            // Buscar dados do perfil ativo
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', activeProfile)
+                .single();
+
+            if (profileError) {
+                addResult('❌ Erro na simulação', profileError.message, 'error');
+                return;
+            }
+
+            // Buscar tickets do perfil ativo
+            const { data: tickets, error: ticketsError } = await supabase
+                .from('tickets')
+                .select('tickets_atual')
+                .eq('user_id', activeProfile)
+                .maybeSingle();
+
+            if (ticketsError) {
+                addResult('❌ Erro ao buscar tickets na simulação', ticketsError.message, 'error');
+                return;
+            }
+
+            const ticketsCount = tickets?.tickets_atual || 0;
+
+            addResult('🔐 Resultado da Simulação', 
+                `Perfil ativo: ${profile.id}\n` +
+                `Nome: ${profile.nome}\n` +
+                `Twitch Username: ${profile.twitch_username}\n` +
+                `Twitch User ID: ${profile.twitch_user_id}\n` +
+                `Tickets carregados: ${ticketsCount}\n\n` +
+                `✅ Este é o valor que deveria aparecer na interface do usuário.`, 
+                ticketsCount > 0 ? 'success' : 'warning');
+        }
+    </script>
+</body>
+</html>

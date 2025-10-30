@@ -154,29 +154,52 @@ export default function AccountSettings() {
         
         // Priorizar o perfil que tem nome_personagem preenchido
         if (profileByUsername.nome_personagem && !profileByTwitchId.nome_personagem) {
-          console.log('🔄 Mesclando: Copiando nome_personagem do perfil antigo para o novo');
+          console.log('🔄 Mesclando: Consolidando perfis duplicados com tickets e saldos');
           
-          // Atualizar perfil por ID com o nome do perfil por username
-          await supabase
-            .from('profiles')
-            .update({ 
-              nome_personagem: profileByUsername.nome_personagem,
-              twitch_user_id: twitchUser.twitch_user_id,
-              display_name_canonical: twitchUser.display_name
-            })
-            .eq('id', profileByTwitchId.id);
-          
-          // Desativar perfil antigo
-          await supabase
-            .from('profiles')
-            .update({ is_active: false })
-            .eq('id', profileByUsername.id);
-          
-          finalProfile = { 
-            ...profileByTwitchId, 
-            nome_personagem: profileByUsername.nome_personagem 
-          };
-          console.log('✅ Perfis mesclados com sucesso');
+          try {
+            // Usar a função RPC para consolidar perfis corretamente (incluindo tickets)
+            const { error: mergeError } = await supabase.rpc('merge_duplicate_profiles', {
+              p_keep_profile_id: profileByTwitchId.id,
+              p_remove_profile_id: profileByUsername.id
+            });
+
+            if (mergeError) {
+              console.error('❌ Erro na consolidação RPC:', mergeError);
+              // Fallback para método manual se RPC falhar
+              await supabase
+                .from('profiles')
+                .update({ 
+                  nome_personagem: profileByUsername.nome_personagem,
+                  twitch_user_id: twitchUser.twitch_user_id,
+                  display_name_canonical: twitchUser.display_name
+                })
+                .eq('id', profileByTwitchId.id);
+              
+              await supabase
+                .from('profiles')
+                .update({ is_active: false })
+                .eq('id', profileByUsername.id);
+            } else {
+              // Atualizar dados do perfil mantido após consolidação
+              await supabase
+                .from('profiles')
+                .update({ 
+                  twitch_user_id: twitchUser.twitch_user_id,
+                  display_name_canonical: twitchUser.display_name
+                })
+                .eq('id', profileByTwitchId.id);
+            }
+            
+            finalProfile = { 
+              ...profileByTwitchId, 
+              nome_personagem: profileByUsername.nome_personagem 
+            };
+            console.log('✅ Perfis consolidados com sucesso (tickets incluídos)');
+          } catch (consolidationError) {
+            console.error('❌ Erro na consolidação:', consolidationError);
+            // Em caso de erro, usar perfil por ID sem consolidação
+            finalProfile = profileByTwitchId;
+          }
         } else {
           // Usar perfil por ID e atualizar com twitch_user_id se necessário
           finalProfile = profileByTwitchId;
@@ -287,7 +310,73 @@ export default function AccountSettings() {
         .eq('user_id', userId)
         .maybeSingle();
 
-      setTickets(ticketsData?.tickets_atual || 0);
+      const currentTickets = ticketsData?.tickets_atual || 0;
+      setTickets(currentTickets);
+      
+      // VERIFICAÇÃO ADICIONAL: Se não há tickets no perfil ativo, verificar se há tickets em perfis inativos
+      if (currentTickets === 0 && twitchUser?.twitch_username) {
+        console.log('🔍 Verificando tickets em perfis inativos...');
+        
+        try {
+          // Buscar perfis inativos do mesmo usuário que possam ter tickets
+          const { data: inactiveProfiles } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('twitch_username', prepareUsernameForSearch(twitchUser.twitch_username))
+            .eq('is_active', false);
+
+          if (inactiveProfiles && inactiveProfiles.length > 0) {
+            const inactiveIds = inactiveProfiles.map(p => p.id);
+            
+            // Verificar se há tickets nesses perfis inativos
+            const { data: inactiveTickets } = await supabase
+              .from('tickets')
+              .select('user_id, tickets_atual')
+              .in('user_id', inactiveIds)
+              .gt('tickets_atual', 0);
+
+            if (inactiveTickets && inactiveTickets.length > 0) {
+              console.log('⚠️ Encontrados tickets em perfis inativos:', inactiveTickets);
+              
+              // Consolidar automaticamente usando a função RPC
+              for (const inactiveTicket of inactiveTickets) {
+                try {
+                  console.log(`🔄 Consolidando tickets do perfil inativo ${inactiveTicket.user_id} para ${userId}`);
+                  
+                  const { error: mergeError } = await supabase.rpc('merge_duplicate_profiles', {
+                    p_keep_profile_id: userId,
+                    p_remove_profile_id: inactiveTicket.user_id
+                  });
+
+                  if (mergeError) {
+                    console.error('❌ Erro na consolidação automática:', mergeError);
+                  } else {
+                    console.log('✅ Tickets consolidados automaticamente');
+                    
+                    // Recarregar tickets após consolidação
+                    const { data: updatedTickets } = await supabase
+                      .from('tickets')
+                      .select('tickets_atual')
+                      .eq('user_id', userId)
+                      .maybeSingle();
+                    
+                    const newTicketsCount = updatedTickets?.tickets_atual || 0;
+                    setTickets(newTicketsCount);
+                    
+                    if (newTicketsCount > currentTickets) {
+                      toast.success(`🎫 Tickets consolidados! Você agora tem ${newTicketsCount} tickets.`);
+                    }
+                  }
+                } catch (consolidationError) {
+                  console.error('❌ Erro na consolidação automática:', consolidationError);
+                }
+              }
+            }
+          }
+        } catch (verificationError) {
+          console.error('❌ Erro na verificação de perfis inativos:', verificationError);
+        }
+      }
       
       console.log(`💰 Saldos carregados: ${rubiniData?.saldo || 0} RC, ${ticketsData?.tickets_atual || 0} Tickets`);
     } catch (error) {

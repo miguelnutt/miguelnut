@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico de Tickets - Brux0D</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        pre {
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .profile-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .profile-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎫 Diagnóstico de Tickets - Brux0D</h1>
+        <p>Este diagnóstico verifica os tickets do usuário Brux0D no banco de dados.</p>
+        
+        <button onclick="runDiagnosis()">🔍 Executar Diagnóstico</button>
+        <button onclick="clearResults()">🗑️ Limpar Resultados</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://qkwctrccuqkjygqurqxt.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrd2N0cmNjdXFranlncXVycXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NjIxMjIsImV4cCI6MjA3NjEzODEyMn0.ZV3xFFv5JGqntrvKp0xq3kSMhHbfYA3daRZNy--blUE';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function addResult(title, content, type = 'result') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<h3>${title}</h3>${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function runDiagnosis() {
+            clearResults();
+            addResult('🔄 Iniciando Diagnóstico', 'Verificando tickets para o usuário Brux0D...', 'result');
+            
+            try {
+                // 1. Buscar todos os perfis do usuário Brux0D
+                addResult('1️⃣ Buscando Perfis', 'Procurando perfis com username "brux0d"...', 'result');
+                
+                const { data: profiles, error: profilesError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .ilike('twitch_username', 'brux0d');
+                
+                if (profilesError) {
+                    addResult('❌ Erro ao buscar perfis', `<pre>${JSON.stringify(profilesError, null, 2)}</pre>`, 'error');
+                    return;
+                }
+                
+                if (!profiles || profiles.length === 0) {
+                    addResult('⚠️ Nenhum Perfil Encontrado', 'Não foi encontrado nenhum perfil com username "brux0d"', 'warning');
+                    return;
+                }
+                
+                addResult('✅ Perfis Encontrados', `Encontrados ${profiles.length} perfil(s)`, 'success');
+                
+                // Mostrar detalhes dos perfis
+                let profilesHtml = '<div class="profile-info">';
+                for (const profile of profiles) {
+                    profilesHtml += `
+                        <div class="profile-card">
+                            <h4>Perfil ID: ${profile.id}</h4>
+                            <p><strong>Nome:</strong> ${profile.nome || 'N/A'}</p>
+                            <p><strong>Twitch Username:</strong> ${profile.twitch_username || 'N/A'}</p>
+                            <p><strong>Twitch User ID:</strong> ${profile.twitch_user_id || 'N/A'}</p>
+                            <p><strong>Nome Personagem:</strong> ${profile.nome_personagem || 'N/A'}</p>
+                            <p><strong>Ativo:</strong> ${profile.is_active ? '✅ Sim' : '❌ Não'}</p>
+                            <p><strong>Criado em:</strong> ${new Date(profile.created_at).toLocaleString()}</p>
+                        </div>
+                    `;
+                }
+                profilesHtml += '</div>';
+                addResult('📋 Detalhes dos Perfis', profilesHtml, 'result');
+                
+                // 2. Verificar tickets para cada perfil
+                addResult('2️⃣ Verificando Tickets', 'Buscando tickets para cada perfil...', 'result');
+                
+                for (const profile of profiles) {
+                    const { data: tickets, error: ticketsError } = await supabase
+                        .from('tickets')
+                        .select('*')
+                        .eq('user_id', profile.id);
+                    
+                    if (ticketsError) {
+                        addResult(`❌ Erro ao buscar tickets para ${profile.id}`, `<pre>${JSON.stringify(ticketsError, null, 2)}</pre>`, 'error');
+                        continue;
+                    }
+                    
+                    if (tickets && tickets.length > 0) {
+                        const ticket = tickets[0];
+                        addResult(
+                            `🎫 Tickets Encontrados - Perfil ${profile.id}`,
+                            `
+                                <p><strong>Perfil:</strong> ${profile.twitch_username} (${profile.is_active ? 'Ativo' : 'Inativo'})</p>
+                                <p><strong>Tickets Atuais:</strong> ${ticket.tickets_atual}</p>
+                                <p><strong>Última Atualização:</strong> ${new Date(ticket.updated_at || ticket.created_at).toLocaleString()}</p>
+                            `,
+                            'success'
+                        );
+                    } else {
+                        addResult(
+                            `⚠️ Sem Tickets - Perfil ${profile.id}`,
+                            `<p>Perfil ${profile.twitch_username} (${profile.is_active ? 'Ativo' : 'Inativo'}) não possui tickets</p>`,
+                            'warning'
+                        );
+                    }
+                }
+                
+                // 3. Verificar histórico de tickets (ticket_ledger)
+                addResult('3️⃣ Verificando Histórico', 'Buscando histórico de tickets...', 'result');
+                
+                const profileIds = profiles.map(p => p.id);
+                const { data: ledger, error: ledgerError } = await supabase
+                    .from('ticket_ledger')
+                    .select('*')
+                    .in('user_id', profileIds)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (ledgerError) {
+                    addResult('❌ Erro ao buscar histórico', `<pre>${JSON.stringify(ledgerError, null, 2)}</pre>`, 'error');
+                } else if (ledger && ledger.length > 0) {
+                    let ledgerHtml = '<table border="1" style="width:100%; border-collapse: collapse;"><tr><th>Data</th><th>Perfil ID</th><th>Variação</th><th>Motivo</th></tr>';
+                    for (const entry of ledger) {
+                        ledgerHtml += `
+                            <tr>
+                                <td>${new Date(entry.created_at).toLocaleString()}</td>
+                                <td>${entry.user_id}</td>
+                                <td>${entry.variacao > 0 ? '+' : ''}${entry.variacao}</td>
+                                <td>${entry.motivo || 'N/A'}</td>
+                            </tr>
+                        `;
+                    }
+                    ledgerHtml += '</table>';
+                    addResult('📊 Histórico de Tickets', ledgerHtml, 'success');
+                } else {
+                    addResult('⚠️ Sem Histórico', 'Não foi encontrado histórico de tickets', 'warning');
+                }
+                
+                // 4. Verificar spins que geraram tickets
+                addResult('4️⃣ Verificando Spins', 'Buscando spins que geraram tickets...', 'result');
+                
+                const { data: spins, error: spinsError } = await supabase
+                    .from('spins')
+                    .select('*')
+                    .ilike('nome_usuario', 'brux0d')
+                    .eq('tipo_recompensa', 'Tickets')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (spinsError) {
+                    addResult('❌ Erro ao buscar spins', `<pre>${JSON.stringify(spinsError, null, 2)}</pre>`, 'error');
+                } else if (spins && spins.length > 0) {
+                    let spinsHtml = '<table border="1" style="width:100%; border-collapse: collapse;"><tr><th>Data</th><th>Usuário</th><th>Valor</th><th>User ID</th></tr>';
+                    for (const spin of spins) {
+                        spinsHtml += `
+                            <tr>
+                                <td>${new Date(spin.created_at).toLocaleString()}</td>
+                                <td>${spin.nome_usuario}</td>
+                                <td>${spin.valor} tickets</td>
+                                <td>${spin.user_id || 'N/A'}</td>
+                            </tr>
+                        `;
+                    }
+                    spinsHtml += '</table>';
+                    addResult('🎰 Spins com Tickets', spinsHtml, 'success');
+                } else {
+                    addResult('⚠️ Sem Spins', 'Não foram encontrados spins que geraram tickets', 'warning');
+                }
+                
+                addResult('✅ Diagnóstico Concluído', 'Verificação completa finalizada!', 'success');
+                
+            } catch (error) {
+                addResult('❌ Erro Geral', `<pre>${JSON.stringify(error, null, 2)}</pre>`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
