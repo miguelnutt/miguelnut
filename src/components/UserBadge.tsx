@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, LogOut } from 'lucide-react';
+import { RefreshCw, LogOut, Ghost } from 'lucide-react';
 import { useTwitchAuth, TwitchUser } from '@/hooks/useTwitchAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { useHalloweenTheme } from '@/contexts/HalloweenThemeContext';
 
 interface UserBadgeProps {
   user: TwitchUser;
@@ -16,6 +18,8 @@ export function UserBadge({ user, onLogout }: UserBadgeProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isAdmin } = useAuth();
+  const { isHalloweenActive, toggleHalloween } = useHalloweenTheme();
 
   const fetchBalance = useCallback(async () => {
     setRefreshing(true);
@@ -109,6 +113,20 @@ export function UserBadge({ user, onLogout }: UserBadgeProps) {
         )}
       </div>
       <div className="flex items-center gap-1">
+        {isAdmin && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 rounded-full hover:bg-orange-500/20"
+            onClick={() => {
+              toggleHalloween();
+              toast.success(isHalloweenActive ? 'Tema Halloween DESATIVADO' : 'Tema Halloween ATIVO');
+            }}
+            title={isHalloweenActive ? 'Desativar Tema Halloween' : 'Ativar Tema Halloween'}
+          >
+            <Ghost className={`h-3 w-3 ${isHalloweenActive ? 'text-orange-500' : ''}`} />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
