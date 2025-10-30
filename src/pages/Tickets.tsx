@@ -156,6 +156,8 @@ export default function Tickets() {
       });
 
       console.log("Mapa final de perfis:", Object.keys(profilesMap).length, "perfis");
+      
+      // Perfis carregados com sucesso
 
       // Montar ranking com nomes corretos
       const rankingList: TicketRanking[] = ticketsData
@@ -164,13 +166,20 @@ export default function Tickets() {
           let displayName = "Usuário desconhecido";
           
           if (profile) {
+            // Verificar se os campos são strings válidas
+            const nome = profile.nome;
+            const nomePersonagem = profile.nome_personagem;
+            const twitchUsername = profile.twitch_username;
+            
+            // Verificação de tipos realizada
+            
             // Priorizar nome, depois nome_personagem, depois twitch_username
-            if (profile.nome && typeof profile.nome === 'string' && profile.nome.trim() !== '') {
-              displayName = String(profile.nome).trim();
-            } else if (profile.nome_personagem && typeof profile.nome_personagem === 'string' && profile.nome_personagem.trim() !== '') {
-              displayName = String(profile.nome_personagem).trim();
-            } else if (profile.twitch_username && typeof profile.twitch_username === 'string' && profile.twitch_username.trim() !== '') {
-              displayName = String(profile.twitch_username).trim();
+            if (nome && typeof nome === 'string' && nome.trim() !== '') {
+              displayName = String(nome).trim();
+            } else if (nomePersonagem && typeof nomePersonagem === 'string' && nomePersonagem.trim() !== '') {
+              displayName = String(nomePersonagem).trim();
+            } else if (twitchUsername && typeof twitchUsername === 'string' && twitchUsername.trim() !== '') {
+              displayName = String(twitchUsername).trim();
             }
           } else {
             console.log("Perfil não encontrado para user_id:", t.user_id);
@@ -179,15 +188,26 @@ export default function Tickets() {
           // Garantir que displayName seja sempre uma string
           displayName = String(displayName || "Usuário desconhecido");
 
-          return {
-            user_id: t.user_id,
-            nome: displayName,
-            tickets_atual: t.tickets_atual
+          // displayName validado
+
+          // Garantir que todos os campos sejam do tipo correto
+          const safeUserId = String(t.user_id || "");
+          const safeDisplayName = String(displayName || "Usuário desconhecido");
+          const safeTicketsAtual = Number(t.tickets_atual) || 0;
+
+          const rankingItem = {
+            user_id: safeUserId,
+            nome: safeDisplayName,
+            tickets_atual: safeTicketsAtual
           };
+
+          // Campos do ranking validados
+
+          return rankingItem;
         })
         .filter((r: TicketRanking) => r.tickets_atual > 0);
 
-      console.log("Ranking final:", rankingList.slice(0, 3)); // Log dos primeiros 3 para debug
+      // Ranking criado com sucesso
       setRanking(rankingList);
 
       // Últimos sorteios
@@ -325,7 +345,10 @@ export default function Tickets() {
   };
 
   const removeUser = async (userId: string, userName: string) => {
-    if (!confirm(`Tem certeza que deseja remover ${userName} da lista de tickets?`)) {
+    // Garantir que userName seja sempre uma string
+    const safeUserName = String(userName || "Usuário desconhecido");
+    
+    if (!confirm(`Tem certeza que deseja remover ${safeUserName} da lista de tickets?`)) {
       return;
     }
 
@@ -337,7 +360,7 @@ export default function Tickets() {
 
       if (error) throw error;
 
-      toast.success(`${userName} removido da lista de tickets`);
+      toast.success(`${safeUserName} removido da lista de tickets`);
       await fetchData();
     } catch (error: any) {
       console.error("Error removing user:", error);
@@ -571,7 +594,7 @@ export default function Tickets() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => removeUser(item.user_id, item.nome)}
+                              onClick={() => removeUser(item.user_id, String(item.nome || "Usuário desconhecido"))}
                               className="flex-1"
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
@@ -693,7 +716,7 @@ export default function Tickets() {
                                       <Button
                                         size="sm"
                                         variant="destructive"
-                                        onClick={() => removeUser(item.user_id, item.nome)}
+                                        onClick={() => removeUser(item.user_id, String(item.nome || "Usuário desconhecido"))}
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Remover Usuário
