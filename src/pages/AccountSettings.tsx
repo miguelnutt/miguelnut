@@ -102,6 +102,7 @@ export default function AccountSettings() {
   /**
    * FUNÇÃO UNIFICADA: Carrega TUDO do perfil do usuário
    * - Busca perfil ativo UMA VEZ (prioriza twitch_user_id)
+   * - Resolve conflitos de perfis duplicados
    * - Seta profileUserId
    * - Carrega nome do personagem
    * - Carrega saldos
@@ -114,38 +115,91 @@ export default function AccountSettings() {
     setLoadingSaldos(true);
     
     try {
-      // 1. PRIORIDADE: Buscar por twitch_user_id (fonte única da verdade)
-      let profile = null;
+      let profileByTwitchId = null;
+      let profileByUsername = null;
       
+      // 1. Buscar por twitch_user_id
       if (twitchUser.twitch_user_id) {
-        const { data: profileByTwitchId } = await supabase
+        const { data } = await supabase
           .from('profiles')
-          .select('id, nome_personagem')
+          .select('id, nome_personagem, twitch_username')
           .eq('twitch_user_id', twitchUser.twitch_user_id)
           .eq('is_active', true)
           .maybeSingle();
 
-        profile = profileByTwitchId;
-        console.log('Busca por twitch_user_id:', profile ? '✅ Encontrado' : '❌ Não encontrado');
+        profileByTwitchId = data;
+        console.log('Busca por twitch_user_id:', profileByTwitchId ? '✅ Encontrado' : '❌ Não encontrado');
       }
       
-      // 2. Fallback: Buscar por twitch_username (apenas se não achou por ID)
-      if (!profile) {
-        const searchTerm = prepareUsernameForSearch(twitchUser.login);
-        const { data: profileByUsername, error: usernameError } = await supabase
-          .from('profiles')
-          .select('id, nome_personagem')
-          .ilike('twitch_username', searchTerm)
-          .eq('is_active', true)
-          .maybeSingle();
+      // 2. Buscar por twitch_username
+      const searchTerm = prepareUsernameForSearch(twitchUser.login);
+      const { data: usernameData, error: usernameError } = await supabase
+        .from('profiles')
+        .select('id, nome_personagem, twitch_user_id')
+        .ilike('twitch_username', searchTerm)
+        .eq('is_active', true)
+        .maybeSingle();
 
-        if (usernameError) throw usernameError;
-        profile = profileByUsername;
-        console.log('Busca por twitch_username:', profile ? '✅ Encontrado' : '❌ Não encontrado');
+      if (usernameError) throw usernameError;
+      profileByUsername = usernameData;
+      console.log('Busca por twitch_username:', profileByUsername ? '✅ Encontrado' : '❌ Não encontrado');
+
+      let finalProfile = null;
+
+      // 3. Resolver conflitos de perfis duplicados
+      if (profileByTwitchId && profileByUsername && profileByTwitchId.id !== profileByUsername.id) {
+        console.log('⚠️ CONFLITO: Encontrados 2 perfis diferentes para o mesmo usuário!');
+        console.log('Perfil por ID:', profileByTwitchId);
+        console.log('Perfil por Username:', profileByUsername);
+        
+        // Priorizar o perfil que tem nome_personagem preenchido
+        if (profileByUsername.nome_personagem && !profileByTwitchId.nome_personagem) {
+          console.log('🔄 Mesclando: Copiando nome_personagem do perfil antigo para o novo');
+          
+          // Atualizar perfil por ID com o nome do perfil por username
+          await supabase
+            .from('profiles')
+            .update({ 
+              nome_personagem: profileByUsername.nome_personagem,
+              twitch_user_id: twitchUser.twitch_user_id,
+              display_name_canonical: twitchUser.display_name
+            })
+            .eq('id', profileByTwitchId.id);
+          
+          // Desativar perfil antigo
+          await supabase
+            .from('profiles')
+            .update({ is_active: false })
+            .eq('id', profileByUsername.id);
+          
+          finalProfile = { 
+            ...profileByTwitchId, 
+            nome_personagem: profileByUsername.nome_personagem 
+          };
+          console.log('✅ Perfis mesclados com sucesso');
+        } else {
+          // Usar perfil por ID e atualizar com twitch_user_id se necessário
+          finalProfile = profileByTwitchId;
+        }
+      } else if (profileByTwitchId) {
+        finalProfile = profileByTwitchId;
+      } else if (profileByUsername) {
+        // Atualizar perfil por username com twitch_user_id
+        if (twitchUser.twitch_user_id && !profileByUsername.twitch_user_id) {
+          await supabase
+            .from('profiles')
+            .update({ 
+              twitch_user_id: twitchUser.twitch_user_id,
+              display_name_canonical: twitchUser.display_name
+            })
+            .eq('id', profileByUsername.id);
+          console.log('✅ Perfil atualizado com twitch_user_id');
+        }
+        finalProfile = profileByUsername;
       }
 
-      // 3. Se não tem perfil, criar com TODOS os dados da Twitch
-      if (!profile) {
+      // 4. Se não tem perfil, criar novo
+      if (!finalProfile) {
         console.log('Criando novo perfil com twitch_user_id...');
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
@@ -162,23 +216,12 @@ export default function AccountSettings() {
         if (insertError) throw insertError;
         
         console.log('✅ Perfil criado:', newProfile.id);
-        await carregarDadosPerfil(newProfile);
-      } else {
-        // 4. Se perfil existe mas não tem twitch_user_id, atualizar
-        if (twitchUser.twitch_user_id) {
-          await supabase
-            .from('profiles')
-            .update({ 
-              twitch_user_id: twitchUser.twitch_user_id,
-              display_name_canonical: twitchUser.display_name
-            })
-            .eq('id', profile.id);
-          console.log('✅ Perfil atualizado com twitch_user_id');
-        }
-        
-        console.log('✅ Perfil encontrado:', profile.id);
-        await carregarDadosPerfil(profile);
+        finalProfile = newProfile;
       }
+
+      console.log('✅ Perfil final selecionado:', finalProfile.id, 'Nome:', finalProfile.nome_personagem);
+      await carregarDadosPerfil(finalProfile);
+      
     } catch (error) {
       console.error('❌ Erro ao carregar dados completos:', error);
       toast.error('Erro ao carregar dados do perfil');

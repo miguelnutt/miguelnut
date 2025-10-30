@@ -59,9 +59,17 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
 
   // Função para buscar tickets atuais do usuário
   const buscarTicketsAtuais = async (nomeUsuario: string) => {
+    if (!nomeUsuario) {
+      console.warn('Nome de usuário não fornecido para buscar tickets');
+      return;
+    }
+
+    console.log('🔍 [DEBUG] Iniciando busca de tickets para:', nomeUsuario);
     setCarregandoTickets(true);
+    
     try {
       // Usar resolve-user-identity para garantir consistência com o processamento de prêmios
+      console.log('🔍 [DEBUG] Resolvendo identidade do usuário...');
       const searchTerm = prepareUsernameForSearch(nomeUsuario);
       const { data: identityData, error: identityError } = await supabase.functions.invoke('resolve-user-identity', {
         body: {
@@ -70,27 +78,42 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         }
       });
 
+      console.log('🔍 [DEBUG] Dados da identidade:', { identityData, identityError });
+
       if (identityError || !identityData?.canonicalProfile) {
-        console.log("Usuário não encontrado ou erro ao resolver identidade:", identityError);
+        console.log("❌ [DEBUG] Usuário não encontrado ou erro ao resolver identidade:", identityError);
         setTicketsAtuais(0); // Novo usuário
         return;
       }
 
       const userId = identityData.canonicalProfile.id;
+      console.log('🔍 [DEBUG] User ID encontrado:', userId);
       
       // Buscar tickets do usuário resolvido
-      const { data: ticketsData } = await supabase
+      console.log('🔍 [DEBUG] Buscando tickets na tabela...');
+      const { data: ticketsData, error: ticketsError } = await supabase
         .from('tickets')
         .select('tickets_atual')
         .eq('user_id', userId)
         .maybeSingle();
       
-      setTicketsAtuais(ticketsData?.tickets_atual || 0);
+      console.log('🔍 [DEBUG] Resultado da busca de tickets:', { ticketsData, ticketsError });
+      
+      if (ticketsError) {
+        console.error('❌ [DEBUG] Erro ao buscar tickets na tabela:', ticketsError);
+        setTicketsAtuais(null);
+        return;
+      }
+      
+      const tickets = ticketsData?.tickets_atual || 0;
+      console.log('🔍 [DEBUG] Tickets encontrados:', tickets);
+      setTicketsAtuais(tickets);
     } catch (error) {
-      console.error("Erro ao buscar tickets:", error);
+      console.error("❌ [DEBUG] Erro ao buscar tickets:", error);
       setTicketsAtuais(null);
     } finally {
       setCarregandoTickets(false);
+      console.log('🔍 [DEBUG] Busca de tickets finalizada');
     }
   };
 
@@ -122,8 +145,21 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
       setCarregandoTickets(false);
     } else {
       setIsModoTeste(testMode);
+      // Se o usuário estiver logado, carregar tickets automaticamente
+      if (twitchUser?.login) {
+        console.log('🔍 [DEBUG] Usuário logado detectado, carregando tickets para:', twitchUser.login);
+        buscarTicketsAtuais(twitchUser.login);
+      }
     }
-  }, [open, testMode]);
+  }, [open, testMode, twitchUser?.login]);
+
+  // Carregar tickets quando o nome do usuário mudar
+  useEffect(() => {
+    if (open && nomeUsuario.trim() && nomeUsuario.length > 2) {
+      console.log('🔍 [DEBUG] Nome de usuário digitado, carregando tickets para:', nomeUsuario);
+      buscarTicketsAtuais(nomeUsuario);
+    }
+  }, [nomeUsuario, open]);
 
   const launchConfetti = () => {
     const duration = 3000;
@@ -351,6 +387,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         const ticketsGanhos = parseInt(resultado.valor) || 1;
         const idempotencyKey = `spin-${spinData?.id}-tickets`;
 
+        console.log('🎫 [DEBUG] Iniciando concessão de tickets:', {
+          userId,
+          ticketsGanhos,
+          idempotencyKey,
+          wheelName: wheel.nome
+        });
+
         try {
           const { data: awardData, error: awardError } = await supabase.functions.invoke('award-reward', {
             body: {
@@ -363,15 +406,48 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
             }
           });
 
+          console.log('🎫 [DEBUG] Resposta do award-reward:', { awardData, awardError });
+
           if (awardError) {
-            console.error('Error awarding tickets via award-reward:', awardError);
+            console.error('❌ [DEBUG] Error awarding tickets via award-reward:', awardError);
             throw awardError;
           }
 
-          console.log(`Tickets awarded via unified service:`, awardData);
+          console.log(`✅ [DEBUG] Tickets awarded via unified service:`, awardData);
           
-          // Atualizar o saldo de tickets na interface
-          await buscarTicketsAtuais(nomeParaUsar);
+          // Atualizar o saldo de tickets na interface com retry para garantir sincronização
+          console.log('🔄 [DEBUG] Atualizando saldo de tickets...');
+          let tentativas = 0;
+          const maxTentativas = 3;
+          
+          while (tentativas < maxTentativas) {
+             try {
+               const ticketsAnteriores = ticketsAtuais;
+               await buscarTicketsAtuais(nomeParaUsar);
+               console.log(`✅ [DEBUG] Saldo atualizado na tentativa ${tentativas + 1}. Anterior: ${ticketsAnteriores}, Atual: ${ticketsAtuais}`);
+               
+               // Verificar se o saldo foi realmente atualizado
+                if (ticketsAtuais !== null && ticketsAtuais >= (ticketsAnteriores || 0) + ticketsGanhos) {
+                  console.log('✅ [DEBUG] Confirmado: saldo de tickets atualizado corretamente');
+                  break;
+                } else if (tentativas === maxTentativas - 1) {
+                  console.warn('⚠️ [DEBUG] Saldo pode não ter sido atualizado corretamente após todas as tentativas');
+                  // Como fallback, usar o saldo retornado pelo award-reward
+                  if (awardData?.newBalance !== undefined) {
+                    console.log('🔄 [DEBUG] Usando saldo do award-reward como fallback:', awardData.newBalance);
+                    setTicketsAtuais(awardData.newBalance);
+                  }
+                }
+               
+               break;
+             } catch (error) {
+               tentativas++;
+               console.warn(`⚠️ [DEBUG] Erro na tentativa ${tentativas} de atualizar saldo:`, error);
+               if (tentativas < maxTentativas) {
+                 await new Promise(resolve => setTimeout(resolve, 500)); // Aguarda 500ms antes da próxima tentativa
+               }
+             }
+           }
           
           // Indicar se foi para perfil temporário
           const successMessage = profileData?.twitch_user_id 

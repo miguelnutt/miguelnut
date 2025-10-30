@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Persistência - Nome do Personagem</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .test-section {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-section h2 {
+            color: #4CAF50;
+            margin-top: 0;
+        }
+        .test-info {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .test-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background-color: #45a049;
+        }
+        .test-button.danger {
+            background-color: #f44336;
+        }
+        .test-button.danger:hover {
+            background-color: #da190b;
+        }
+        .result {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .result.success {
+            background-color: #2d5a2d;
+            border: 1px solid #4CAF50;
+        }
+        .result.error {
+            background-color: #5a2d2d;
+            border: 1px solid #f44336;
+        }
+        .result.warning {
+            background-color: #5a5a2d;
+            border: 1px solid #ff9800;
+        }
+        .logs-container {
+            background-color: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 5px;
+        }
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+        .log-entry.success {
+            color: #51cf66;
+        }
+        .log-entry.warning {
+            color: #ffd43b;
+        }
+        .log-entry.info {
+            color: #74c0fc;
+        }
+        .status-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .status-success {
+            background-color: #2d5a2d;
+            color: #4CAF50;
+        }
+        .status-error {
+            background-color: #5a2d2d;
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Persistência - Nome do Personagem RubiniOT</h1>
+    
+    <div class="test-section">
+        <h2>📋 Configuração do Teste</h2>
+        <div class="test-info">
+            <strong>Usuário de Teste:</strong> <span id="test-username">miguelnutt</span><br>
+            <strong>Nome do Personagem:</strong> <span id="test-character-name">Le Sniperg</span><br>
+            <strong>Status JWT:</strong> <span id="jwt-status">Não configurado</span>
+        </div>
+        <button class="test-button" onclick="setupTest()">🔧 Configurar Teste</button>
+        <div id="setup-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>💾 Teste de Salvamento</h2>
+        <p>Testa se o nome do personagem é salvo corretamente no banco de dados.</p>
+        <button class="test-button" onclick="testSaveCharacter()">💾 Salvar Personagem</button>
+        <div id="save-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Verificação Imediata</h2>
+        <p>Verifica se o nome foi salvo imediatamente após o salvamento.</p>
+        <button class="test-button" onclick="testImmediateRetrieval()">🔍 Verificar Salvamento</button>
+        <div id="immediate-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 Simulação de Recarregamento (F5)</h2>
+        <p>Simula o processo que acontece quando o usuário recarrega a página.</p>
+        <button class="test-button" onclick="testAfterReload()">🔄 Simular F5</button>
+        <button class="test-button danger" onclick="actualReload()">⚠️ Recarregar Página Real</button>
+        <div id="reload-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Análise de Logs</h2>
+        <button class="test-button" onclick="clearLogs()">🗑️ Limpar Logs</button>
+        <div id="test-logs" class="logs-container"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://qkwctrccuqkjygqurqxt.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrd2N0cmNjdXFranlncXVycXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NjIxMjIsImV4cCI6MjA3NjEzODEyMn0.ZV3xFFv5JGqntrvKp0xq3kSMhHbfYA3daRZNy--blUE';
+
+        let testLogs = [];
+        let testToken = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            testLogs.push({ message: logEntry, type });
+            
+            const logsContainer = document.getElementById('test-logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log-entry ${type}`;
+            logDiv.textContent = logEntry;
+            logsContainer.appendChild(logDiv);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            
+            console.log(logEntry);
+        }
+
+        function showResult(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+
+        async function generateTestJWT() {
+            try {
+                log('Gerando JWT de teste para brux0d...', 'info');
+                
+                const userData = {
+                    twitch_user_id: '123456789',
+                    login: 'brux0d',
+                    display_name: 'Brux0D',
+                    profile_image_url: 'https://static-cdn.jtvnw.net/jtv_user_pictures/default-profile_image-300x300.png',
+                    email: 'test@example.com'
+                };
+
+                const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+                const payload = btoa(JSON.stringify({
+                    ...userData,
+                    exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
+                }));
+                const signature = 'test_signature_for_testing_only';
+                
+                testToken = `${header}.${payload}.${signature}`;
+                
+                log('JWT de teste gerado com sucesso', 'success');
+                document.getElementById('jwt-status').textContent = 'JWT de teste gerado ✅';
+                
+                return testToken;
+            } catch (error) {
+                log(`Erro ao gerar JWT: ${error.message}`, 'error');
+                document.getElementById('jwt-status').textContent = 'Erro ao gerar JWT ❌';
+                throw error;
+            }
+        }
+
+        async function setupTest() {
+            try {
+                log('=== INICIANDO CONFIGURAÇÃO DO TESTE ===', 'info');
+                
+                await generateTestJWT();
+                
+                showResult('setup-result', 
+                    '✅ Teste configurado com sucesso!<br>' +
+                    '• Usuário: miguelnutt<br>' +
+                    '• Personagem: Le Sniperg<br>' +
+                    '• JWT: Gerado para teste', 
+                    'success'
+                );
+                
+                log('Configuração do teste concluída', 'success');
+            } catch (error) {
+                showResult('setup-result', `❌ Erro na configuração: ${error.message}`, 'error');
+                log(`Erro na configuração: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSaveCharacter() {
+            try {
+                log('=== INICIANDO TESTE DE SALVAMENTO ===', 'info');
+                
+                if (!testToken) {
+                    throw new Error('JWT não configurado. Execute a configuração primeiro.');
+                }
+
+                const characterName = document.getElementById('test-character-name').textContent;
+                log(`Salvando personagem: ${characterName}`, 'info');
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/save-twitch-character`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${testToken}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                    },
+                    body: JSON.stringify({
+                        nome_personagem: characterName
+                    })
+                });
+
+                const data = await response.json();
+                log(`Resposta da API: ${JSON.stringify(data)}`, 'info');
+
+                if (response.ok && data.success) {
+                    showResult('save-result', 
+                        `✅ Personagem salvo com sucesso!<br>` +
+                        `• Nome: ${data.nome_personagem}<br>` +
+                        `• Status: ${response.status}`, 
+                        'success'
+                    );
+                    log('Personagem salvo com sucesso', 'success');
+                } else {
+                    throw new Error(data.error || 'Erro desconhecido');
+                }
+            } catch (error) {
+                showResult('save-result', `❌ Erro ao salvar: ${error.message}`, 'error');
+                log(`Erro ao salvar personagem: ${error.message}`, 'error');
+            }
+        }
+
+        async function testImmediateRetrieval() {
+            try {
+                log('=== INICIANDO TESTE DE RECUPERAÇÃO IMEDIATA ===', 'info');
+                
+                const username = document.getElementById('test-username').textContent;
+                log(`Buscando perfil para usuário: ${username}`, 'info');
+
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?twitch_username=eq.${username}&select=id,nome_personagem,twitch_username,is_active`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const profiles = await response.json();
+                log(`Perfis encontrados: ${JSON.stringify(profiles)}`, 'info');
+
+                if (profiles && profiles.length > 0) {
+                    const profile = profiles[0];
+                    const hasCharacterName = profile.nome_personagem && profile.nome_personagem.trim();
+                    
+                    showResult('immediate-result', 
+                        `✅ Perfil encontrado!<br>` +
+                        `• ID: ${profile.id}<br>` +
+                        `• Username: ${profile.twitch_username}<br>` +
+                        `• Nome do Personagem: ${profile.nome_personagem || 'Não definido'}<br>` +
+                        `• Ativo: ${profile.is_active ? 'Sim' : 'Não'}<br>` +
+                        `• Status: ${hasCharacterName ? '✅ Nome salvo' : '❌ Nome não encontrado'}`, 
+                        hasCharacterName ? 'success' : 'warning'
+                    );
+                    
+                    if (hasCharacterName) {
+                        log('Nome do personagem encontrado no banco', 'success');
+                    } else {
+                        log('Nome do personagem NÃO encontrado no banco', 'warning');
+                    }
+                } else {
+                    showResult('immediate-result', '❌ Perfil não encontrado no banco', 'error');
+                    log('Perfil não encontrado no banco', 'error');
+                }
+            } catch (error) {
+                showResult('immediate-result', `❌ Erro na verificação: ${error.message}`, 'error');
+                log(`Erro na verificação: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAfterReload() {
+            try {
+                log('=== SIMULANDO CARREGAMENTO APÓS F5 ===', 'info');
+                
+                log('Simulando processo de carregamento do AccountSettings...', 'info');
+                
+                const twitchUser = {
+                    twitch_user_id: '123456789',
+                    login: 'miguelnutt',
+                    display_name: 'MiguelNutt'
+                };
+                
+                log(`Dados do usuário Twitch: ${JSON.stringify(twitchUser)}`, 'info');
+                
+                let profile = null;
+                
+                log('Buscando por twitch_user_id...', 'info');
+                let response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?twitch_user_id=eq.${twitchUser.twitch_user_id}&is_active=eq.true&select=id,nome_personagem`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                let profiles = await response.json();
+                if (profiles && profiles.length > 0) {
+                    profile = profiles[0];
+                    log('✅ Perfil encontrado por twitch_user_id', 'success');
+                } else {
+                    log('❌ Perfil não encontrado por twitch_user_id', 'warning');
+                    
+                    log('Buscando por twitch_username...', 'info');
+                    response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?twitch_username=ilike.${twitchUser.login}&is_active=eq.true&select=id,nome_personagem`, {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    profiles = await response.json();
+                    if (profiles && profiles.length > 0) {
+                        profile = profiles[0];
+                        log('✅ Perfil encontrado por twitch_username', 'success');
+                    } else {
+                        log('❌ Perfil não encontrado por twitch_username', 'error');
+                    }
+                }
+                
+                if (profile) {
+                    const hasCharacterName = profile.nome_personagem && profile.nome_personagem.trim();
+                    
+                    showResult('reload-result', 
+                        `📋 Resultado da simulação de F5:<br>` +
+                        `• Perfil ID: ${profile.id}<br>` +
+                        `• Nome do Personagem: ${profile.nome_personagem || 'Não definido'}<br>` +
+                        `• Status: ${hasCharacterName ? '✅ Nome persistiu após F5' : '❌ Nome perdido após F5'}`, 
+                        hasCharacterName ? 'success' : 'error'
+                    );
+                    
+                    if (hasCharacterName) {
+                        log('✅ SUCESSO: Nome do personagem persistiu após simulação de F5', 'success');
+                    } else {
+                        log('❌ PROBLEMA: Nome do personagem foi perdido após simulação de F5', 'error');
+                    }
+                } else {
+                    showResult('reload-result', '❌ Perfil não encontrado - problema crítico', 'error');
+                    log('❌ PROBLEMA CRÍTICO: Perfil não encontrado', 'error');
+                }
+                
+            } catch (error) {
+                showResult('reload-result', `❌ Erro na simulação: ${error.message}`, 'error');
+                log(`Erro na simulação de F5: ${error.message}`, 'error');
+            }
+        }
+
+        function actualReload() {
+            log('Recarregando página...', 'info');
+            window.location.reload();
+        }
+
+        function clearLogs() {
+            testLogs = [];
+            document.getElementById('test-logs').innerHTML = '';
+            log('Logs limpos', 'info');
+        }
+
+        window.addEventListener('load', () => {
+            log('Página carregada - pronto para testes', 'info');
+        });
+    </script>
+</body>
+</html>

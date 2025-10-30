@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Tickets</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Teste de Tickets - Debug</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Configuração do Supabase (substitua pelas suas chaves)
+        const SUPABASE_URL = 'https://qkwctrccuqkjygqurqxt.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrd2N0cmNjdXFranlncXVycXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NjIxMjIsImV4cCI6MjA3NjEzODEyMn0.ZV3xFFv5JGqntrvKp0xq3kSMhHbfYA3daRZNy--blUE';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function testTickets() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testando...</p>';
+            
+            try {
+                // 1. Testar se a tabela tickets existe e tem dados
+                console.log('🔍 Testando tabela tickets...');
+                const { data: ticketsData, error: ticketsError } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .limit(10);
+                
+                console.log('Resultado tickets:', { ticketsData, ticketsError });
+                
+                // 2. Testar se a tabela ticket_ledger existe e tem dados
+                console.log('🔍 Testando tabela ticket_ledger...');
+                const { data: ledgerData, error: ledgerError } = await supabase
+                    .from('ticket_ledger')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                console.log('Resultado ledger:', { ledgerData, ledgerError });
+                
+                // 3. Testar resolve-user-identity com miguelnutt
+                console.log('🔍 Testando resolve-user-identity com miguelnutt...');
+                const { data: identityData, error: identityError } = await supabase.functions.invoke('resolve-user-identity', {
+                    body: { searchTerm: 'miguelnutt' }
+                });
+                
+                console.log('Resultado identity miguelnutt:', { identityData, identityError });
+                
+                // 4. Testar resolve-user-identity com usuário inexistente
+                console.log('🔍 Testando resolve-user-identity com usuário inexistente...');
+                const { data: identityDataInexistente, error: identityErrorInexistente } = await supabase.functions.invoke('resolve-user-identity', {
+                    body: { searchTerm: 'usuario_que_nao_existe_123' }
+                });
+                
+                console.log('Resultado identity inexistente:', { identityDataInexistente, identityErrorInexistente });
+                
+                // 5. Buscar perfis específicos para teste
+                console.log('🔍 Buscando perfis específicos...');
+                const { data: perfilMiguelnutt, error: errorMiguelnutt } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .or('twitch_username.ilike.%miguelnutt%,nome.ilike.%miguelnutt%')
+                    .eq('is_active', true);
+                
+                console.log('Perfil miguelnutt:', { perfilMiguelnutt, errorMiguelnutt });
+                
+                // 6. Verificar tickets do miguelnutt se existir
+                if (perfilMiguelnutt && perfilMiguelnutt.length > 0) {
+                    const userId = perfilMiguelnutt[0].id;
+                    console.log('🔍 Verificando tickets do miguelnutt...');
+                    const { data: ticketsMiguelnutt, error: errorTicketsMiguelnutt } = await supabase
+                        .from('tickets')
+                        .select('*')
+                        .eq('user_id', userId);
+                    
+                    console.log('Tickets miguelnutt:', { ticketsMiguelnutt, errorTicketsMiguelnutt });
+                    
+                    // 7. Testar award-reward com o usuário miguelnutt (apenas 1 ticket para teste)
+                    console.log('🔍 Testando award-reward com miguelnutt...');
+                    const testIdempotencyKey = 'test_' + Date.now();
+                    const { data: awardData, error: awardError } = await supabase.functions.invoke('award-reward', {
+                        body: {
+                            userId: userId,
+                            type: 'tickets',
+                            value: 1,
+                            source: 'test_debug',
+                            idempotencyKey: testIdempotencyKey,
+                            reason: 'Teste de debug para verificar funcionamento'
+                        }
+                    });
+                    
+                    console.log('Resultado award-reward:', { awardData, awardError });
+                    
+                    // 8. Verificar tickets após o award
+                    if (!awardError) {
+                        console.log('🔍 Verificando tickets após award...');
+                        const { data: ticketsAposAward, error: errorTicketsAposAward } = await supabase
+                            .from('tickets')
+                            .select('*')
+                            .eq('user_id', userId);
+                        
+                        console.log('Tickets após award:', { ticketsAposAward, errorTicketsAposAward });
+                    }
+                }
+                
+                // Mostrar resultados na página
+                let html = '<h2>Resultados dos Testes:</h2>';
+                
+                html += '<h3>1. Tabela Tickets:</h3>';
+                if (ticketsError) {
+                    html += `<p style="color: red;">Erro: ${ticketsError.message}</p>`;
+                } else {
+                    html += `<p style="color: green;">✅ Sucesso! Encontrados ${ticketsData?.length || 0} registros</p>`;
+                    if (ticketsData && ticketsData.length > 0) {
+                        html += '<pre>' + JSON.stringify(ticketsData, null, 2) + '</pre>';
+                    }
+                }
+                
+                html += '<h3>2. Tabela Ticket Ledger:</h3>';
+                if (ledgerError) {
+                    html += `<p style="color: red;">Erro: ${ledgerError.message}</p>`;
+                } else {
+                    html += `<p style="color: green;">✅ Sucesso! Encontrados ${ledgerData?.length || 0} registros</p>`;
+                    if (ledgerData && ledgerData.length > 0) {
+                        html += '<pre>' + JSON.stringify(ledgerData, null, 2) + '</pre>';
+                    }
+                }
+                
+                html += '<h3>3. Resolve User Identity (miguelnutt):</h3>';
+                if (identityError) {
+                    html += `<p style="color: red;">Erro: ${identityError.message}</p>`;
+                } else {
+                    html += `<p style="color: green;">✅ Sucesso!</p>`;
+                    html += `<pre>${JSON.stringify(identityData, null, 2)}</pre>`;
+                }
+                
+                html += '<h3>4. Resolve User Identity (usuário inexistente):</h3>';
+                if (identityErrorInexistente) {
+                    html += `<p style="color: orange;">Erro esperado: ${identityErrorInexistente.message}</p>`;
+                } else {
+                    html += `<p style="color: green;">✅ Criou perfil temporário!</p>`;
+                    html += `<pre>${JSON.stringify(identityDataInexistente, null, 2)}</pre>`;
+                }
+                
+                html += '<h3>5. Perfil miguelnutt:</h3>';
+                if (errorMiguelnutt) {
+                    html += `<p style="color: red;">Erro: ${errorMiguelnutt.message}</p>`;
+                } else {
+                    html += `<p style="color: green;">✅ Encontrados ${perfilMiguelnutt?.length || 0} perfis</p>`;
+                    if (perfilMiguelnutt && perfilMiguelnutt.length > 0) {
+                        html += `<pre>${JSON.stringify(perfilMiguelnutt[0], null, 2)}</pre>`;
+                    }
+                }
+                
+                if (typeof ticketsMiguelnutt !== 'undefined') {
+                    html += '<h3>6. Tickets do miguelnutt:</h3>';
+                    if (errorTicketsMiguelnutt) {
+                        html += `<p style="color: red;">Erro: ${errorTicketsMiguelnutt.message}</p>`;
+                    } else {
+                        html += `<p style="color: green;">✅ Encontrados ${ticketsMiguelnutt?.length || 0} registros de tickets</p>`;
+                        if (ticketsMiguelnutt && ticketsMiguelnutt.length > 0) {
+                            html += `<pre>${JSON.stringify(ticketsMiguelnutt, null, 2)}</pre>`;
+                        }
+                    }
+                    
+                    if (typeof awardData !== 'undefined') {
+                        html += '<h3>7. Teste Award-Reward:</h3>';
+                        if (awardError) {
+                            html += `<p style="color: red;">Erro: ${awardError.message}</p>`;
+                        } else {
+                            html += `<p style="color: green;">✅ Award executado com sucesso!</p>`;
+                            html += `<pre>${JSON.stringify(awardData, null, 2)}</pre>`;
+                        }
+                        
+                        if (typeof ticketsAposAward !== 'undefined') {
+                            html += '<h3>8. Tickets após Award:</h3>';
+                            if (errorTicketsAposAward) {
+                                html += `<p style="color: red;">Erro: ${errorTicketsAposAward.message}</p>`;
+                            } else {
+                                html += `<p style="color: green;">✅ Tickets verificados após award</p>`;
+                                if (ticketsAposAward && ticketsAposAward.length > 0) {
+                                    html += `<pre>${JSON.stringify(ticketsAposAward, null, 2)}</pre>`;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Erro geral:', error);
+                resultsDiv.innerHTML = `<p style="color: red;">Erro geral: ${error.message}</p>`;
+            }
+        }
+        
+        // Executar teste automaticamente
+        testTickets();
+    </script>
+</body>
+</html>
