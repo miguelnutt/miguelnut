@@ -14,7 +14,6 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { User } from "@supabase/supabase-js";
 import { PromotionalBar } from "@/components/PromotionalBar";
-import DebugData from "@/components/DebugData";
 import { normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface Stats {
