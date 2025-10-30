@@ -684,7 +684,7 @@ export default function Tickets() {
                           <Trophy className="h-4 w-4 text-primary flex-shrink-0" />
                           <span className="font-bold text-sm truncate">{raffle.nome_vencedor}</span>
                         </div>
-                        {isAdmin && (
+                        {isAdmin && isAdminMode && (
                           <Button
                             size="icon"
                             variant="ghost"

@@ -137,6 +137,50 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Se o spin é de Pontos de Loja e tem user_id, processar débito na StreamElements
+    if (spinRecord.tipo_recompensa === 'Pontos de Loja' && spinRecord.user_id) {
+      const pontos = parseInt(spinRecord.valor) || 0;
+      
+      // Buscar informações do usuário para obter o username
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('twitch_username, nome')
+        .eq('id', spinRecord.user_id)
+        .single();
+
+      if (profile && profile.twitch_username) {
+        try {
+          // Enviar débito para StreamElements (valor negativo para remover pontos)
+          const { error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
+            body: {
+              username: profile.twitch_username,
+              user_id: spinRecord.user_id,
+              points: -pontos, // Valor negativo para debitar
+              reason: `Histórico deletado: -${pontos} pontos`
+            }
+          });
+
+          if (syncError) {
+            console.error('Erro ao debitar pontos na StreamElements:', syncError);
+            return new Response(
+              JSON.stringify({ error: 'Erro ao debitar pontos na StreamElements' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            );
+          }
+
+          console.log(`Pontos debitados na StreamElements: user ${profile.twitch_username}, débito: -${pontos}`);
+        } catch (error) {
+          console.error('Erro ao processar débito de pontos:', error);
+          return new Response(
+            JSON.stringify({ error: 'Erro ao processar débito de pontos' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+          );
+        }
+      } else {
+        console.log(`Usuário sem twitch_username, não é possível debitar pontos: user_id ${spinRecord.user_id}`);
+      }
+    }
+
     // Deletar o spin
     const { error: deleteError } = await supabase
       .from('spins')
