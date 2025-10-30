@@ -49,41 +49,73 @@ export function RecentRewards() {
 
       // Buscar perfis dos usuários dos spins
       const spinUserIds = (spins || []).map(spin => spin.user_id).filter(Boolean);
-      const { data: spinProfilesData } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", spinUserIds);
+      let spinProfilesData = [];
       
-      const spinProfilesMap = (spinProfilesData || []).reduce((acc, profile) => {
-        acc[profile.id] = profile;
+      if (spinUserIds.length > 0) {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, nome")
+            .in("id", spinUserIds);
+          
+          if (error) {
+            console.error("Error fetching spin profiles:", error);
+          } else {
+            spinProfilesData = data || [];
+          }
+        } catch (err) {
+          console.error("Error in spin profiles query:", err);
+        }
+      }
+      
+      const spinProfilesMap = spinProfilesData.reduce((acc: Record<string, { id: string; nome: string }>, profile) => {
+        if (profile && profile.id) {
+          acc[profile.id] = profile;
+        }
         return acc;
-      }, {} as Record<string, any>);
+      }, {});
 
       // Buscar perfis dos vencedores dos sorteios
       const raffleUserIds = (raffles || []).map(raffle => raffle.vencedor_id).filter(Boolean);
-      const { data: raffleProfilesData } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", raffleUserIds);
+      let raffleProfilesData = [];
       
-      const raffleProfilesMap = (raffleProfilesData || []).reduce((acc, profile) => {
-        acc[profile.id] = profile;
+      if (raffleUserIds.length > 0) {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, nome")
+            .in("id", raffleUserIds);
+          
+          if (error) {
+            console.error("Error fetching raffle profiles:", error);
+          } else {
+            raffleProfilesData = data || [];
+          }
+        } catch (err) {
+          console.error("Error in raffle profiles query:", err);
+        }
+      }
+      
+      const raffleProfilesMap = raffleProfilesData.reduce((acc: Record<string, { id: string; nome: string }>, profile) => {
+        if (profile && profile.id) {
+          acc[profile.id] = profile;
+        }
         return acc;
-      }, {} as Record<string, any>);
+      }, {});
 
       const combined = [
         ...(spins || []).map(s => ({ 
           ...s, 
           type: 'spin' as const,
-          nome: s.user_id ? spinProfilesMap[s.user_id]?.nome : null
+          nome: s.user_id && spinProfilesMap[s.user_id] ? spinProfilesMap[s.user_id].nome : null
         })),
         ...(raffles || []).map(r => ({ 
           ...r, 
           type: 'raffle' as const,
-          nome_usuario: r.nome_vencedor,
-          tipo_recompensa: r.tipo_premio,
+          nome_usuario: r.nome_vencedor || '',
+          tipo_recompensa: r.tipo_premio || '',
           valor: r.valor_premio?.toString() || '0',
-          nome: r.vencedor_id ? raffleProfilesMap[r.vencedor_id]?.nome : null
+          nome: r.vencedor_id && raffleProfilesMap[r.vencedor_id] ? raffleProfilesMap[r.vencedor_id].nome : null
         }))
       ].sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

@@ -95,9 +95,11 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       if (profilesError) throw profilesError;
 
       // Criar mapa de perfis
-      const profilesMap: Record<string, any> = {};
+      const profilesMap: Record<string, { id: string; nome: string }> = {};
       (profilesData || []).forEach(p => {
-        profilesMap[p.id] = p;
+        if (p && p.id) {
+          profilesMap[p.id] = p;
+        }
       });
 
       console.log("Dados brutos dos tickets:", ticketsData);

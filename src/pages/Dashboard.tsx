@@ -228,20 +228,36 @@ export default function Dashboard() {
       
       // Buscar perfis dos usuários dos spins
       const userIds = (spinsData || []).map(spin => spin.user_id).filter(Boolean);
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", userIds);
+      let profilesData = [];
       
-      const profilesMap = (profilesData || []).reduce((acc, profile) => {
-        acc[profile.id] = profile;
+      if (userIds.length > 0) {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, nome")
+            .in("id", userIds);
+          
+          if (error) {
+            console.error("Error fetching profiles:", error);
+          } else {
+            profilesData = data || [];
+          }
+        } catch (err) {
+          console.error("Error in profiles query:", err);
+        }
+      }
+      
+      const profilesMap = profilesData.reduce((acc: Record<string, { id: string; nome: string }>, profile) => {
+        if (profile && profile.id) {
+          acc[profile.id] = profile;
+        }
         return acc;
-      }, {} as Record<string, any>);
+      }, {});
       
       const spinsWithNome = (spinsData || []).map(spin => ({
         ...spin,
-        twitch_username: spin.nome_usuario,
-        nome: spin.user_id ? profilesMap[spin.user_id]?.nome : null
+        twitch_username: spin.nome_usuario || '',
+        nome: spin.user_id && profilesMap[spin.user_id] ? profilesMap[spin.user_id].nome : null
       }));
       setRecentSpins(spinsWithNome);
 
@@ -258,20 +274,36 @@ export default function Dashboard() {
       
       // Buscar perfis dos usuários dos sorteios
       const raffleUserIds = (rafflesData || []).map(raffle => raffle.vencedor_id).filter(Boolean);
-      const { data: raffleProfilesData } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", raffleUserIds);
+      let raffleProfilesData = [];
       
-      const raffleProfilesMap = (raffleProfilesData || []).reduce((acc, profile) => {
-        acc[profile.id] = profile;
+      if (raffleUserIds.length > 0) {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, nome")
+            .in("id", raffleUserIds);
+          
+          if (error) {
+            console.error("Error fetching raffle profiles:", error);
+          } else {
+            raffleProfilesData = data || [];
+          }
+        } catch (err) {
+          console.error("Error in raffle profiles query:", err);
+        }
+      }
+      
+      const raffleProfilesMap = raffleProfilesData.reduce((acc: Record<string, { id: string; nome: string }>, profile) => {
+        if (profile && profile.id) {
+          acc[profile.id] = profile;
+        }
         return acc;
-      }, {} as Record<string, any>);
+      }, {});
       
       const rafflesWithNome = (rafflesData || []).map(raffle => ({
         ...raffle,
-        twitch_username: raffle.nome_vencedor,
-        nome: raffle.vencedor_id ? raffleProfilesMap[raffle.vencedor_id]?.nome : null
+        twitch_username: raffle.nome_vencedor || '',
+        nome: raffle.vencedor_id && raffleProfilesMap[raffle.vencedor_id] ? raffleProfilesMap[raffle.vencedor_id].nome : null
       }));
       setRecentRaffles(rafflesWithNome);
 

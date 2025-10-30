@@ -149,9 +149,11 @@ export default function Tickets() {
       }
 
       // Criar mapa de perfis simples
-      const profilesMap: Record<string, any> = {};
+      const profilesMap: Record<string, { id: string; nome: string }> = {};
       profilesData.forEach((p: any) => {
-        profilesMap[p.id] = p;
+        if (p && p.id) {
+          profilesMap[p.id] = p;
+        }
       });
       
       // Perfis carregados com sucesso
@@ -191,19 +193,35 @@ export default function Tickets() {
       
       // Buscar perfis dos vencedores dos sorteios
       const vencedorIds = (rafflesData || []).map(raffle => raffle.vencedor_id).filter(Boolean);
-      const { data: vencedorProfilesData } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", vencedorIds);
+      let vencedorProfilesData = [];
       
-      const vencedorProfilesMap = (vencedorProfilesData || []).reduce((acc, profile) => {
-        acc[profile.id] = profile;
+      if (vencedorIds.length > 0) {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, nome")
+            .in("id", vencedorIds);
+          
+          if (error) {
+            console.error("Error fetching vencedor profiles:", error);
+          } else {
+            vencedorProfilesData = data || [];
+          }
+        } catch (err) {
+          console.error("Error in vencedor profiles query:", err);
+        }
+      }
+      
+      const vencedorProfilesMap = vencedorProfilesData.reduce((acc: Record<string, { id: string; nome: string }>, profile) => {
+        if (profile && profile.id) {
+          acc[profile.id] = profile;
+        }
         return acc;
-      }, {} as Record<string, any>);
+      }, {});
       
       const rafflesWithNome = (rafflesData || []).map(raffle => ({
         ...raffle,
-        nome: raffle.vencedor_id ? vencedorProfilesMap[raffle.vencedor_id]?.nome : null
+        nome: raffle.vencedor_id && vencedorProfilesMap[raffle.vencedor_id] ? vencedorProfilesMap[raffle.vencedor_id].nome : null
       }));
       setRaffles(rafflesWithNome);
 
