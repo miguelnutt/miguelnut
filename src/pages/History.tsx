@@ -386,15 +386,32 @@ export default function History() {
                 <p className="font-semibold text-foreground mb-1">Atenção: Esta ação irá:</p>
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   <li>Excluir o histórico permanentemente</li>
-                  <li>
-                    <strong>Debitar -{spinToDelete?.spin.valor} pontos</strong> da conta do usuário{' '}
-                    <strong>{normalizeUsernameWithFallback(spinToDelete?.spin.nome_usuario, null)}</strong> na StreamElements
-                  </li>
+                  {spinToDelete?.spin.nome_usuario && 
+                   spinToDelete.spin.nome_usuario.trim() !== '' && 
+                   spinToDelete.spin.nome_usuario !== 'Visitante' ? (
+                    <li>
+                      <strong>Debitar -{spinToDelete.spin.valor} pontos</strong> da conta do usuário{' '}
+                      <strong>{normalizeUsernameWithFallback(spinToDelete.spin.nome_usuario, null)}</strong> na StreamElements
+                    </li>
+                  ) : (
+                    <li className="text-amber-600">
+                      <strong>Usuário não identificado</strong> - não será possível estornar pontos na StreamElements
+                    </li>
+                  )}
                 </ul>
               </div>
               
               <div className="text-sm text-muted-foreground">
-                <p><strong>Usuário:</strong> {normalizeUsernameWithFallback(spinToDelete?.spin.nome_usuario, null)}</p>
+                <p>
+                  <strong>Usuário:</strong>{' '}
+                  {spinToDelete?.spin.nome_usuario && 
+                   spinToDelete.spin.nome_usuario.trim() !== '' && 
+                   spinToDelete.spin.nome_usuario !== 'Visitante' ? (
+                    normalizeUsernameWithFallback(spinToDelete.spin.nome_usuario, null)
+                  ) : (
+                    <span className="text-amber-600 font-medium">Não identificado</span>
+                  )}
+                </p>
                 <p><strong>Valor:</strong> {spinToDelete?.spin.valor} pontos</p>
                 <p><strong>Origem:</strong> {spinToDelete?.spin.origem || spinToDelete?.spin.wheels?.nome || "-"}</p>
                 <p><strong>Data:</strong> {spinToDelete?.spin.created_at && formatDate(spinToDelete.spin.created_at)}</p>

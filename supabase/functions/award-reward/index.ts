@@ -30,7 +30,15 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    db: {
+      schema: 'public'
+    }
+  });
 
   try {
     const { userId, type, value, source, idempotencyKey, reason }: AwardRewardRequest = await req.json();
@@ -197,16 +205,20 @@ Deno.serve(async (req) => {
         // Validar saldo não-negativo
         if (newBalance < 0) {
           // Registrar falha no ledger
-          await supabase.from('ticket_ledger').insert({
-            user_id: userId,
-            variacao: value,
-            motivo: reason || `Recompensa: ${source}`,
-            idempotency_key: idempotencyKey,
-            origem: source,
-            status: 'falhou',
-            error_message: 'Saldo insuficiente',
-            retries: 0
-          });
+          try {
+            await supabase.from('ticket_ledger').insert({
+              user_id: userId,
+              variacao: value,
+              motivo: reason || `Recompensa: ${source}`,
+              idempotency_key: idempotencyKey,
+              origem: source,
+              status: 'falhou',
+              error_message: 'Saldo insuficiente',
+              retries: 0
+            });
+          } catch (ledgerError) {
+            console.error(`[${requestId}] Erro ao registrar falha no ledger:`, ledgerError);
+          }
 
           return new Response(
             JSON.stringify({ error: 'Saldo de tickets insuficiente para essa operação' }),
@@ -214,17 +226,31 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Atualizar saldo
-        await supabase
+        // Atualizar saldo de tickets
+        console.log(`[${requestId}] Atualizando saldo: ${currentBalance} -> ${newBalance} (${value > 0 ? '+' : ''}${value})`);
+        
+        const { error: upsertError } = await supabase
           .from('tickets')
           .upsert({
             user_id: userId,
             tickets_atual: newBalance,
             updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id'
           });
+        
+        if (upsertError) {
+          console.error(`[${requestId}] Erro ao atualizar tickets:`, upsertError);
+          console.error(`[${requestId}] Detalhes do erro:`, JSON.stringify(upsertError, null, 2));
+          throw new Error(`Erro ao atualizar saldo de tickets: ${upsertError.message}`);
+        }
+        
+        console.log(`[${requestId}] Saldo atualizado com sucesso para ${newBalance}`);
 
-        // Registrar no ledger como CONFIRMADO
-        await supabase
+        // Registrar no ledger
+        console.log(`[${requestId}] Registrando transação no ledger...`);
+        
+        const { error: insertError } = await supabase
           .from('ticket_ledger')
           .insert({
             user_id: userId,
@@ -235,6 +261,14 @@ Deno.serve(async (req) => {
             status: 'confirmado',
             retries: 0
           });
+        
+        if (insertError) {
+          console.error(`[${requestId}] Erro ao registrar no ledger:`, insertError);
+          console.error(`[${requestId}] Detalhes do erro do ledger:`, JSON.stringify(insertError, null, 2));
+          throw new Error(`Erro ao registrar transação: ${insertError.message}`);
+        }
+        
+        console.log(`[${requestId}] Transação registrada no ledger com sucesso`);
 
         console.log(`[${requestId}] ✅ Tickets ${value > 0 ? 'adicionados' : 'removidos'}: ${Math.abs(value)} para user ${userId}, novo saldo: ${newBalance}`);
 
@@ -252,16 +286,20 @@ Deno.serve(async (req) => {
         console.error(`[${requestId}] ❌ Erro ao processar tickets:`, error);
         
         // Registrar falha no ledger
-        await supabase.from('ticket_ledger').insert({
-          user_id: userId,
-          variacao: value,
-          motivo: reason || `Recompensa: ${source}`,
-          idempotency_key: idempotencyKey,
-          origem: source,
-          status: 'falhou',
-          error_message: error.message || 'Erro desconhecido',
-          retries: 0
-        });
+        try {
+          await supabase.from('ticket_ledger').insert({
+            user_id: userId,
+            variacao: value,
+            motivo: reason || `Recompensa: ${source}`,
+            idempotency_key: idempotencyKey,
+            origem: source,
+            status: 'falhou',
+            error_message: error.message || 'Erro desconhecido',
+            retries: 0
+          });
+        } catch (ledgerError) {
+          console.error(`[${requestId}] Erro ao registrar falha no ledger:`, ledgerError);
+        }
         
         throw error;
       }

@@ -159,6 +159,33 @@ Deno.serve(async (req) => {
     const pontosReverso = -pontosOriginal;
     const username = spinRecord.nome_usuario;
 
+    // Verificar se o username está vazio ou é inválido
+    if (!username || username.trim() === '' || username === 'Visitante') {
+      console.log(`[RevertStorePoints] Username inválido ou vazio (${username}), apenas deletando histórico`);
+      
+      const { error: deleteError } = await supabase
+        .from('spins')
+        .delete()
+        .eq('id', spinId);
+
+      if (deleteError) {
+        console.error('[RevertStorePoints] Erro ao deletar spin:', deleteError);
+        return new Response(
+          JSON.stringify({ error: 'Erro ao deletar histórico' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          reverted: false,
+          message: 'Histórico deletado (usuário não identificado, não foi possível estornar na StreamElements)'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`[RevertStorePoints] Enviando estorno: ${pontosReverso} pontos para ${username}`);
 
     try {
