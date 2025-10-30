@@ -261,14 +261,21 @@ export default function Tickets() {
           created_at: spin.created_at,
           tipo: 'spin' as const,
         })),
-        ...(ledgerData || []).map((entry: any) => ({
-          id: entry.id,
-          nome_usuario: entry.user_id ? ((profilesMap as any)[entry.user_id] || "Usuário desconhecido") : "Usuário desconhecido",
-          valor: entry.variacao > 0 ? `+${entry.variacao}` : `${entry.variacao}`,
-          created_at: entry.created_at,
-          tipo: 'ledger' as const,
-          motivo: entry.motivo
-        }))
+        ...(ledgerData || []).map((entry: any) => {
+          const profile = entry.user_id ? (profilesMap as any)[entry.user_id] : null;
+          const displayName = profile 
+            ? (profile.nome || profile.nome_personagem || profile.twitch_username || "Usuário desconhecido")
+            : "Usuário desconhecido";
+          
+          return {
+            id: entry.id,
+            nome_usuario: String(displayName),
+            valor: entry.variacao > 0 ? `+${entry.variacao}` : `${entry.variacao}`,
+            created_at: entry.created_at,
+            tipo: 'ledger' as const,
+            motivo: entry.motivo
+          };
+        })
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setTicketHistory(history.slice(0, 20));
