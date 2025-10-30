@@ -87,7 +87,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       const userIds = (ticketsData || []).map(t => t.user_id);
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, nome, nome_personagem, twitch_username, is_temporary")
+        .select("id, nome, nome_personagem, twitch_username")
         .in("id", userIds);
 
       if (profilesError) throw profilesError;
@@ -107,8 +107,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
           user_id: t.user_id,
           nome: profile?.nome,
           nome_personagem: profile?.nome_personagem,
-          tickets: t.tickets_atual,
-          is_temporary: profile?.is_temporary
+          tickets: t.tickets_atual
         });
         return {
           user_id: t.user_id,
