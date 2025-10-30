@@ -132,8 +132,10 @@ export default function Tickets() {
         try {
           const { data: batchProfiles, error: batchError } = await supabase
             .from("profiles")
-            .select("id, nome, nome_personagem, twitch_username, is_temporary")
-            .in("id", batch);
+            .select("id, nome, nome_personagem, twitch_username, is_temporary, is_active, merged_into")
+            .in("id", batch)
+            .eq("is_active", true)
+            .is("merged_into", null);
 
           if (batchError) {
             console.error(`Erro ao buscar lote ${i / batchSize + 1}:`, batchError);
@@ -150,11 +152,65 @@ export default function Tickets() {
       console.log("Perfis encontrados:", profilesData.length);
       console.log("Perfis data:", profilesData);
 
+      // Se alguns perfis não foram encontrados, tentar buscar perfis mesclados
+      const foundUserIds = new Set(profilesData.map(p => p.id));
+      const missingUserIds = userIds.filter(id => !foundUserIds.has(id));
+      
+      if (missingUserIds.length > 0) {
+        console.log("IDs não encontrados (podem estar mesclados):", missingUserIds);
+        
+        // Buscar perfis que foram mesclados
+        const { data: mergedProfiles, error: mergedError } = await supabase
+          .from("profiles")
+          .select("id, merged_into, nome, nome_personagem, twitch_username, is_temporary")
+          .in("id", missingUserIds);
+          
+        if (mergedError) {
+          console.error("Erro ao buscar perfis mesclados:", mergedError);
+        } else if (mergedProfiles) {
+          console.log("Perfis mesclados encontrados:", mergedProfiles);
+          
+          // Para cada perfil mesclado, buscar o perfil canônico
+          const canonicalIds = mergedProfiles
+            .filter(p => p.merged_into)
+            .map(p => p.merged_into);
+            
+          if (canonicalIds.length > 0) {
+            const { data: canonicalProfiles, error: canonicalError } = await supabase
+              .from("profiles")
+              .select("id, nome, nome_personagem, twitch_username, is_temporary")
+              .in("id", canonicalIds);
+              
+            if (canonicalError) {
+              console.error("Erro ao buscar perfis canônicos:", canonicalError);
+            } else if (canonicalProfiles) {
+              console.log("Perfis canônicos encontrados:", canonicalProfiles);
+              
+              // Mapear perfis mesclados para seus canônicos
+              mergedProfiles.forEach(merged => {
+                if (merged.merged_into) {
+                  const canonical = canonicalProfiles.find(c => c.id === merged.merged_into);
+                  if (canonical) {
+                    // Adicionar o perfil canônico usando o ID original
+                    profilesData.push({
+                      ...canonical,
+                      id: merged.id // Usar o ID original para o mapeamento
+                    });
+                  }
+                }
+              });
+            }
+          }
+        }
+      }
+
       // Criar mapa de perfis
       const profilesMap: Record<string, any> = {};
       profilesData.forEach((p: any) => {
         profilesMap[p.id] = p;
       });
+
+      console.log("Mapa final de perfis:", Object.keys(profilesMap).length, "perfis");
 
       // Montar ranking com nomes corretos
       const rankingList: TicketRanking[] = ticketsData
@@ -173,6 +229,8 @@ export default function Tickets() {
             } else if (profile.is_temporary) {
               displayName = "Usuário Temporário";
             }
+          } else {
+            console.log("Perfil não encontrado para user_id:", t.user_id);
           }
 
           return {

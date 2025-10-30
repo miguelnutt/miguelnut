@@ -15,7 +15,6 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
-import AddAdminMiguelnutt from "@/components/AddAdminMiguelnutt";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -75,28 +74,129 @@ const AdminDashboard = () => {
   const loadLogs = async () => {
     setLogsLoading(true);
     try {
-      // Usar a tabela correta: streamelements_sync_logs
-      const { data: logs, error } = await supabase
-        .from('streamelements_sync_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1000);
+      // Buscar logs de todas as moedas/sistemas
+      const [
+        streamElementsLogs,
+        rubiniCoinsLogs,
+        ticketLogs,
+        dailyRewardsLogs,
+        tibiaTermoLogs
+      ] = await Promise.all([
+        // StreamElements (pontos de loja)
+        supabase
+          .from('streamelements_sync_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(200),
+        
+        // Rubini Coins
+        supabase
+          .from('rubini_coins_history')
+          .select('*, profiles(nome, twitch_username)')
+          .order('created_at', { ascending: false })
+          .limit(200),
+        
+        // Tickets
+        supabase
+          .from('ticket_ledger')
+          .select('*, profiles(nome, twitch_username)')
+          .order('created_at', { ascending: false })
+          .limit(200),
+        
+        // Daily Rewards
+        supabase
+          .from('daily_rewards_history')
+          .select('*, profiles(nome, twitch_username)')
+          .order('created_at', { ascending: false })
+          .limit(200),
+        
+        // TibiaTermo
+        supabase
+          .from('tibiatermo_history')
+          .select('*, profiles(nome, twitch_username)')
+          .order('created_at', { ascending: false })
+          .limit(200)
+      ]);
 
-      if (error) throw error;
+      const allLogs: any[] = [];
 
-      // Mapear os dados para o formato esperado pelo componente
-      const mappedLogs = (logs || []).map(log => ({
-        id: log.id,
-        created_at: log.created_at,
-        log_type: log.tipo_operacao || 'streamelements',
-        user_name: log.username,
-        description: log.success ? 
-          `Operação ${log.tipo_operacao} realizada com sucesso` : 
-          `Erro na operação ${log.tipo_operacao}: ${log.error_message || 'Erro desconhecido'}`,
-        amount: log.points_added || 0
-      }));
+      // Mapear StreamElements logs
+      if (streamElementsLogs.data) {
+        streamElementsLogs.data.forEach(log => {
+          allLogs.push({
+            id: `se_${log.id}`,
+            created_at: log.created_at,
+            log_type: 'Pontos Loja',
+            user_name: log.username || 'Usuário desconhecido',
+            description: log.success ? 
+              `Operação ${log.tipo_operacao} realizada com sucesso` : 
+              `Erro na operação ${log.tipo_operacao}: ${log.error_message || 'Erro desconhecido'}`,
+            amount: log.points_added || 0
+          });
+        });
+      }
 
-      setLogsData(mappedLogs);
+      // Mapear Rubini Coins logs
+      if (rubiniCoinsLogs.data) {
+        rubiniCoinsLogs.data.forEach(log => {
+          allLogs.push({
+            id: `rc_${log.id}`,
+            created_at: log.created_at,
+            log_type: 'Rubini Coins',
+            user_name: log.profiles?.nome || log.profiles?.twitch_username || 'Usuário desconhecido',
+            description: log.motivo || 'Transação de Rubini Coins',
+            amount: log.variacao || 0
+          });
+        });
+      }
+
+      // Mapear Ticket logs
+      if (ticketLogs.data) {
+        ticketLogs.data.forEach(log => {
+          allLogs.push({
+            id: `tk_${log.id}`,
+            created_at: log.created_at,
+            log_type: 'Tickets',
+            user_name: log.profiles?.nome || log.profiles?.twitch_username || 'Usuário desconhecido',
+            description: log.motivo || 'Transação de Tickets',
+            amount: log.variacao || 0
+          });
+        });
+      }
+
+      // Mapear Daily Rewards logs
+      if (dailyRewardsLogs.data) {
+        dailyRewardsLogs.data.forEach(log => {
+          allLogs.push({
+            id: `dr_${log.id}`,
+            created_at: log.created_at,
+            log_type: 'Daily Rewards',
+            user_name: log.profiles?.nome || log.profiles?.twitch_username || 'Usuário desconhecido',
+            description: `Recompensa diária: ${log.tipo_recompensa} - ${log.valor_recompensa}`,
+            amount: log.valor_recompensa || 0
+          });
+        });
+      }
+
+      // Mapear TibiaTermo logs
+      if (tibiaTermoLogs.data) {
+        tibiaTermoLogs.data.forEach(log => {
+          allLogs.push({
+            id: `tt_${log.id}`,
+            created_at: log.created_at,
+            log_type: 'TibiaTermo',
+            user_name: log.profiles?.nome || log.profiles?.twitch_username || 'Usuário desconhecido',
+            description: `TibiaTermo: ${log.acertou ? 'Acertou' : 'Errou'} - Palavra: ${log.palavra_tentativa}`,
+            amount: log.pontos_ganhos || 0
+          });
+        });
+      }
+
+      // Ordenar todos os logs por data (mais recentes primeiro)
+      allLogs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      // Limitar a 1000 logs no total
+      setLogsData(allLogs.slice(0, 1000));
     } catch (error: any) {
       console.error("Erro ao carregar logs:", error);
       toast({
@@ -165,9 +265,6 @@ const AdminDashboard = () => {
         </Button>
       </div>
 
-      {/* Componente para adicionar admin */}
-      <AddAdminMiguelnutt />
-
       <Card>
         <CardHeader>
           <CardTitle>Logs do Sistema</CardTitle>
@@ -186,15 +283,11 @@ const AdminDashboard = () => {
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="all">Todos os Logs</option>
-                  <option value="rubini_coins">Rubini Coins</option>
-                  <option value="daily_rewards">Recompensas Diárias</option>
-                  <option value="tibiatermo">TibiaTermo</option>
-                  <option value="streamelements">StreamElements</option>
-                  <option value="spins">Roleta</option>
-                  <option value="raffles">Sorteios</option>
-                  <option value="tickets">Tickets</option>
-                  <option value="chat">Chat</option>
-                  <option value="system">Sistema</option>
+                  <option value="Pontos Loja">Pontos Loja</option>
+                  <option value="Rubini Coins">Rubini Coins</option>
+                  <option value="Tickets">Tickets</option>
+                  <option value="Daily Rewards">Daily Rewards</option>
+                  <option value="TibiaTermo">TibiaTermo</option>
                 </select>
               </div>
               <div>
