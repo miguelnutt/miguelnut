@@ -41,23 +41,33 @@ export function RubiniCoinsResgateDialog({
 
   const carregarPersonagens = async () => {
     try {
-      // Buscar perfil por userId independentemente do status is_active
-      // pois usuários podem ter personagem cadastrado mesmo sem perfil ativo
-      const { data: profile } = await supabase
+      console.log('🔍 Carregando personagem para userId:', userId);
+      
+      // Buscar perfil por userId (que já é o ID correto do perfil ativo)
+      const { data: profile, error } = await supabase
         .from('profiles')
-        .select('nome_personagem')
+        .select('nome_personagem, twitch_username')
         .eq('id', userId)
         .maybeSingle();
 
+      if (error) {
+        console.error('❌ Erro ao buscar perfil:', error);
+        throw error;
+      }
+
+      console.log('📋 Perfil encontrado:', profile);
+
       if (profile?.nome_personagem && profile.nome_personagem.trim() !== '') {
+        console.log('✅ Personagem encontrado:', profile.nome_personagem);
         setPersonagens([profile.nome_personagem]);
         setPersonagem(profile.nome_personagem);
       } else {
+        console.log('⚠️ Nenhum personagem cadastrado');
         setPersonagens([]);
         setPersonagem('');
       }
     } catch (error) {
-      console.error('Erro ao carregar personagens:', error);
+      console.error('❌ Erro ao carregar personagens:', error);
       setPersonagens([]);
       setPersonagem('');
     }
@@ -83,40 +93,53 @@ export function RubiniCoinsResgateDialog({
   };
 
   const solicitarResgate = async () => {
+    console.log('🎯 Iniciando solicitação de resgate:', { quantidade, personagem, userId, saldoAtual });
+
     if (quantidade % 25 !== 0) {
+      console.log('❌ Quantidade inválida:', quantidade);
       toast.error('A quantidade deve ser múltiplo de 25');
       return;
     }
 
     if (quantidade > saldoAtual) {
+      console.log('❌ Saldo insuficiente:', { quantidade, saldoAtual });
       toast.error('Saldo insuficiente');
       return;
     }
 
     if (!personagem) {
+      console.log('❌ Nenhum personagem selecionado');
       toast.error('Selecione um personagem');
       return;
     }
 
     setLoading(true);
     try {
+      console.log('📤 Enviando solicitação para backend...');
       const { data, error } = await supabase.functions.invoke('solicitar-resgate-rubini-coins', {
         body: { quantidade, personagem, userId }
       });
 
-      if (error) throw error;
+      console.log('📥 Resposta do backend:', { data, error });
+
+      if (error) {
+        console.error('❌ Erro na função:', error);
+        throw error;
+      }
 
       if (data.error) {
+        console.error('❌ Erro retornado pelo backend:', data.error);
         toast.error(data.error);
         return;
       }
 
+      console.log('✅ Resgate solicitado com sucesso!');
       toast.success('Resgate solicitado com sucesso!');
       setQuantidade(25);
       carregarResgates();
       onResgateSuccess();
     } catch (error: any) {
-      console.error('Erro ao solicitar resgate:', error);
+      console.error('❌ Erro ao solicitar resgate:', error);
       toast.error(error.message || 'Erro ao solicitar resgate');
     } finally {
       setLoading(false);
@@ -198,9 +221,12 @@ export function RubiniCoinsResgateDialog({
                 </SelectContent>
               </Select>
               {personagens.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Você precisa vincular um personagem nas configurações da conta
-                </p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Personagem não encontrado!</strong><br />
+                    Você precisa cadastrar o nome do seu personagem nas <strong>Configurações da Conta</strong> antes de solicitar resgates.
+                  </p>
+                </div>
               )}
             </div>
 
