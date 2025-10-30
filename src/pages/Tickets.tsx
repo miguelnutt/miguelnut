@@ -118,7 +118,7 @@ export default function Tickets() {
 
       const { data: profilesData } = await supabase
         .from("profiles")
-        .select("id, nome")
+        .select("id, nome, is_temporary")
         .in("id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]);
 
       const profilesMap: Record<string, string> = {};

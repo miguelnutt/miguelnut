@@ -74,31 +74,47 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
   const fetchParticipantes = async () => {
     try {
       console.log("Buscando participantes do sorteio...");
-      const { data: ticketsData, error } = await supabase
+      
+      // Buscar tickets primeiro
+      const { data: ticketsData, error: ticketsError } = await supabase
         .from("tickets")
-        .select(`
-          user_id,
-          tickets_atual,
-          profiles(nome, nome_personagem, twitch_username)
-        `)
+        .select("user_id, tickets_atual")
         .gt("tickets_atual", 0);
 
-      if (error) throw error;
+      if (ticketsError) throw ticketsError;
+
+      // Buscar perfis separadamente para incluir usuários temporários
+      const userIds = (ticketsData || []).map(t => t.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, nome, nome_personagem, twitch_username, is_temporary")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Criar mapa de perfis
+      const profilesMap: Record<string, any> = {};
+      (profilesData || []).forEach(p => {
+        profilesMap[p.id] = p;
+      });
 
       console.log("Dados brutos dos tickets:", ticketsData);
+      console.log("Perfis encontrados:", profilesData);
 
       const participantesList: Participante[] = (ticketsData || []).map((t: any) => {
+        const profile = profilesMap[t.user_id];
         console.log("Processando participante:", {
           user_id: t.user_id,
-          nome: t.profiles?.nome,
-          nome_personagem: t.profiles?.nome_personagem,
-          tickets: t.tickets_atual
+          nome: profile?.nome,
+          nome_personagem: profile?.nome_personagem,
+          tickets: t.tickets_atual,
+          is_temporary: profile?.is_temporary
         });
         return {
           user_id: t.user_id,
-          nome: t.profiles?.nome || "Usuário desconhecido",
+          nome: profile?.nome || "Usuário desconhecido",
           tickets: t.tickets_atual,
-          nome_personagem: t.profiles?.nome_personagem || undefined
+          nome_personagem: profile?.nome_personagem || undefined
         };
       });
 

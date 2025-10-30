@@ -30,6 +30,8 @@ interface SpinDialogProps {
     duracao_spin: number;
   } | null;
   testMode?: boolean;
+  loggedUser?: User | null;
+  twitchUser?: { login: string; id: string; display_name: string } | null;
 }
 
 
@@ -37,7 +39,7 @@ const spinInputSchema = z.object({
   nomeUsuario: z.string().trim().min(1, "Nome do usuário é obrigatório").max(100, "Nome muito longo (máximo 100 caracteres)")
 });
 
-export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: SpinDialogProps) {
+export function SpinDialog({ open, onOpenChange, wheel, testMode = false, loggedUser, twitchUser }: SpinDialogProps) {
   const [user, setUser] = useState<User | null>(null);
   const { isAdmin } = useAdmin(user);
   const { isAdminMode } = useAdminMode();
@@ -130,11 +132,14 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       const nomeParaUsar = nomeVencedor || "Visitante";
       
       console.log("[Roulette] 🎯 Resolvendo identidade para:", nomeParaUsar);
+      console.log("[Roulette] 🔍 Usuário logado:", { twitchUser: twitchUser?.login, twitchId: twitchUser?.id });
       
       // Usar a edge function resolve-user-identity para obter o perfil canônico
+      // Se o usuário estiver logado, usar o twitch_user_id para garantir que encontre o perfil correto
       const { data: identityData, error: identityError } = await supabase.functions.invoke('resolve-user-identity', {
         body: {
-          searchTerm: nomeParaUsar
+          searchTerm: nomeParaUsar,
+          twitch_user_id: twitchUser?.id || null
         }
       });
 

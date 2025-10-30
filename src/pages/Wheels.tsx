@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, Copy, GripVertical, Eye, EyeOff } from "lucide-reac
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminMode } from "@/contexts/AdminModeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { WheelDialog } from "@/components/WheelDialog";
 import { SpinDialog } from "@/components/SpinDialog";
 import { CanvasWheel } from "@/components/CanvasWheel";
@@ -31,8 +32,7 @@ interface Wheel {
 }
 
 export default function Wheels() {
-  const [user, setUser] = useState<User | null>(null);
-  const { isAdmin, loading: adminLoading } = useAdmin(user);
+  const { sessionUser, twitchUser, isAdmin } = useAuth();
   const { isAdminMode } = useAdminMode();
   const [wheels, setWheels] = useState<Wheel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,21 +44,7 @@ export default function Wheels() {
   const [testMode, setTestMode] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!adminLoading) {
-      fetchWheels();
-    }
+    fetchWheels();
 
     const channel = supabase
       .channel("wheels_changes")
@@ -70,9 +56,7 @@ export default function Wheels() {
           table: "wheels"
         },
         () => {
-          if (!adminLoading) {
-            fetchWheels();
-          }
+          fetchWheels();
         }
       )
       .subscribe();
@@ -379,6 +363,8 @@ export default function Wheels() {
         onOpenChange={setSpinDialogOpen}
         wheel={selectedWheel}
         testMode={testMode}
+        loggedUser={sessionUser}
+        twitchUser={twitchUser}
       />
     </div>
   );
