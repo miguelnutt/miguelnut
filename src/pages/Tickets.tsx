@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/lib/supabase-helper";
-import { normalizeUsername } from "@/lib/username-utils";
+import { normalizeUsername, normalizeUsernameWithFallback } from "@/lib/username-utils";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import { RaffleDialog } from "@/components/RaffleDialog";
@@ -159,7 +159,7 @@ export default function Tickets() {
       const rankingList: TicketRanking[] = ticketsData
         .map((t: any) => {
           const profile = profilesMap[t.user_id];
-          const displayName = normalizeUsername(profile?.twitch_username);
+          const displayName = normalizeUsernameWithFallback(profile?.twitch_username, profile?.nome);
 
           // Garantir que todos os campos sejam do tipo correto
           const safeUserId = String(t.user_id || "");
@@ -210,14 +210,14 @@ export default function Tickets() {
 
       // Garantir nomes para usuários no ledger
       const ledgerUserIds = Array.from(new Set((ledgerData || []).map((e: any) => e.user_id).filter(Boolean)));
-      const missingIds = ledgerUserIds.filter((id: string) => !(profilesMap as any)[id]);
+      const missingIds = ledgerUserIds.filter((id: string) => !profilesMap[id]);
       if (missingIds.length) {
         const { data: moreProfiles } = await supabase
           .from("profiles")
-          .select("id, nome")
+          .select("id, nome, twitch_username")
           .in("id", missingIds);
         (moreProfiles || []).forEach((p: any) => {
-          (profilesMap as any)[p.id] = p.nome;
+          profilesMap[p.id] = p;
         });
       }
 
@@ -231,8 +231,8 @@ export default function Tickets() {
           tipo: 'spin' as const,
         })),
         ...(ledgerData || []).map((entry: any) => {
-          const profile = entry.user_id ? (profilesMap as any)[entry.user_id] : null;
-          const displayName = normalizeUsername(profile?.twitch_username);
+          const profile = entry.user_id ? profilesMap[entry.user_id] : null;
+          const displayName = normalizeUsernameWithFallback(profile?.twitch_username, profile?.nome);
           
           return {
             id: entry.id,

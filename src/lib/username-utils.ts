@@ -23,6 +23,30 @@ export function normalizeUsername(username: string | null | undefined): string {
 }
 
 /**
+ * Normaliza um username da Twitch com fallback para o nome do perfil
+ * @param twitchUsername - Username da Twitch (pode ser null)
+ * @param profileName - Nome do perfil como fallback
+ * @returns Username normalizado com @ ou nome do perfil
+ */
+export function normalizeUsernameWithFallback(
+  twitchUsername: string | null | undefined, 
+  profileName: string | null | undefined
+): string {
+  // Se tem twitch_username, usa ele
+  if (twitchUsername && twitchUsername.trim() !== "") {
+    return normalizeUsername(twitchUsername);
+  }
+  
+  // Se não tem twitch_username mas tem nome, usa o nome sem @
+  if (profileName && profileName.trim() !== "") {
+    return profileName.trim();
+  }
+  
+  // Se não tem nenhum dos dois, retorna usuário desconhecido
+  return "Usuário desconhecido";
+}
+
+/**
  * Remove @ do início do username se existir
  * @param username - Username que pode ter @
  * @returns Username sem @

@@ -8,6 +8,7 @@ import { RefreshCw, CheckCircle, XCircle, Download, Filter } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface RCLog {
   id: string;
@@ -21,6 +22,7 @@ interface RCLog {
   idempotency_key: string | null;
   profiles?: {
     twitch_username: string;
+    nome?: string;
   };
 }
 
@@ -80,7 +82,7 @@ export function RubiniCoinsMonitor() {
         .from('rubini_coins_history')
         .select(`
           *,
-          profiles:user_id (twitch_username)
+          profiles:user_id (twitch_username, nome)
         `)
         .gte('created_at', dataLimite.toISOString())
         .order('created_at', { ascending: false });
@@ -107,7 +109,7 @@ export function RubiniCoinsMonitor() {
     const headers = ['Data/Hora', 'Usuário', 'Variação', 'Origem', 'Status', 'Motivo', 'Erro'];
     const rows = filteredLogs.map(log => [
       format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss'),
-      log.profiles?.twitch_username || 'N/A',
+      normalizeUsernameWithFallback(log.profiles?.twitch_username, log.profiles?.nome),
       log.variacao,
       log.origem || 'N/A',
       log.status || 'N/A',
@@ -262,7 +264,7 @@ export function RubiniCoinsMonitor() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="font-medium">
-                            @{log.profiles?.twitch_username || 'N/A'}
+                            @{normalizeUsernameWithFallback(log.profiles?.twitch_username, log.profiles?.nome)}
                           </span>
                           <Badge variant={isSuccess ? "default" : "destructive"}>
                             {isSuccess ? 'Confirmado' : 'Falha'}

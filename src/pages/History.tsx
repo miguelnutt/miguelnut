@@ -113,7 +113,18 @@ export default function History() {
 
       if (tibiaTermoError) throw tibiaTermoError;
 
-      // Mesclar os dados
+      // Mapear dados das roletas (spins usa nome_usuario, não twitch_username)
+      const spinsFormatted = (spinsData || []).map(item => ({
+        id: item.id,
+        twitch_username: item.nome_usuario, // Mapear nome_usuario para twitch_username
+        tipo_recompensa: item.tipo_recompensa,
+        valor: item.valor,
+        created_at: item.created_at,
+        wheels: item.wheels,
+        origem: item.wheels?.nome || 'Roleta'
+      }));
+
+      // Mesclar dados do TibiaTermo
       const tibiaTermoFormatted = (tibiaTermoData || []).map(item => ({
         id: item.id,
         twitch_username: item.twitch_username,
@@ -124,7 +135,7 @@ export default function History() {
         origem: 'TibiaTermo'
       }));
 
-      const allHistory = [...(spinsData || []), ...tibiaTermoFormatted];
+      const allHistory = [...spinsFormatted, ...tibiaTermoFormatted];
       allHistory.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setSpins(allHistory);

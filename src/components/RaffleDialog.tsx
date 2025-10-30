@@ -497,7 +497,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                       />
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="font-medium">@{p.twitch_username}</span>
+                          <span className="font-medium">{p.twitch_username}</span>
                           <span className="text-sm font-semibold text-primary">
                             {probabilidade}%
                           </span>
@@ -558,7 +558,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
                 {isModoTeste ? "🎮 Teste!" : "Vencedor!"}
               </h2>
               <p className="text-xl font-semibold text-foreground">
-                @{vencedor?.twitch_username}
+                {vencedor?.twitch_username}
               </p>
               <p className="text-sm text-muted-foreground">
                 Tinha {vencedor?.tickets} {vencedor?.tickets === 1 ? "ticket" : "tickets"}

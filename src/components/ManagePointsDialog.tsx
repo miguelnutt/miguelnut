@@ -20,11 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { searchUsername, normalizeUsername } from "@/lib/username-utils";
+import { searchUsername, normalizeUsername, normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface Profile {
   id: string;
   twitch_username: string;
+  nome?: string;
 }
 
 interface ManagePointsDialogProps {
@@ -51,7 +52,7 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, twitch_username')
+        .select('id, twitch_username, nome')
         .not('twitch_username', 'is', null)
         .order('twitch_username', { ascending: true });
 
@@ -220,7 +221,7 @@ export function ManagePointsDialog({ open, onOpenChange }: ManagePointsDialogPro
                         key={user.id}
                         className={selectedUser?.id === user.id ? "bg-muted" : ""}
                       >
-                        <TableCell className="font-medium">{normalizeUsername(user.twitch_username)}</TableCell>
+                        <TableCell className="font-medium">{normalizeUsernameWithFallback(user.twitch_username, user.nome)}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             size="sm"

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase-helper";
+import { searchUsername, normalizeUsernameWithFallback } from "@/lib/username-utils";
 import {
   Table,
   TableBody,
@@ -106,11 +107,10 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
   };
 
   const filteredUsers = users.filter(user => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-
-      user.profiles?.twitch_username?.toLowerCase().includes(searchLower)
-    );
+    if (!searchTerm) return true;
+    
+    const username = user.profiles?.twitch_username || "";
+    return searchUsername(username, searchTerm);
   });
 
   return (
@@ -161,7 +161,7 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
                     {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
-                          @{user.profiles?.twitch_username || "Sem username"}
+                          @{normalizeUsernameWithFallback(user.profiles?.twitch_username, user.profiles?.nome)}
                         </TableCell>
                         <TableCell>
                           {user.profiles?.twitch_username || "N/A"}
