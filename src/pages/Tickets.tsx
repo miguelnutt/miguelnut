@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { RaffleDialog } from "@/components/RaffleDialog";
 import { AddTicketDialog } from "@/components/AddTicketDialog";
 import { toast } from "sonner";
@@ -48,6 +49,7 @@ interface TicketHistory {
 export default function Tickets() {
   const [user, setUser] = useState<User | null>(null);
   const { isAdmin } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [ranking, setRanking] = useState<TicketRanking[]>([]);
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [ticketHistory, setTicketHistory] = useState<TicketHistory[]>([]);
@@ -431,7 +433,7 @@ export default function Tickets() {
                           </div>
                         </div>
                         
-                        {isAdmin && editingUser === item.user_id && (
+                        {isAdmin && isAdminMode && editingUser === item.user_id && (
                           <div className="mt-3 pt-3 border-t border-border space-y-2">
                             <div className="flex gap-2">
                               <Input
@@ -498,7 +500,7 @@ export default function Tickets() {
                           </div>
                         )}
                         
-                        {isAdmin && editingUser !== item.user_id && (
+                        {isAdmin && isAdminMode && editingUser !== item.user_id && (
                           <div className="mt-3 pt-3 border-t border-border flex gap-2">
                             <Button
                               size="sm"
@@ -550,7 +552,7 @@ export default function Tickets() {
                               <TableCell className="font-medium">{item.nome}</TableCell>
                               <TableCell className="text-right">{item.tickets_atual}</TableCell>
                             </TableRow>
-                            {isAdmin && (
+                            {isAdmin && isAdminMode && (
                               <TableRow key={`${item.user_id}-controls`}>
                                 <TableCell colSpan={3} className="py-2 bg-muted/20">
                                   {editingUser === item.user_id ? (
@@ -743,7 +745,7 @@ export default function Tickets() {
                           <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
                             {formatDate(item.created_at)}
                           </span>
-                          {isAdmin && (
+                          {isAdmin && isAdminMode && (
                             <Button
                               size="icon"
                               variant="ghost"

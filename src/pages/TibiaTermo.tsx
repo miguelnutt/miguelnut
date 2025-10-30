@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Settings, Trash2, Plus } from "lucide-react";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { WheelRanking } from "@/components/WheelRanking";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,6 +39,7 @@ const TibiaTermo = () => {
   const { authReady } = useAuth();
   const [user, setUser] = useState<any>(null);
   const { isAdmin, loading: adminLoading } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [gameData, setGameData] = useState<any>(null);
   const [currentGuess, setCurrentGuess] = useState("");
   const [guesses, setGuesses] = useState<string[]>([]);
@@ -843,7 +845,7 @@ const TibiaTermo = () => {
                 Descubra a palavra do dia em até 6 tentativas!
               </p>
             </div>
-            {isAdmin && (
+            {isAdmin && isAdminMode && (
               <Dialog open={showAdmin} onOpenChange={setShowAdmin}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="icon" title="Configurações">

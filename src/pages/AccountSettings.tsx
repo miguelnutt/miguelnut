@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, ShoppingCart, Gem, Ticket, BadgeCheck, Link2, Link2Off } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { PromotionalBar } from "@/components/PromotionalBar";
@@ -32,6 +33,7 @@ export default function AccountSettings() {
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
   const { isAdmin, loading: adminLoading } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [nomePersonagem, setNomePersonagem] = useState("");
   const [savingPersonagem, setSavingPersonagem] = useState(false);
   const [pontosStreamElements, setPontosStreamElements] = useState<number | null>(null);
@@ -484,7 +486,7 @@ export default function AccountSettings() {
     );
   }
 
-  if (!twitchUser && !isAdmin) {
+  if (!twitchUser && !(isAdmin && isAdminMode)) {
     return (
       <>
         <Navbar />
@@ -830,7 +832,7 @@ export default function AccountSettings() {
           </Card>
           )}
           {/* Account Info - Apenas para admin */}
-          {isAdmin && (
+          {isAdmin && isAdminMode && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg md:text-xl">Informações da Conta</CardTitle>
@@ -864,7 +866,7 @@ export default function AccountSettings() {
           )}
 
           {/* 2FA Settings - Apenas para admin */}
-          {isAdmin && (
+          {isAdmin && isAdminMode && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">

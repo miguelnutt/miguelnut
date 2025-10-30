@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2, Copy, GripVertical, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { WheelDialog } from "@/components/WheelDialog";
 import { SpinDialog } from "@/components/SpinDialog";
 import { CanvasWheel } from "@/components/CanvasWheel";
@@ -32,6 +33,7 @@ interface Wheel {
 export default function Wheels() {
   const [user, setUser] = useState<User | null>(null);
   const { isAdmin, loading: adminLoading } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [wheels, setWheels] = useState<Wheel[]>([]);
   const [loading, setLoading] = useState(true);
   const [wheelDialogOpen, setWheelDialogOpen] = useState(false);
@@ -87,8 +89,8 @@ export default function Wheels() {
         .select("*")
         .eq("ativa", true);
       
-      // Se não for admin, mostrar apenas roletas visíveis
-      if (!isAdmin) {
+      // Se não for admin ou não estiver em modo admin, mostrar apenas roletas visíveis
+      if (!isAdmin || !isAdminMode) {
         query = query.eq("visivel_para_usuarios", true);
       }
       
@@ -210,7 +212,7 @@ export default function Wheels() {
       return (
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">Nenhuma roleta criada ainda</p>
-          {isAdmin && (
+          {isAdmin && isAdminMode && (
             <Button onClick={() => setWheelDialogOpen(true)} className="bg-gradient-primary">
               <Plus className="mr-2 h-4 w-4" />
               Criar Primeira Roleta
@@ -226,22 +228,22 @@ export default function Wheels() {
           <Card 
             key={wheel.id} 
             className={`shadow-card hover:shadow-glow transition-all duration-300 ${
-              isAdmin ? 'cursor-move' : ''
+              isAdmin && isAdminMode ? 'cursor-move' : ''
             } ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
-            draggable={isAdmin}
-            onDragStart={() => isAdmin && handleDragStart(index)}
-            onDragOver={(e) => isAdmin && handleDragOver(e, index)}
-            onDragEnd={() => isAdmin && handleDragEnd()}
+            draggable={isAdmin && isAdminMode}
+            onDragStart={() => isAdmin && isAdminMode && handleDragStart(index)}
+            onDragOver={(e) => isAdmin && isAdminMode && handleDragOver(e, index)}
+            onDragEnd={() => isAdmin && isAdminMode && handleDragEnd()}
           >
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {isAdmin && (
+                  {isAdmin && isAdminMode && (
                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
                   )}
                   <CardTitle>{wheel.nome}</CardTitle>
                 </div>
-                {isAdmin && (
+                {isAdmin && isAdminMode && (
                   <div className="flex gap-2">
                     <Button
                       size="icon"
@@ -308,7 +310,7 @@ export default function Wheels() {
                 >
                   🎮 Testar Roleta
                 </Button>
-                {isAdmin && (
+                {isAdmin && isAdminMode && (
                   <Button 
                     onClick={() => handleSpin(wheel, false)}
                     className="w-full bg-gradient-primary"
@@ -336,7 +338,7 @@ export default function Wheels() {
           </h1>
         </div>
 
-        {isAdmin && (
+        {isAdmin && isAdminMode && (
           <div className="mb-6">
             <Button 
               onClick={() => {

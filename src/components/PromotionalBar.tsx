@@ -2,6 +2,7 @@ import { Crown, Rocket, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { User } from "@supabase/supabase-js";
 export function PromotionalBar() {
   const [user, setUser] = useState<User | null>(null);
   const { isAdmin } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [button1Text, setButton1Text] = useState("Crie sua conta no Rubinot");
   const [button1Url, setButton1Url] = useState("https://rubinot.site/miguelnutt");
   const [button1Color, setButton1Color] = useState("#8B5CF6");
@@ -159,7 +161,7 @@ export function PromotionalBar() {
             <Rocket className="h-4 w-4" />
             <span>{button2Text}</span>
           </a>
-          {isAdmin && (
+          {isAdmin && isAdminMode && (
             <button
               onClick={abrirEdicao}
               className="flex items-center gap-2 px-3 py-2 bg-muted/50 hover:bg-muted/70 text-muted-foreground rounded-full transition-all duration-300 text-sm font-medium shadow-sm hover:shadow-md hover:scale-[1.02]"

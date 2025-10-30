@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/lib/supabase-helper";
 import { useTwitchAuth } from "@/hooks/useTwitchAuth";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { Send, MessageCircle, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -40,6 +41,7 @@ export function SiteChat() {
   const { user: twitchUser } = useTwitchAuth();
   const [user, setUser] = useState<any>(null);
   const { isAdmin } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -276,7 +278,7 @@ export function SiteChat() {
           <CardTitle className="flex items-center gap-2 text-lg">
             <MessageCircle className="h-5 w-5" />
             Chat da Comunidade
-            {isAdmin && (
+            {isAdmin && isAdminMode && (
               <Shield className="h-4 w-4 text-primary ml-auto" />
             )}
           </CardTitle>
@@ -308,7 +310,7 @@ export function SiteChat() {
                           minute: '2-digit'
                         })}
                       </span>
-                      {isAdmin && (
+                      {isAdmin && isAdminMode && (
                         <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                           <Button
                             size="sm"

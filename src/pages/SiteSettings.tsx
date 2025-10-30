@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Youtube, FileText } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +29,7 @@ export default function SiteSettings() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const { isAdmin } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [youtubeVideoId, setYoutubeVideoId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,10 +44,10 @@ export default function SiteSettings() {
   }, []);
 
   useEffect(() => {
-    if (user && !isAdmin) {
+    if (user && !(isAdmin && isAdminMode)) {
       navigate("/");
     }
-  }, [user, isAdmin, navigate]);
+  }, [user, isAdmin, isAdminMode, navigate]);
 
   useEffect(() => {
     fetchSettings();

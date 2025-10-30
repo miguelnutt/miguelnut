@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { supabase } from "@/lib/supabase-helper";
 import { useTwitchStatus } from "@/contexts/TwitchStatusContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { Loader2, Radio, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
@@ -20,6 +21,7 @@ const DEFAULT_VIDEO_ID = "EeF3UTkCoxY";
 export default function Index() {
   const [user, setUser] = useState<User | null>(null);
   const { isAdmin } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const { isLive, loading: twitchLoading } = useTwitchStatus();
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>(DEFAULT_VIDEO_ID);
   const [videoStartTime, setVideoStartTime] = useState<number>(0);
@@ -211,7 +213,7 @@ export default function Index() {
                     </div>
                   ) : (
                     <div className="space-y-4 p-4 md:p-6">
-                      {isAdmin && (
+                      {isAdmin && isAdminMode && (
                         <div className="flex items-center justify-end mb-2">
                           <Button
                             onClick={() => setDialogOpen(true)}

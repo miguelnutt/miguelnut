@@ -10,6 +10,7 @@ import { CanvasWheel } from "./CanvasWheel";
 import { z } from "zod";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
 
@@ -39,6 +40,7 @@ const spinInputSchema = z.object({
 export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: SpinDialogProps) {
   const [user, setUser] = useState<User | null>(null);
   const { isAdmin } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [nomeUsuario, setNomeUsuario] = useState("");
   const [spinning, setSpinning] = useState(false);
   const [resultado, setResultado] = useState<Recompensa | null>(null);
@@ -537,7 +539,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           </DialogHeader>
 
           <div className="space-y-6">
-            {!testMode && isAdmin && (
+            {!testMode && isAdmin && isAdminMode && (
               <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
                 <Checkbox
                   id="modoTeste"
@@ -589,7 +591,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
 
             <Button
               onClick={spin}
-              disabled={spinning || (isAdmin && !isModoTeste && !nomeUsuario.trim())}
+              disabled={spinning || (isAdmin && isAdminMode && !isModoTeste && !nomeUsuario.trim())}
               className="w-full bg-gradient-primary shadow-glow"
               size="lg"
             >

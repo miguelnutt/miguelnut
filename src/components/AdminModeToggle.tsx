@@ -11,7 +11,7 @@ export const AdminModeToggle: React.FC = () => {
   }
 
   return (
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100]">
+    <div className="fixed top-20 md:top-28 left-1/2 transform -translate-x-1/2 z-[100]">
       <Button
         onClick={toggleAdminMode}
         variant={isAdminMode ? "default" : "outline"}

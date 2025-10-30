@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { PromotionalBar } from "@/components/PromotionalBar";
@@ -42,6 +43,7 @@ interface Spin {
 export default function History() {
   const [user, setUser] = useState<User | null>(null);
   const { isAdmin } = useAdmin(user);
+  const { isAdminMode } = useAdminMode();
   const [spins, setSpins] = useState<Spin[]>([]);
   const [filteredSpins, setFilteredSpins] = useState<Spin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -318,7 +320,7 @@ export default function History() {
                         <TableHead className="whitespace-nowrap">Tipo</TableHead>
                         <TableHead className="whitespace-nowrap">Valor</TableHead>
                         <TableHead className="whitespace-nowrap">Data/Hora</TableHead>
-                        {isAdmin && <TableHead className="text-center whitespace-nowrap">Ações</TableHead>}
+                        {isAdmin && isAdminMode && <TableHead className="text-center whitespace-nowrap">Ações</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -331,7 +333,7 @@ export default function History() {
                           <TableCell className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
                             {formatDate(spin.created_at)}
                           </TableCell>
-                          {isAdmin && (
+                          {isAdmin && isAdminMode && (
                             <TableCell className="text-center">
                               <Button
                                 size="icon"
