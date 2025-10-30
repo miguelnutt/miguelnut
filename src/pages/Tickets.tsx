@@ -106,33 +106,69 @@ export default function Tickets() {
 
   const fetchData = async () => {
     try {
-      // Ranking de tickets
+      // Ranking de tickets - buscar tickets e perfis separadamente para melhor controle
       const { data: ticketsData, error: ticketsError } = await supabase
         .from("tickets")
         .select("user_id, tickets_atual")
+        .gt("tickets_atual", 0) // Só buscar usuários com tickets > 0
         .order("tickets_atual", { ascending: false });
 
       if (ticketsError) throw ticketsError;
 
-      const userIds = Array.from(new Set((ticketsData || []).map((t: any) => t.user_id).filter(Boolean)));
+      if (!ticketsData || ticketsData.length === 0) {
+        setRanking([]);
+        return;
+      }
 
-      const { data: profilesData } = await supabase
+      const userIds = Array.from(new Set(ticketsData.map((t: any) => t.user_id).filter(Boolean)));
+
+      // Buscar perfis com todos os campos de nome disponíveis
+      const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, nome, is_temporary")
-        .in("id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]);
+        .select("id, nome, nome_personagem, twitch_username, is_temporary")
+        .in("id", userIds);
 
-      const profilesMap: Record<string, string> = {};
+      if (profilesError) {
+        console.error("Erro ao buscar perfis:", profilesError);
+      }
+
+      console.log("Tickets encontrados:", ticketsData.length);
+      console.log("User IDs únicos:", userIds.length);
+      console.log("Perfis encontrados:", profilesData?.length || 0);
+      console.log("Perfis data:", profilesData);
+
+      // Criar mapa de perfis
+      const profilesMap: Record<string, any> = {};
       (profilesData || []).forEach((p: any) => {
-        profilesMap[p.id] = p.nome;
+        profilesMap[p.id] = p;
       });
 
-      const rankingList: TicketRanking[] = (ticketsData || [])
-        .map((t: any) => ({
-          user_id: t.user_id,
-          nome: profilesMap[t.user_id] || "Usuário desconhecido",
-          tickets_atual: t.tickets_atual
-        }))
-        .filter((r: TicketRanking) => r.tickets_atual > 0); // Filtrar apenas usuários com tickets > 0
+      // Montar ranking com nomes corretos
+      const rankingList: TicketRanking[] = ticketsData
+        .map((t: any) => {
+          const profile = profilesMap[t.user_id];
+          let displayName = "Usuário desconhecido";
+          
+          if (profile) {
+            // Priorizar nome, depois nome_personagem, depois twitch_username
+            if (profile.nome && profile.nome.trim() !== '') {
+              displayName = profile.nome;
+            } else if (profile.nome_personagem && profile.nome_personagem.trim() !== '') {
+              displayName = profile.nome_personagem;
+            } else if (profile.twitch_username && profile.twitch_username.trim() !== '') {
+              displayName = profile.twitch_username;
+            } else if (profile.is_temporary) {
+              displayName = "Usuário Temporário";
+            }
+          }
+
+          return {
+            user_id: t.user_id,
+            nome: displayName,
+            tickets_atual: t.tickets_atual
+          };
+        })
+        .filter((r: TicketRanking) => r.tickets_atual > 0);
 
       setRanking(rankingList);
 

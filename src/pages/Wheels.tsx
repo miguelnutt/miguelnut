@@ -34,6 +34,7 @@ interface Wheel {
 export default function Wheels() {
   const { sessionUser, twitchUser, isAdmin } = useAuth();
   const { isAdminMode } = useAdminMode();
+  const { loading: adminLoading } = useAdmin(sessionUser);
   const [wheels, setWheels] = useState<Wheel[]>([]);
   const [loading, setLoading] = useState(true);
   const [wheelDialogOpen, setWheelDialogOpen] = useState(false);
