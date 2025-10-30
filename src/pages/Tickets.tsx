@@ -132,8 +132,9 @@ export default function Tickets() {
         try {
           const { data: batchProfiles, error: batchError } = await supabase
             .from("profiles")
-            .select("id, nome, nome_personagem, twitch_username")
-            .in("id", batch);
+            .select("id, nome, nome_personagem, twitch_username, is_temporary")
+            .in("id", batch)
+            .eq("is_active", true); // Incluir apenas perfis ativos (incluindo temporários)
 
           if (batchError) {
             console.error(`Erro ao buscar lote ${i / batchSize + 1}:`, batchError);
@@ -382,13 +383,14 @@ export default function Tickets() {
 
     try {
       if (historyItem.tipo === 'spin') {
-        const { error } = await supabase
-          .from("spins")
-          .delete()
-          .eq("id", historyItem.id);
+        // Usar edge function para spins (inclui integração com StreamElements para Pontos de Loja)
+        const { error } = await supabase.functions.invoke("delete-spin-history", {
+          body: { spinId: historyItem.id },
+        });
         
         if (error) throw error;
       } else {
+        // Para ledger entries, deletar diretamente
         const { error } = await supabase
           .from("ticket_ledger")
           .delete()
@@ -511,7 +513,14 @@ export default function Tickets() {
                               {index > 2 && `${index + 1}º`}
                             </span>
                             <div>
-                              <div className="font-medium text-base">{String(item.nome || "Usuário desconhecido")}</div>
+                              <div className="font-medium text-base flex items-center gap-2">
+                                {String(item.nome || "Usuário desconhecido")}
+                                {item.is_temporary && (
+                                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full border border-orange-200">
+                                    Temporário
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-muted-foreground">{item.tickets_atual} tickets</div>
                             </div>
                           </div>
@@ -633,7 +642,16 @@ export default function Tickets() {
                                 {index === 2 && "🥉"}
                                 {index > 2 && `${index + 1}º`}
                               </TableCell>
-                              <TableCell className="font-medium">{String(item.nome || "Usuário desconhecido")}</TableCell>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  {String(item.nome || "Usuário desconhecido")}
+                                  {item.is_temporary && (
+                                    <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full border border-orange-200">
+                                      Temporário
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
                               <TableCell className="text-right">{item.tickets_atual}</TableCell>
                             </TableRow>
                             {isAdmin && isAdminMode && (

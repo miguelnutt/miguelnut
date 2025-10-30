@@ -87,8 +87,9 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       const userIds = (ticketsData || []).map(t => t.user_id);
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, nome, nome_personagem, twitch_username")
-        .in("id", userIds);
+        .select("id, nome, nome_personagem, twitch_username, is_temporary")
+        .in("id", userIds)
+        .eq("is_active", true); // Incluir apenas perfis ativos (incluindo temporários)
 
       if (profilesError) throw profilesError;
 
