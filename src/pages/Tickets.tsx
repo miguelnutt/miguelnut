@@ -147,28 +147,11 @@ export default function Tickets() {
         }
       }
 
-      console.log("Tickets encontrados:", ticketsData.length);
-      console.log("User IDs únicos:", userIds.length);
-      console.log("Perfis encontrados:", profilesData.length);
-      
-      // Debug: verificar perfis temporários
-      const tempProfiles = profilesData.filter(p => p.is_temporary);
-      console.log("Perfis temporários encontrados:", tempProfiles.length);
-      if (tempProfiles.length > 0) {
-        console.log("Detalhes dos perfis temporários:", tempProfiles.map(p => ({
-          id: p.id,
-          nome: p.nome,
-          is_temporary: p.is_temporary
-        })));
-      }
-
       // Criar mapa de perfis simples
       const profilesMap: Record<string, any> = {};
       profilesData.forEach((p: any) => {
         profilesMap[p.id] = p;
       });
-
-      console.log("Mapa final de perfis:", Object.keys(profilesMap).length, "perfis");
       
       // Perfis carregados com sucesso
 
@@ -221,18 +204,6 @@ export default function Tickets() {
         })
         .filter((r: TicketRanking) => r.tickets_atual > 0);
 
-      // Debug: verificar ranking final
-      const tempInRanking = rankingList.filter(r => r.is_temporary);
-      console.log("Perfis temporários no ranking final:", tempInRanking.length);
-      if (tempInRanking.length > 0) {
-        console.log("Detalhes dos temporários no ranking:", tempInRanking.map(r => ({
-          nome: r.nome,
-          tickets: r.tickets_atual,
-          is_temporary: r.is_temporary
-        })));
-      }
-
-      // Ranking criado com sucesso
       setRanking(rankingList);
 
       // Últimos sorteios
