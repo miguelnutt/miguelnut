@@ -8,7 +8,7 @@
  * @returns Username normalizado com @
  */
 export function normalizeUsername(username: string | null | undefined): string {
-  if (!username) return "";
+  if (!username || username.trim() === "") return "@Usuário desconhecido";
   
   // Remove espaços em branco
   const trimmed = username.trim();

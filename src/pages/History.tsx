@@ -327,7 +327,7 @@ export default function History() {
                     <TableBody>
                       {filteredSpins.map((spin) => (
                         <TableRow key={spin.id}>
-                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsername(spin.twitch_username) || "@Usuário desconhecido"}</TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">{normalizeUsername(spin.twitch_username)}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.origem || spin.wheels?.nome || "-"}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.tipo_recompensa}</TableCell>
                           <TableCell className="whitespace-nowrap">{spin.valor}</TableCell>

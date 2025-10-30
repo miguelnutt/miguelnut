@@ -128,7 +128,7 @@ const AdminDashboard = () => {
             id: `se_${log.id}`,
             created_at: log.created_at,
             log_type: 'Pontos Loja',
-            user_name: log.username || 'Usuário desconhecido',
+            user_name: normalizeUsername(log.username),
             description: log.success ? 
               `Operação ${log.tipo_operacao} realizada com sucesso` : 
               `Erro na operação ${log.tipo_operacao}: ${log.error_message || 'Erro desconhecido'}`,
@@ -144,7 +144,7 @@ const AdminDashboard = () => {
             id: `rc_${log.id}`,
             created_at: log.created_at,
             log_type: 'Rubini Coins',
-            user_name: log.profiles?.twitch_username || 'Usuário desconhecido',
+            user_name: normalizeUsername(log.profiles?.twitch_username),
             description: log.motivo || 'Transação de Rubini Coins',
             amount: log.variacao || 0
           });
@@ -158,7 +158,7 @@ const AdminDashboard = () => {
             id: `tk_${log.id}`,
             created_at: log.created_at,
             log_type: 'Tickets',
-            user_name: log.profiles?.twitch_username || 'Usuário desconhecido',
+            user_name: normalizeUsername(log.profiles?.twitch_username),
             description: log.motivo || 'Transação de Tickets',
             amount: log.variacao || 0
           });
@@ -172,7 +172,7 @@ const AdminDashboard = () => {
             id: `dr_${log.id}`,
             created_at: log.created_at,
             log_type: 'Daily Rewards',
-            user_name: log.profiles?.twitch_username || 'Usuário desconhecido',
+            user_name: normalizeUsername(log.profiles?.twitch_username),
             description: `Recompensa diária: ${log.tipo_recompensa} - ${log.valor_recompensa}`,
             amount: log.valor_recompensa || 0
           });
@@ -186,7 +186,7 @@ const AdminDashboard = () => {
             id: `tt_${log.id}`,
             created_at: log.created_at,
             log_type: 'TibiaTermo',
-            user_name: log.profiles?.twitch_username || 'Usuário desconhecido',
+            user_name: normalizeUsername(log.profiles?.twitch_username),
             description: `TibiaTermo: ${log.acertou ? 'Acertou' : 'Errou'} - Palavra: ${log.palavra_tentativa}`,
             amount: log.pontos_ganhos || 0
           });

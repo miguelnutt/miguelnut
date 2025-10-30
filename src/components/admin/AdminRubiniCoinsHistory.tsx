@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { normalizeUsername } from "@/lib/username-utils";
 
 interface HistoryItem {
   id: string;
@@ -110,7 +111,7 @@ export function AdminRubiniCoinsHistory() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">
-                        @{item.profiles?.twitch_username || "Usuário Desconhecido"}
+                        {normalizeUsername(item.profiles?.twitch_username)}
                       </p>
                       <span
                         className={`text-sm font-bold ${

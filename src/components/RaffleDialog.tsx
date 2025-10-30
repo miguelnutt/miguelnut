@@ -10,6 +10,7 @@ import { Trophy } from "lucide-react";
 import { z } from "zod";
 import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
+import { normalizeUsername } from "@/lib/username-utils";
 
 interface Participante {
   user_id: string;
@@ -112,7 +113,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
         });
         return {
           user_id: t.user_id,
-          twitch_username: profile?.twitch_username || "Usuário desconhecido",
+          twitch_username: normalizeUsername(profile?.twitch_username),
           tickets: t.tickets_atual,
           nome_personagem: profile?.nome_personagem || undefined
         };

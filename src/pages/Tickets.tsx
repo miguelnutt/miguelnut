@@ -159,32 +159,15 @@ export default function Tickets() {
       const rankingList: TicketRanking[] = ticketsData
         .map((t: any) => {
           const profile = profilesMap[t.user_id];
-          let displayName = "Usuário desconhecido";
-          
-          if (profile) {
-            // Usar apenas twitch_username
-            const twitchUsername = profile.twitch_username;
-            
-            if (twitchUsername && typeof twitchUsername === 'string' && twitchUsername.trim() !== '') {
-              displayName = String(twitchUsername).trim();
-            }
-          } else {
-            console.log("Perfil não encontrado para user_id:", t.user_id);
-          }
-
-          // Garantir que displayName seja sempre uma string
-          displayName = String(displayName || "Usuário desconhecido");
-
-          // displayName validado
+          const displayName = normalizeUsername(profile?.twitch_username);
 
           // Garantir que todos os campos sejam do tipo correto
           const safeUserId = String(t.user_id || "");
-          const safeDisplayName = String(displayName || "Usuário desconhecido");
           const safeTicketsAtual = Number(t.tickets_atual) || 0;
 
           const rankingItem = {
             user_id: safeUserId,
-            twitch_username: safeDisplayName,
+            twitch_username: displayName,
             tickets_atual: safeTicketsAtual
           };
 
@@ -249,13 +232,11 @@ export default function Tickets() {
         })),
         ...(ledgerData || []).map((entry: any) => {
           const profile = entry.user_id ? (profilesMap as any)[entry.user_id] : null;
-          const displayName = profile 
-            ? (profile.nome || profile.nome_personagem || profile.twitch_username || "Usuário desconhecido")
-            : "Usuário desconhecido";
+          const displayName = normalizeUsername(profile?.twitch_username);
           
           return {
             id: entry.id,
-            nome_usuario: String(displayName),
+            nome_usuario: displayName,
             valor: entry.variacao > 0 ? `+${entry.variacao}` : `${entry.variacao}`,
             created_at: entry.created_at,
             tipo: 'ledger' as const,
@@ -338,10 +319,7 @@ export default function Tickets() {
   };
 
   const removeUser = async (userId: string, userName: string) => {
-    // Garantir que userName seja sempre uma string
-    const safeUserName = String(userName || "Usuário desconhecido");
-    
-    if (!confirm(`Tem certeza que deseja remover ${safeUserName} da lista de tickets?`)) {
+    if (!confirm(`Tem certeza que deseja remover ${userName} da lista de tickets?`)) {
       return;
     }
 
@@ -353,7 +331,7 @@ export default function Tickets() {
 
       if (error) throw error;
 
-      toast.success(`${safeUserName} removido da lista de tickets`);
+      toast.success(`${userName} removido da lista de tickets`);
       await fetchData();
     } catch (error: any) {
       console.error("Error removing user:", error);
@@ -499,7 +477,7 @@ export default function Tickets() {
                             </span>
                             <div>
                               <div className="font-medium text-base flex items-center gap-2">
-                                {normalizeUsername(item.twitch_username) || "@Usuário desconhecido"}
+                                {normalizeUsername(item.twitch_username)}
                               </div>
                               <div className="text-sm text-muted-foreground">{item.tickets_atual} tickets</div>
                             </div>
@@ -590,7 +568,7 @@ export default function Tickets() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => removeUser(item.user_id, normalizeUsername(item.twitch_username) || "@Usuário desconhecido")}
+                              onClick={() => removeUser(item.user_id, normalizeUsername(item.twitch_username))}
                               className="flex-1"
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
@@ -624,7 +602,7 @@ export default function Tickets() {
                               </TableCell>
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
-                                  {normalizeUsername(item.twitch_username) || "@Usuário desconhecido"}
+                                  {normalizeUsername(item.twitch_username)}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">{item.tickets_atual}</TableCell>
@@ -716,7 +694,7 @@ export default function Tickets() {
                                       <Button
                                         size="sm"
                                         variant="destructive"
-                                        onClick={() => removeUser(item.user_id, normalizeUsername(item.twitch_username) || "@Usuário desconhecido")}
+                                        onClick={() => removeUser(item.user_id, normalizeUsername(item.twitch_username))}
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Remover Usuário
