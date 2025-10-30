@@ -10,7 +10,7 @@ import { Trophy } from "lucide-react";
 import { z } from "zod";
 import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
-import { normalizeUsername } from "@/lib/username-utils";
+import { normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface Participante {
   user_id: string;
@@ -88,7 +88,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
       const userIds = (ticketsData || []).map(t => t.user_id);
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, nome_personagem, twitch_username")
+        .select("id, nome_personagem, twitch_username, nome")
         .in("id", userIds)
         .eq("is_active", true);
 
@@ -113,7 +113,7 @@ export function RaffleDialog({ open, onOpenChange, onSuccess }: RaffleDialogProp
         });
         return {
           user_id: t.user_id,
-          twitch_username: normalizeUsername(profile?.twitch_username),
+          twitch_username: normalizeUsernameWithFallback(profile?.twitch_username, profile?.nome),
           tickets: t.tickets_atual,
           nome_personagem: profile?.nome_personagem || undefined
         };

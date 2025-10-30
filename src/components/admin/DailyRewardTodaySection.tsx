@@ -19,11 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { searchUsername, normalizeUsername } from "@/lib/username-utils";
+import { searchUsername, normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface RewardClaim {
   id: string;
   user_id: string;
+  nome: string;
   twitch_username: string | null;
   dia: number;
   pontos: number;
@@ -215,7 +216,7 @@ export function DailyRewardTodaySection() {
                         <TableCell className="font-bold">#{reward.posicao}</TableCell>
   
                         <TableCell className="text-muted-foreground">
-                          {reward.twitch_username ? normalizeUsername(reward.twitch_username) : '-'}
+                          {normalizeUsernameWithFallback(reward.twitch_username, reward.nome)}
                         </TableCell>
                         <TableCell className="text-center">{reward.dia}º</TableCell>
                         <TableCell className="text-center font-semibold text-primary">

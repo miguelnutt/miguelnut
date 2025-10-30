@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase-helper";
 import { Loader2, Flame, Trophy } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface StreakRanking {
   posicao: number;
   user_id: string;
+  nome: string;
   twitch_username: string;
   dias_consecutivos: number;
   ultimo_resgate: string;
@@ -73,7 +75,7 @@ export function StreakRanking() {
                     {rank.posicao !== 1 && `${rank.posicao}º`}
                   </div>
                   <div>
-                    <p className="font-medium">@{rank.twitch_username}</p>
+                    <p className="font-medium">{normalizeUsernameWithFallback(rank.twitch_username, rank.nome)}</p>
                   </div>
                 </div>
                 <div className="text-right">

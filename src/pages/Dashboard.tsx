@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { User } from "@supabase/supabase-js";
 import { PromotionalBar } from "@/components/PromotionalBar";
 import DebugData from "@/components/DebugData";
+import { normalizeUsernameWithFallback } from "@/lib/username-utils";
 
 interface Stats {
   totalSpins: number;
@@ -427,7 +428,7 @@ export default function Dashboard() {
                   {recentSpins.map((spin) => (
                     <div key={spin.id} className="flex justify-between items-center p-3 bg-gradient-card rounded-lg">
                       <div>
-                        <p className="font-medium">@{spin.twitch_username}</p>
+                        <p className="font-medium">@{normalizeUsernameWithFallback(spin.twitch_username)}</p>
                         <p className="text-sm text-muted-foreground">
                           {spin.valor} {spin.tipo_recompensa}
                         </p>
@@ -456,7 +457,7 @@ export default function Dashboard() {
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center gap-2">
                           <Trophy className="h-5 w-5 text-primary" />
-                          <p className="font-medium">@{raffle.twitch_username}</p>
+                          <p className="font-medium">@{normalizeUsernameWithFallback(raffle.twitch_username)}</p>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(raffle.created_at)}
