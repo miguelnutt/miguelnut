@@ -29,6 +29,13 @@ const AdminDashboard = () => {
   const [logsType, setLogsType] = useState("all");
   const [logsSearchTerm, setLogsSearchTerm] = useState("");
   const [logsDateFilter, setLogsDateFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const logsPerPage = 50;
+
+  // Resetar página ao mudar filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [logsType, logsSearchTerm, logsDateFilter]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -68,9 +75,15 @@ const AdminDashboard = () => {
   const loadLogs = async () => {
     setLogsLoading(true);
     try {
-      // TODO: Implement logs loading logic
-      // For now, just set empty array
-      setLogsData([]);
+      const { data: logs, error } = await supabase
+        .from('system_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+
+      if (error) throw error;
+
+      setLogsData(logs || []);
     } catch (error: any) {
       console.error("Erro ao carregar logs:", error);
       toast({
@@ -83,14 +96,36 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredLogs = logsData.filter(log =>
-    (logsType === "all" || log.log_type?.toLowerCase().includes(logsType.toLowerCase())) &&
-    (logsSearchTerm === "" || 
-     log.user_name?.toLowerCase().includes(logsSearchTerm.toLowerCase()) ||
-     log.description?.toLowerCase().includes(logsSearchTerm.toLowerCase()) ||
-     log.log_type?.toLowerCase().includes(logsSearchTerm.toLowerCase())) &&
-    (logsDateFilter === "" || log.created_at?.startsWith(logsDateFilter))
-  );
+  // Função para formatar a data para o formato do banco
+  const formatDateForFilter = (date: string) => {
+    return new Date(date).toISOString().split('T')[0];
+  };
+
+  // Função para verificar se um log corresponde ao filtro de data
+  const matchesDateFilter = (logDate: string, filterDate: string) => {
+    if (!filterDate) return true;
+    const logDateStr = formatDateForFilter(logDate);
+    return logDateStr === filterDate;
+  };
+
+  const filteredLogs = logsData.filter(log => {
+    // Filtro por tipo
+    const typeMatch = logsType === "all" || log.log_type === logsType;
+
+    // Filtro por termo de busca (case insensitive)
+    const searchTermMatch = !logsSearchTerm || [
+      log.user_name,
+      log.description,
+      log.log_type
+    ].some(field => 
+      field?.toLowerCase().includes(logsSearchTerm.toLowerCase())
+    );
+
+    // Filtro por data
+    const dateMatch = matchesDateFilter(log.created_at, logsDateFilter);
+
+    return typeMatch && searchTermMatch && dateMatch;
+  });
 
   if (!sessionReady || loading) {
     return <div className="container mx-auto py-8 text-center">Verificando permissões...</div>;
@@ -144,6 +179,9 @@ const AdminDashboard = () => {
                   <option value="streamelements">StreamElements</option>
                   <option value="spins">Roleta</option>
                   <option value="raffles">Sorteios</option>
+                  <option value="tickets">Tickets</option>
+                  <option value="chat">Chat</option>
+                  <option value="system">Sistema</option>
                 </select>
               </div>
               <div>
@@ -212,44 +250,72 @@ const AdminDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredLogs.length === 0 ? (
+                    {logsLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                            <span className="ml-2">Carregando logs...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredLogs.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          {logsSearchTerm || logsDateFilter ? "Nenhum log encontrado com os filtros aplicados" : "Nenhum log encontrado"}
+                          {logsSearchTerm || logsDateFilter || logsType !== 'all' ? 
+                            "Nenhum log encontrado com os filtros aplicados" : 
+                            "Nenhum log encontrado"}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredLogs.slice(0, 200).map((log, index) => (
-                        <TableRow key={`${log.log_type}-${log.id}-${index}`}>
-                          <TableCell className="text-sm">
-                            {new Date(log.created_at).toLocaleString('pt-BR')}
+                      filteredLogs
+                        .slice((currentPage - 1) * logsPerPage, currentPage * logsPerPage)
+                        .map((log, index) => (
+                        <TableRow key={`${log.log_type}-${log.id}-${index}`} className="hover:bg-muted/50">
+                          <TableCell className="text-sm whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}
                           </TableCell>
                           <TableCell>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              log.log_type === 'Rubini Coins' ? 'bg-yellow-100 text-yellow-800' :
-                              log.log_type === 'Recompensa Diária' ? 'bg-green-100 text-green-800' :
-                              log.log_type === 'TibiaTermo' ? 'bg-blue-100 text-blue-800' :
-                              log.log_type === 'StreamElements' ? 'bg-purple-100 text-purple-800' :
-                              log.log_type === 'Roleta' ? 'bg-orange-100 text-orange-800' :
-                              log.log_type === 'Sorteio' ? 'bg-pink-100 text-pink-800' :
+                              log.log_type === 'rubini_coins' ? 'bg-yellow-100 text-yellow-800' :
+                              log.log_type === 'daily_rewards' ? 'bg-green-100 text-green-800' :
+                              log.log_type === 'tibiatermo' ? 'bg-blue-100 text-blue-800' :
+                              log.log_type === 'streamelements' ? 'bg-purple-100 text-purple-800' :
+                              log.log_type === 'spins' ? 'bg-orange-100 text-orange-800' :
+                              log.log_type === 'raffles' ? 'bg-pink-100 text-pink-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {log.log_type}
+                              {log.log_type === 'rubini_coins' ? 'Rubini Coins' :
+                               log.log_type === 'daily_rewards' ? 'Recompensa Diária' :
+                               log.log_type === 'tibiatermo' ? 'TibiaTermo' :
+                               log.log_type === 'streamelements' ? 'StreamElements' :
+                               log.log_type === 'spins' ? 'Roleta' :
+                               log.log_type === 'raffles' ? 'Sorteio' :
+                               log.log_type}
                             </span>
                           </TableCell>
                           <TableCell className="font-medium">
                             {log.user_name || 'Sistema'}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {log.description}
+                            <div className="max-w-xl truncate">
+                              {log.description}
+                            </div>
                           </TableCell>
-                          <TableCell className={`text-right font-bold ${
+                          <TableCell className={`text-right font-bold whitespace-nowrap ${
                             log.amount > 0 ? 'text-green-600' : 
                             log.amount < 0 ? 'text-red-600' : 
                             'text-gray-600'
                           }`}>
                             {log.amount !== undefined ? (
-                              `${log.amount > 0 ? '+' : ''}${log.amount}`
+                              `${log.amount > 0 ? '+' : ''}${log.amount.toLocaleString('pt-BR')}`
                             ) : '-'}
                           </TableCell>
                         </TableRow>
@@ -260,9 +326,33 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {filteredLogs.length > 200 && (
-              <div className="text-center text-sm text-muted-foreground">
-                Mostrando os primeiros 200 logs. Use os filtros para refinar a busca.
+            {/* Paginação */}
+            {filteredLogs.length > logsPerPage && (
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {Math.min(currentPage * logsPerPage, filteredLogs.length)} de {filteredLogs.length} logs
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="text-sm">
+                    Página {currentPage} de {Math.ceil(filteredLogs.length / logsPerPage)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredLogs.length / logsPerPage), p + 1))}
+                    disabled={currentPage >= Math.ceil(filteredLogs.length / logsPerPage)}
+                  >
+                    Próxima
+                  </Button>
+                </div>
               </div>
             )}
           </div>
