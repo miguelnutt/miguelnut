@@ -133,9 +133,7 @@ export default function Tickets() {
           const { data: batchProfiles, error: batchError } = await supabase
             .from("profiles")
             .select("id, nome, nome_personagem, twitch_username, is_temporary, is_active, merged_into")
-            .in("id", batch)
-            .eq("is_active", true)
-            .is("merged_into", null);
+            .in("id", batch);
 
           if (batchError) {
             console.error(`Erro ao buscar lote ${i / batchSize + 1}:`, batchError);
@@ -150,65 +148,63 @@ export default function Tickets() {
       console.log("Tickets encontrados:", ticketsData.length);
       console.log("User IDs únicos:", userIds.length);
       console.log("Perfis encontrados:", profilesData.length);
-      console.log("Perfis data:", profilesData);
 
-      // Se alguns perfis não foram encontrados, tentar buscar perfis mesclados
-      const foundUserIds = new Set(profilesData.map(p => p.id));
-      const missingUserIds = userIds.filter(id => !foundUserIds.has(id));
-      
-      if (missingUserIds.length > 0) {
-        console.log("IDs não encontrados (podem estar mesclados):", missingUserIds);
+      // Processar perfis: separar ativos, inativos e mesclados
+      const activeProfiles = profilesData.filter(p => p.is_active && !p.merged_into);
+      const inactiveProfiles = profilesData.filter(p => !p.is_active && !p.merged_into);
+      const mergedProfiles = profilesData.filter(p => p.merged_into);
+
+      console.log(`Processando perfis - Ativos: ${activeProfiles.length}, Inativos: ${inactiveProfiles.length}, Mesclados: ${mergedProfiles.length}`);
+
+      // Criar mapa inicial com perfis ativos
+      const profilesMap: Record<string, any> = {};
+      activeProfiles.forEach((p: any) => {
+        profilesMap[p.id] = p;
+      });
+
+      // Adicionar perfis inativos se não houver conflito
+      inactiveProfiles.forEach((p: any) => {
+        if (!profilesMap[p.id]) {
+          profilesMap[p.id] = { ...p, _inactive: true };
+        }
+      });
+
+      // Processar perfis mesclados
+      if (mergedProfiles.length > 0) {
+        console.log("Processando perfis mesclados:", mergedProfiles);
         
-        // Buscar perfis que foram mesclados
-        const { data: mergedProfiles, error: mergedError } = await supabase
-          .from("profiles")
-          .select("id, merged_into, nome, nome_personagem, twitch_username, is_temporary")
-          .in("id", missingUserIds);
-          
-        if (mergedError) {
-          console.error("Erro ao buscar perfis mesclados:", mergedError);
-        } else if (mergedProfiles) {
-          console.log("Perfis mesclados encontrados:", mergedProfiles);
-          
-          // Para cada perfil mesclado, buscar o perfil canônico
-          const canonicalIds = mergedProfiles
-            .filter(p => p.merged_into)
-            .map(p => p.merged_into);
+        const canonicalIds = Array.from(new Set(mergedProfiles.map(p => p.merged_into).filter(Boolean)));
+        
+        if (canonicalIds.length > 0) {
+          const { data: canonicalProfiles, error: canonicalError } = await supabase
+            .from("profiles")
+            .select("id, nome, nome_personagem, twitch_username, is_temporary, is_active")
+            .in("id", canonicalIds);
             
-          if (canonicalIds.length > 0) {
-            const { data: canonicalProfiles, error: canonicalError } = await supabase
-              .from("profiles")
-              .select("id, nome, nome_personagem, twitch_username, is_temporary")
-              .in("id", canonicalIds);
-              
-            if (canonicalError) {
-              console.error("Erro ao buscar perfis canônicos:", canonicalError);
-            } else if (canonicalProfiles) {
-              console.log("Perfis canônicos encontrados:", canonicalProfiles);
-              
-              // Mapear perfis mesclados para seus canônicos
-              mergedProfiles.forEach(merged => {
-                if (merged.merged_into) {
-                  const canonical = canonicalProfiles.find(c => c.id === merged.merged_into);
-                  if (canonical) {
-                    // Adicionar o perfil canônico usando o ID original
-                    profilesData.push({
-                      ...canonical,
-                      id: merged.id // Usar o ID original para o mapeamento
-                    });
-                  }
+          if (canonicalError) {
+            console.error("Erro ao buscar perfis canônicos:", canonicalError);
+          } else if (canonicalProfiles) {
+            console.log("Perfis canônicos encontrados:", canonicalProfiles);
+            
+            // Mapear perfis mesclados para seus canônicos
+            mergedProfiles.forEach(merged => {
+              if (merged.merged_into) {
+                const canonical = canonicalProfiles.find(c => c.id === merged.merged_into);
+                if (canonical) {
+                  profilesMap[merged.id] = {
+                    ...canonical,
+                    id: merged.id, // Manter o ID original para o mapeamento
+                    _merged_from: merged.merged_into
+                  };
+                } else {
+                  // Se não encontrou o canônico, usar o próprio perfil mesclado
+                  profilesMap[merged.id] = { ...merged, _merged_orphan: true };
                 }
-              });
-            }
+              }
+            });
           }
         }
       }
-
-      // Criar mapa de perfis
-      const profilesMap: Record<string, any> = {};
-      profilesData.forEach((p: any) => {
-        profilesMap[p.id] = p;
-      });
 
       console.log("Mapa final de perfis:", Object.keys(profilesMap).length, "perfis");
 
@@ -229,6 +225,8 @@ export default function Tickets() {
             } else if (profile.is_temporary) {
               displayName = "Usuário Temporário";
             }
+            
+
           } else {
             console.log("Perfil não encontrado para user_id:", t.user_id);
           }
