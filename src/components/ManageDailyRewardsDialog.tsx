@@ -163,7 +163,7 @@ export function ManageDailyRewardsDialog({ open, onOpenChange }: ManageDailyRewa
                     {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
-                          @{normalizeUsernameWithFallback(user.profiles?.twitch_username, user.profiles?.nome)}
+                          {normalizeUsernameWithFallback(user.profiles?.twitch_username, user.profiles?.nome)}
                         </TableCell>
                         <TableCell>
                           {user.profiles?.twitch_username || "N/A"}

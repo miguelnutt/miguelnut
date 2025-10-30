@@ -264,7 +264,7 @@ export function RubiniCoinsMonitor() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="font-medium">
-                            @{normalizeUsernameWithFallback(log.profiles?.twitch_username, log.profiles?.nome)}
+                            {normalizeUsernameWithFallback(log.profiles?.twitch_username, log.profiles?.nome)}
                           </span>
                           <Badge variant={isSuccess ? "default" : "destructive"}>
                             {isSuccess ? 'Confirmado' : 'Falha'}
