@@ -122,24 +122,37 @@ export default function Tickets() {
 
       const userIds = Array.from(new Set(ticketsData.map((t: any) => t.user_id).filter(Boolean)));
 
-      // Buscar perfis com todos os campos de nome disponíveis
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, nome, nome_personagem, twitch_username, is_temporary")
-        .in("id", userIds);
+      // Dividir userIds em lotes menores para evitar erro 400 (query muito longa)
+      const batchSize = 50; // Reduzir o tamanho do lote
+      const profilesData: any[] = [];
+      
+      for (let i = 0; i < userIds.length; i += batchSize) {
+        const batch = userIds.slice(i, i + batchSize);
+        
+        try {
+          const { data: batchProfiles, error: batchError } = await supabase
+            .from("profiles")
+            .select("id, nome, nome_personagem, twitch_username, is_temporary")
+            .in("id", batch);
 
-      if (profilesError) {
-        console.error("Erro ao buscar perfis:", profilesError);
+          if (batchError) {
+            console.error(`Erro ao buscar lote ${i / batchSize + 1}:`, batchError);
+          } else if (batchProfiles) {
+            profilesData.push(...batchProfiles);
+          }
+        } catch (error) {
+          console.error(`Erro no lote ${i / batchSize + 1}:`, error);
+        }
       }
 
       console.log("Tickets encontrados:", ticketsData.length);
       console.log("User IDs únicos:", userIds.length);
-      console.log("Perfis encontrados:", profilesData?.length || 0);
+      console.log("Perfis encontrados:", profilesData.length);
       console.log("Perfis data:", profilesData);
 
       // Criar mapa de perfis
       const profilesMap: Record<string, any> = {};
-      (profilesData || []).forEach((p: any) => {
+      profilesData.forEach((p: any) => {
         profilesMap[p.id] = p;
       });
 

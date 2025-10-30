@@ -75,15 +75,28 @@ const AdminDashboard = () => {
   const loadLogs = async () => {
     setLogsLoading(true);
     try {
+      // Usar a tabela correta: streamelements_sync_logs
       const { data: logs, error } = await supabase
-        .from('system_logs')
+        .from('streamelements_sync_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1000);
 
       if (error) throw error;
 
-      setLogsData(logs || []);
+      // Mapear os dados para o formato esperado pelo componente
+      const mappedLogs = (logs || []).map(log => ({
+        id: log.id,
+        created_at: log.created_at,
+        log_type: log.tipo_operacao || 'streamelements',
+        user_name: log.username,
+        description: log.success ? 
+          `Operação ${log.tipo_operacao} realizada com sucesso` : 
+          `Erro na operação ${log.tipo_operacao}: ${log.error_message || 'Erro desconhecido'}`,
+        amount: log.points_added || 0
+      }));
+
+      setLogsData(mappedLogs);
     } catch (error: any) {
       console.error("Erro ao carregar logs:", error);
       toast({
