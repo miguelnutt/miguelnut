@@ -8,8 +8,7 @@ import { supabase } from "@/lib/supabase-helper";
 import { toast } from "sonner";
 import { CanvasWheel } from "./CanvasWheel";
 import { z } from "zod";
-import { User } from "@supabase/supabase-js";
-import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
@@ -31,7 +30,7 @@ interface SpinDialogProps {
     duracao_spin: number;
   } | null;
   testMode?: boolean;
-  loggedUser?: User | null;
+  loggedUser?: any;
   twitchUser?: { login: string; id: string; display_name: string } | null;
 }
 
@@ -41,8 +40,7 @@ const spinInputSchema = z.object({
 });
 
 export function SpinDialog({ open, onOpenChange, wheel, testMode = false, loggedUser, twitchUser }: SpinDialogProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const { isAdmin } = useAdmin(user);
+  const { isAdmin } = useAuth();
   const { isAdminMode } = useAdminMode();
   const [nomeUsuario, setNomeUsuario] = useState("");
   const [spinning, setSpinning] = useState(false);

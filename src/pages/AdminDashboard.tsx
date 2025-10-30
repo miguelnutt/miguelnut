@@ -11,17 +11,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase-helper";
-import { Session } from "@supabase/supabase-js";
 import { searchUsername, normalizeUsername } from "@/lib/username-utils";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [session, setSession] = useState<Session | null>(null);
-  const [sessionReady, setSessionReady] = useState(false);
-  const { isAdmin, loading } = useAdmin(session?.user ?? null);
+  const { isAdmin, status } = useAuth();
+  const loading = status === 'loading';
 
   // Estados para a aba de logs
   const [logsData, setLogsData] = useState<any[]>([]);
@@ -37,25 +35,9 @@ const AdminDashboard = () => {
     setCurrentPage(1);
   }, [logsType, logsSearchTerm, logsDateFilter]);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setSessionReady(true);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setSessionReady(true);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   // Redirecionar se não for admin
   React.useEffect(() => {
-    if (sessionReady && !loading && !isAdmin) {
+    if (!loading && !isAdmin) {
       toast({
         title: "Acesso negado",
         description: "Você não tem permissão para acessar esta página.",
@@ -63,14 +45,14 @@ const AdminDashboard = () => {
       });
       navigate("/");
     }
-  }, [sessionReady, isAdmin, loading, navigate]);
+  }, [isAdmin, loading, navigate]);
 
   // Carregar logs quando o componente for montado
   useEffect(() => {
-    if (isAdmin && sessionReady) {
+    if (isAdmin && !loading) {
       loadLogs();
     }
-  }, [isAdmin, sessionReady]);
+  }, [isAdmin, loading]);
 
   const loadLogs = async () => {
     setLogsLoading(true);
