@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Ghost } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -11,6 +11,7 @@ import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { AdminRubiniCoinsResgatesButton } from "@/components/admin/AdminRubiniCoinsResgatesButton";
 import { useDailyRewardStatus } from "@/hooks/useDailyRewardStatus";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useHalloweenTheme } from "@/contexts/HalloweenThemeContext";
 
 import { Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +24,7 @@ export const Navbar = () => {
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { status, sessionUserId, twitchUser, isAdmin, logout } = useAuth();
+  const { isHalloweenActive, toggleHalloween } = useHalloweenTheme();
   
   // Verificar status da recompensa diária - só quando auth estiver pronta
   const { hasRewardAvailable } = useDailyRewardStatus(
@@ -68,8 +70,24 @@ export const Navbar = () => {
           <UserBadge user={twitchUser} onLogout={() => logout()} />
           {isAdmin && (
             <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  toggleHalloween();
+                  toast({
+                    title: isHalloweenActive ? "Halloween DESATIVADO" : "Halloween ATIVO",
+                    description: isHalloweenActive 
+                      ? "Tema padrão restaurado" 
+                      : "Tema Halloween ativado em todo o site",
+                  });
+                }}
+                className="rounded-full hover:bg-orange-500/20"
+                title={isHalloweenActive ? "Desativar Tema Halloween" : "Ativar Tema Halloween"}
+              >
+                <Ghost className={`h-5 w-5 ${isHalloweenActive ? 'text-orange-500' : ''}`} />
+              </Button>
               <AdminRubiniCoinsResgatesButton />
-
             </>
           )}
           <Button
