@@ -200,15 +200,58 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
       console.log("[Roulette] 🎯 Resolvendo identidade para:", nomeParaUsar);
       console.log("[Roulette] 🔍 Usuário logado:", { twitchUser: twitchUser?.login, twitchId: twitchUser?.id });
       
-      // Usar a edge function resolve-user-identity para obter o perfil canônico
-      // Se o usuário estiver logado, usar o twitch_user_id para garantir que encontre o perfil correto
-      const searchTermWithAt = prepareUsernameForSearch(nomeParaUsar);
-      const { data: identityData, error: identityError } = await supabase.functions.invoke('resolve-user-identity', {
-        body: {
-          searchTerm: searchTermWithAt,
-          twitch_user_id: twitchUser?.id || null
+      let identityData: any = null;
+      let identityError: any = null;
+
+      // Se o usuário estiver logado, usar o mesmo padrão do Tibia Termo
+      if (twitchUser?.id) {
+        console.log("[Roulette] 🔑 Usuário logado - usando get_or_merge_profile_v2");
+        
+        const { data: profileId, error: profileError } = await supabase.rpc('get_or_merge_profile_v2', {
+          p_twitch_user_id: twitchUser.id,
+          p_display_name: twitchUser.display_name,
+          p_login: twitchUser.login,
+          p_nome_personagem: null,
+        });
+
+        if (profileError || !profileId) {
+          console.error("[Roulette] ❌ Erro ao obter perfil via get_or_merge_profile_v2:", profileError);
+          identityError = profileError;
+        } else {
+          console.log("[Roulette] ✅ Profile ID obtido:", profileId);
+          
+          // Buscar dados completos do perfil
+          const { data: profileData, error: fetchError } = await supabase
+            .from('profiles')
+            .select('id, nome, twitch_username, twitch_user_id, display_name_canonical, nome_personagem')
+            .eq('id', profileId)
+            .single();
+
+          if (fetchError || !profileData) {
+            console.error("[Roulette] ❌ Erro ao buscar dados do perfil:", fetchError);
+            identityError = fetchError;
+          } else {
+            identityData = {
+              canonicalProfile: profileData,
+              hasDuplicates: false
+            };
+          }
         }
-      });
+      } else {
+        console.log("[Roulette] 👤 Usuário não logado - usando resolve-user-identity");
+        
+        // Usar a edge function resolve-user-identity para usuários não logados
+        const searchTermWithAt = prepareUsernameForSearch(nomeParaUsar);
+        const response = await supabase.functions.invoke('resolve-user-identity', {
+          body: {
+            searchTerm: searchTermWithAt,
+            twitch_user_id: null
+          }
+        });
+        
+        identityData = response.data;
+        identityError = response.error;
+      }
 
       if (identityError || !identityData?.canonicalProfile) {
         console.error("[Roulette] ❌ Erro ao resolver identidade:", identityError);
@@ -354,38 +397,39 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         }
       }
 
-      // Salvar o spin com tipo padronizado
+      // Preparar dados do spin para salvar após processamento da recompensa
       const tipoParaSalvar = resultado.tipo;
-      console.log("💾 Salvando spin:", {
+      console.log("💾 Preparando dados do spin:", {
         tipo: tipoParaSalvar,
         valor: resultado.valor,
         nome_usuario: nomeParaUsar,
         userId
       });
-      
-      const { data: spinData, error: spinError } = await supabase
-        .from("spins")
-        .insert({
-          wheel_id: wheel.id,
-          user_id: userId,
-          nome_usuario: nomeParaUsar,
-          tipo_recompensa: tipoParaSalvar,
-          valor: resultado.valor
-        })
-        .select()
-        .single();
-
-      if (spinError) {
-        console.error("❌ Erro ao salvar spin:", spinError);
-        throw spinError;
-      }
-      
-      console.log("✅ Spin salvo com sucesso", spinData);
 
       // Se ganhou ticket, usar serviço unificado
       if (resultado.tipo === "Tickets") {
+        // Primeiro salvar o spin para obter o ID
+        const { data: spinData, error: spinError } = await supabase
+          .from("spins")
+          .insert({
+            wheel_id: wheel.id,
+            user_id: userId,
+            nome_usuario: nomeParaUsar,
+            tipo_recompensa: tipoParaSalvar,
+            valor: resultado.valor
+          })
+          .select()
+          .single();
+
+        if (spinError) {
+          console.error("❌ Erro ao salvar spin:", spinError);
+          throw spinError;
+        }
+        
+        console.log("✅ Spin salvo com sucesso", spinData);
+
         const ticketsGanhos = parseInt(resultado.valor) || 1;
-        const idempotencyKey = `spin-${spinData?.id}-tickets`;
+        const idempotencyKey = `spin-${spinData.id}-tickets`;
 
         console.log('🎫 [DEBUG] Iniciando concessão de tickets:', {
           userId,
@@ -488,6 +532,26 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
       console.log("🔍 Verificando tipo de recompensa:", resultado.tipo);
       
       if (resultado.tipo === "Pontos de Loja") {
+        // Primeiro salvar o spin para obter o ID
+        const { data: spinData, error: spinError } = await supabase
+          .from("spins")
+          .insert({
+            wheel_id: wheel.id,
+            user_id: userId,
+            nome_usuario: nomeParaUsar,
+            tipo_recompensa: tipoParaSalvar,
+            valor: resultado.valor
+          })
+          .select()
+          .single();
+
+        if (spinError) {
+          console.error("❌ Erro ao salvar spin:", spinError);
+          throw spinError;
+        }
+        
+        console.log("✅ Spin salvo com sucesso", spinData);
+
         const pontosGanhos = parseInt(resultado.valor) || 0;
         
         console.log(`🎯 INICIANDO sincronização de Pontos de Loja:`, {
@@ -504,7 +568,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
               username: nomeParaUsar,
               points: pontosGanhos,
               tipo_operacao: profileData?.twitch_user_id ? 'spin' : 'spin_temporary_profile',
-              referencia_id: wheel.id,
+              referencia_id: spinData.id, // Usar o ID do spin salvo
               user_id: userId
             }
           });
@@ -515,21 +579,8 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
             console.error("❌ Erro ao sincronizar pontos com StreamElements:", syncError);
             toast.error(`Erro ao sincronizar ${pontosGanhos} pontos de loja para ${nomeParaUsar} no StreamElements`);
             
-            // Mesmo com erro no StreamElements, salvar o spin para auditoria
-            try {
-              await supabase
-                .from("spins")
-                .insert({
-                  wheel_id: wheel.id,
-                  user_id: userId,
-                  nome_usuario: nomeParaUsar,
-                  tipo_recompensa: resultado.tipo,
-                  valor: resultado.valor
-                });
-              console.log("📝 Spin salvo para auditoria mesmo com erro no StreamElements");
-            } catch (spinSaveError) {
-              console.error("❌ Erro ao salvar spin para auditoria:", spinSaveError);
-            }
+            // Spin já foi salvo anteriormente, apenas log para auditoria
+            console.log("📝 Spin já salvo para auditoria mesmo com erro no StreamElements");
             
             throw syncError;
           } else {
@@ -555,11 +606,30 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
 
       // Se ganhou Rubini Coins, adicionar ao saldo automaticamente COM IDEMPOTÊNCIA
       if (resultado.tipo === "Rubini Coins") {
+        // Primeiro salvar o spin para obter o ID
+        const { data: spinData, error: spinError } = await supabase
+          .from("spins")
+          .insert({
+            wheel_id: wheel.id,
+            user_id: userId,
+            nome_usuario: nomeParaUsar,
+            tipo_recompensa: tipoParaSalvar,
+            valor: resultado.valor
+          })
+          .select()
+          .single();
+
+        if (spinError) {
+          console.error("❌ Erro ao salvar spin:", spinError);
+          throw spinError;
+        }
+        
+        console.log("✅ Spin salvo com sucesso", spinData);
+
         const rubiniGanhos = parseInt(resultado.valor) || 0;
         
-        // Gerar idempotency_key único e consistente baseado em timestamp truncado
-        const timestampTrunc = Math.floor(Date.now() / 1000) * 1000;
-        const idempotencyKey = `roulette-${wheel.id}-${userId}-${timestampTrunc}`;
+        // Usar o ID do spin como parte da idempotency key
+        const idempotencyKey = `roulette-spin-${spinData.id}-rc`;
         
         try {
           console.log(`[Roulette] 💰 Creditando ${rubiniGanhos} Rubini Coins`, {
@@ -567,7 +637,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
             userId,
             value: rubiniGanhos,
             idempotencyKey,
-            wheelId: wheel.id
+            spinId: spinData.id
           });
           
           const { data, error: rubiniError } = await supabase.functions.invoke('add-rubini-coins', {
@@ -577,7 +647,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
               motivo: `Ganhou ${rubiniGanhos} Rubini Coins na roleta ${wheel.nome}`,
               idempotencyKey: idempotencyKey,
               origem: 'roulette',
-              referenciaId: wheel.id
+              referenciaId: spinData.id
             }
           });
           
