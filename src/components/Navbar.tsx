@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Shield } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Shield, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -30,7 +30,7 @@ export const Navbar = () => {
   
   // Sempre chamar useAdmin, mas passar user correto
   const { isAdmin, loading: adminLoading } = useAdmin(session?.user ?? null);
-  const { isAdminMode } = useAdminMode();
+  const { isAdminMode, toggleAdminMode, canUseAdminMode } = useAdminMode();
   
   // Verificar status da recompensa diária - só quando auth terminar de carregar
   const { hasRewardAvailable, forceRefresh } = useDailyRewardStatus(
@@ -155,6 +155,36 @@ export const Navbar = () => {
                   <Sun className="h-5 w-5" />
                 )}
               </Button>
+
+              {canUseAdminMode && (
+                <Button
+                  onClick={toggleAdminMode}
+                  variant={isAdminMode ? "default" : "outline"}
+                  size="sm"
+                  className={`
+                    transition-all duration-200 hover:scale-105
+                    ${isAdminMode 
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-purple-400 text-white' 
+                      : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200'
+                    }
+                  `}
+                  title={isAdminMode ? "Alternar para Modo Usuário" : "Alternar para Modo Admin"}
+                >
+                  {isAdminMode ? (
+                    <>
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin
+                      <EyeOff className="ml-2 h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <User className="mr-2 h-4 w-4" />
+                      Usuário
+                      <Eye className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              )}
 
               {twitchLoading ? (
                 <UserBadgeLoading />
@@ -319,6 +349,33 @@ export const Navbar = () => {
                   ) : twitchUser ? (
                   <div className="flex flex-col gap-2">
                     <UserBadge user={twitchUser} onLogout={twitchLogout} />
+                    {canUseAdminMode && (
+                      <Button
+                        onClick={toggleAdminMode}
+                        variant={isAdminMode ? "default" : "outline"}
+                        className={`
+                          w-full justify-start transition-all duration-200
+                          ${isAdminMode 
+                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-purple-400 text-white' 
+                            : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200'
+                          }
+                        `}
+                      >
+                        {isAdminMode ? (
+                          <>
+                            <Shield className="mr-2 h-4 w-4" />
+                            Modo Admin
+                            <EyeOff className="ml-auto h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            <User className="mr-2 h-4 w-4" />
+                            Modo Usuário
+                            <Eye className="ml-auto h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    )}
                     {isAdmin && isAdminMode && (
                       <>
                         <div className="w-full">

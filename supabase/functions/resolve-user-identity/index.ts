@@ -91,11 +91,50 @@ serve(async (req) => {
       }
     }
 
+    // Se não encontrou usuário existente, criar perfil temporário para permitir entrega de prêmios
+    if (!canonicalProfile && searchTerm) {
+      console.log(`🆕 Criando perfil temporário para usuário não encontrado: ${searchTerm}`);
+      
+      // Criar perfil temporário na tabela profiles
+      const { data: newProfile, error: createError } = await supabaseClient
+        .from('profiles')
+        .insert({
+          nome: searchTerm,
+          twitch_username: searchTerm.toLowerCase(),
+          display_name_canonical: searchTerm,
+          is_active: true,
+          is_temporary: true, // Flag para indicar que é um perfil temporário
+          created_via: 'prize_delivery' // Indicar como foi criado
+        })
+        .select('id, nome, twitch_username, twitch_user_id, display_name_canonical, is_active')
+        .single();
+
+      if (createError) {
+        console.error('❌ Erro ao criar perfil temporário:', createError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Erro ao criar perfil temporário para usuário',
+            canonicalProfile: null,
+            hasDuplicates: false
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
+      canonicalProfile = newProfile;
+      console.log(`✅ Perfil temporário criado com sucesso:`, {
+        id: canonicalProfile.id,
+        nome: canonicalProfile.nome,
+        isTemporary: true
+      });
+    }
+
     if (!canonicalProfile) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Usuário não encontrado',
+          error: 'Usuário não encontrado e não foi possível criar perfil temporário',
           canonicalProfile: null,
           hasDuplicates: false
         }),

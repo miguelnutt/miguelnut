@@ -140,13 +140,117 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
 
       if (identityError || !identityData?.canonicalProfile) {
         console.error("[Roulette] ❌ Erro ao resolver identidade:", identityError);
-        toast.error("Erro ao processar usuário");
+        
+        // Para Pontos de Loja, ainda tentar entregar mesmo sem perfil
+        if (resultado.tipo === "Pontos de Loja") {
+          console.log("[Roulette] 🎯 Tentando entregar Pontos de Loja mesmo sem perfil resolvido");
+          
+          try {
+            const pontosGanhos = parseInt(resultado.valor) || 0;
+            
+            const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-streamelements-points', {
+              body: {
+                username: nomeParaUsar,
+                points: pontosGanhos,
+                tipo_operacao: 'spin_fallback',
+                referencia_id: wheel.id,
+                user_id: null // Sem user_id pois não foi possível resolver
+              }
+            });
+            
+            if (syncError) {
+              console.error("❌ Erro ao sincronizar pontos (fallback):", syncError);
+              toast.error(`Erro ao entregar ${pontosGanhos} pontos de loja para ${nomeParaUsar}`);
+            } else {
+              console.log("✅ Pontos de Loja entregues via fallback:", syncData);
+              toast.success(`${nomeParaUsar} ganhou +${pontosGanhos} pontos de loja!`);
+              
+              // Salvar spin sem user_id
+              await supabase
+                .from("spins")
+                .insert({
+                  wheel_id: wheel.id,
+                  user_id: null,
+                  nome_usuario: nomeParaUsar,
+                  tipo_recompensa: resultado.tipo,
+                  valor: resultado.valor
+                });
+            }
+          } catch (fallbackError: any) {
+            console.error("❌ Erro no fallback de Pontos de Loja:", fallbackError);
+            toast.error(`Falha ao entregar pontos: ${fallbackError.message}`);
+          }
+        } 
+        // Para Tickets, salvar o registro mesmo sem perfil (para auditoria)
+        else if (resultado.tipo === "Tickets") {
+          console.log("[Roulette] 🎫 Salvando Tickets mesmo sem perfil resolvido (para auditoria)");
+          
+          try {
+            const ticketsGanhos = parseInt(resultado.valor) || 1;
+            
+            // Salvar spin sem user_id para auditoria
+            await supabase
+              .from("spins")
+              .insert({
+                wheel_id: wheel.id,
+                user_id: null,
+                nome_usuario: nomeParaUsar,
+                tipo_recompensa: resultado.tipo,
+                valor: resultado.valor
+              });
+            
+            console.log("✅ Tickets registrados para auditoria (sem perfil)");
+            toast.success(`${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Registrado para quando fizer login)`);
+          } catch (fallbackError: any) {
+            console.error("❌ Erro ao registrar Tickets:", fallbackError);
+            toast.error(`Falha ao registrar tickets: ${fallbackError.message}`);
+          }
+        }
+        // Para Rubini Coins, salvar o registro mesmo sem perfil (para auditoria)
+        else if (resultado.tipo === "Rubini Coins") {
+          console.log("[Roulette] 💰 Salvando Rubini Coins mesmo sem perfil resolvido (para auditoria)");
+          
+          try {
+            const rubiniGanhos = parseInt(resultado.valor) || 0;
+            
+            // Salvar spin sem user_id para auditoria
+            await supabase
+              .from("spins")
+              .insert({
+                wheel_id: wheel.id,
+                user_id: null,
+                nome_usuario: nomeParaUsar,
+                tipo_recompensa: resultado.tipo,
+                valor: resultado.valor
+              });
+            
+            console.log("✅ Rubini Coins registrados para auditoria (sem perfil)");
+            toast.success(`${nomeParaUsar} ganhou +${rubiniGanhos} Rubini Coins! (Registrado para quando fizer login)`);
+          } catch (fallbackError: any) {
+            console.error("❌ Erro ao registrar Rubini Coins:", fallbackError);
+            toast.error(`Falha ao registrar Rubini Coins: ${fallbackError.message}`);
+          }
+        } else {
+          toast.error("Erro ao processar usuário - prêmio não pode ser entregue");
+        }
+        
+        setShowResultDialog(false);
+        onOpenChange(false);
         setAwaitingConfirmation(false);
         return;
       }
 
       const userId = identityData.canonicalProfile.id;
       const profileData = identityData.canonicalProfile;
+      
+      // Log se foi criado um perfil temporário
+      if (identityData.canonicalProfile && !identityData.canonicalProfile.twitch_user_id) {
+        console.log("[Roulette] 🆕 Perfil temporário criado/usado para:", {
+          userId,
+          nome: profileData.nome,
+          isTemporary: true
+        });
+      }
       
       console.log("[Roulette] ✅ Perfil canônico resolvido:", {
         userId,
@@ -209,7 +313,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       console.log("✅ Spin salvo com sucesso", spinData);
 
       // Se ganhou ticket, usar serviço unificado
-      if (resultado.tipo === "Tickets" && userId) {
+      if (resultado.tipo === "Tickets") {
         const ticketsGanhos = parseInt(resultado.valor) || 1;
         const idempotencyKey = `spin-${spinData?.id}-tickets`;
 
@@ -231,7 +335,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           }
 
           console.log(`Tickets awarded via unified service:`, awardData);
-          toast.success(`${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Novo saldo: ${awardData.newBalance})`);
+          
+          // Indicar se foi para perfil temporário
+          const successMessage = profileData?.twitch_user_id 
+            ? `${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Novo saldo: ${awardData.newBalance})`
+            : `${nomeParaUsar} ganhou +${ticketsGanhos} ticket(s)! (Perfil temporário - saldo: ${awardData.newBalance})`;
+          
+          toast.success(successMessage);
         } catch (error) {
           console.error('Error awarding tickets:', error);
           toast.error('Erro ao conceder tickets');
@@ -253,7 +363,9 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
         console.log(`🎯 INICIANDO sincronização de Pontos de Loja:`, {
           pontosGanhos,
           nomeParaUsar,
-          tipo: resultado.tipo
+          tipo: resultado.tipo,
+          userId,
+          hasTemporaryProfile: !profileData?.twitch_user_id
         });
         
         try {
@@ -261,7 +373,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
             body: {
               username: nomeParaUsar,
               points: pontosGanhos,
-              tipo_operacao: 'spin',
+              tipo_operacao: profileData?.twitch_user_id ? 'spin' : 'spin_temporary_profile',
               referencia_id: wheel.id,
               user_id: userId
             }
@@ -272,10 +384,33 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
           if (syncError) {
             console.error("❌ Erro ao sincronizar pontos com StreamElements:", syncError);
             toast.error(`Erro ao sincronizar ${pontosGanhos} pontos de loja para ${nomeParaUsar} no StreamElements`);
-            throw syncError; // Lançar erro para garantir que a operação seja interrompida em caso de falha
+            
+            // Mesmo com erro no StreamElements, salvar o spin para auditoria
+            try {
+              await supabase
+                .from("spins")
+                .insert({
+                  wheel_id: wheel.id,
+                  user_id: userId,
+                  nome_usuario: nomeParaUsar,
+                  tipo_recompensa: resultado.tipo,
+                  valor: resultado.valor
+                });
+              console.log("📝 Spin salvo para auditoria mesmo com erro no StreamElements");
+            } catch (spinSaveError) {
+              console.error("❌ Erro ao salvar spin para auditoria:", spinSaveError);
+            }
+            
+            throw syncError;
           } else {
             console.log("✅ StreamElements sync bem-sucedido:", syncData);
-            toast.success(`${nomeParaUsar} ganhou +${pontosGanhos} pontos de loja!`);
+            
+            // Indicar se foi para perfil temporário
+            const successMessage = profileData?.twitch_user_id 
+              ? `${nomeParaUsar} ganhou +${pontosGanhos} pontos de loja!`
+              : `${nomeParaUsar} ganhou +${pontosGanhos} pontos de loja! (Perfil temporário criado)`;
+            
+            toast.success(successMessage);
           }
         } catch (seError: any) {
           console.error("❌ Erro ao chamar função de sincronização StreamElements:", seError);
@@ -289,7 +424,7 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
       }
 
       // Se ganhou Rubini Coins, adicionar ao saldo automaticamente COM IDEMPOTÊNCIA
-      if (resultado.tipo === "Rubini Coins" && userId) {
+      if (resultado.tipo === "Rubini Coins") {
         const rubiniGanhos = parseInt(resultado.valor) || 0;
         
         // Gerar idempotency_key único e consistente baseado em timestamp truncado
@@ -329,7 +464,13 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false }: Spin
               userId,
               value: rubiniGanhos
             });
-            toast.success(`${nomeParaUsar} ganhou +${rubiniGanhos} Rubini Coins!`);
+            
+            // Indicar se foi para perfil temporário
+            const successMessage = profileData?.twitch_user_id 
+              ? `${nomeParaUsar} ganhou +${rubiniGanhos} Rubini Coins!`
+              : `${nomeParaUsar} ganhou +${rubiniGanhos} Rubini Coins! (Perfil temporário)`;
+            
+            toast.success(successMessage);
           }
         } catch (rcError: any) {
           console.error("[Roulette] ❌ Erro inesperado:", rcError);

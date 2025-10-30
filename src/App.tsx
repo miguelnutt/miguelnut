@@ -20,7 +20,7 @@ import SiteSettings from "./pages/SiteSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import { Footer } from "@/components/Footer";
-import { AdminModeToggle } from "@/components/AdminModeToggle";
+
 import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -34,7 +34,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <div className="flex flex-col min-h-screen">
-              <AdminModeToggle />
+      
               <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
