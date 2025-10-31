@@ -122,8 +122,24 @@ export const Navbar = () => {
         <>
           {isAdmin && (
             <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  toggleHalloween();
+                  toast({
+                    title: isHalloweenActive ? "Halloween DESATIVADO" : "Halloween ATIVO",
+                    description: isHalloweenActive 
+                      ? "Tema padrão restaurado" 
+                      : "Tema Halloween ativado em todo o site",
+                  });
+                }}
+                className="rounded-full hover:bg-orange-500/20"
+                title={isHalloweenActive ? "Desativar Tema Halloween" : "Ativar Tema Halloween"}
+              >
+                <Ghost className={`h-5 w-5 ${isHalloweenActive ? 'text-orange-500' : ''}`} />
+              </Button>
               <AdminRubiniCoinsResgatesButton />
-
             </>
           )}
           <Button
