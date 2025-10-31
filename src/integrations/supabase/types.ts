@@ -656,6 +656,7 @@ export type Database = {
         Row: {
           created_at: string | null
           halloween_mode_enabled: boolean | null
+          header_profile_image_url: string | null
           id: string
           updated_at: string | null
           video_start_time: number | null
@@ -664,6 +665,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           halloween_mode_enabled?: boolean | null
+          header_profile_image_url?: string | null
           id?: string
           updated_at?: string | null
           video_start_time?: number | null
@@ -672,6 +674,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           halloween_mode_enabled?: boolean | null
+          header_profile_image_url?: string | null
           id?: string
           updated_at?: string | null
           video_start_time?: number | null

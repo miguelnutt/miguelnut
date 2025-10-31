@@ -1,10 +1,9 @@
-import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Shield, Eye, EyeOff } from "lucide-react";
+import { Moon, Sun, LogOut, User, Settings as SettingsIcon, Menu, X, Gift, Shield, Eye, EyeOff, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-helper";
 import { Session } from "@supabase/supabase-js";
-import profileImage from "@/assets/profile-miguelnut.png";
 import { useTwitchStatus } from "@/contexts/TwitchStatusContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminMode } from "@/contexts/AdminModeContext";
@@ -13,10 +12,9 @@ import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
 import { TwitchLoginButton } from "@/components/TwitchLoginButton";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { AdminRubiniCoinsResgatesButton } from "@/components/admin/AdminRubiniCoinsResgatesButton";
-import { HeaderImageUpload } from "@/components/admin/HeaderImageUpload";
+import { HeaderImageUploadDialog } from "@/components/admin/HeaderImageUploadDialog";
+import { useHalloweenTheme } from "@/contexts/HalloweenThemeContext";
 import { useDailyRewardStatus } from "@/hooks/useDailyRewardStatus";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-
 import { toast } from "@/hooks/use-toast";
 import { BetaBanner } from "@/components/BetaBanner";
 
@@ -26,9 +24,10 @@ export const Navbar = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
-  const [currentHeaderImage, setCurrentHeaderImage] = useState(profileImage);
+  const [imageUploadOpen, setImageUploadOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
+  const { headerProfileImage } = useHalloweenTheme();
   
   const { isAdmin } = useAuth();
   const { isAdminMode, toggleAdminMode, canUseAdminMode } = useAdminMode();
@@ -43,12 +42,6 @@ export const Navbar = () => {
     if (savedTheme) {
       setTheme(savedTheme);
       document.documentElement.classList.toggle("dark", savedTheme === "dark");
-    }
-
-    // Carregar imagem customizada do header
-    const customImage = localStorage.getItem("custom-header-image");
-    if (customImage) {
-      setCurrentHeaderImage(customImage);
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -72,16 +65,11 @@ export const Navbar = () => {
   };
 
   const handleLogout = async () => {
+    if (twitchUser) {
+      await twitchLogout();
+    }
     await supabase.auth.signOut();
     navigate("/login");
-  };
-
-  const handleImageChange = (newImageUrl: string) => {
-    setCurrentHeaderImage(newImageUrl);
-  };
-
-  const handleImageReset = () => {
-    setCurrentHeaderImage(profileImage);
   };
 
 
@@ -95,6 +83,7 @@ export const Navbar = () => {
         <div className="flex h-16 md:h-24 items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="relative">
+            <div className="relative group">
               <a 
                 href="https://www.twitch.tv/miguelnutt" 
                 target="_blank" 
@@ -102,7 +91,7 @@ export const Navbar = () => {
               >
                 <div className="flex flex-col items-center gap-1 md:gap-1.5 cursor-pointer hover:opacity-80 transition-opacity">
                   <img 
-                    src={currentHeaderImage} 
+                    src={headerProfileImage} 
                     alt="Miguelnut Tibiano" 
                     className={`h-10 w-10 md:h-16 md:w-16 rounded-full object-cover ring-2 md:ring-4 transition-all ${
                       !liveLoading && isLive 
@@ -122,14 +111,17 @@ export const Navbar = () => {
               
               {/* Botão de edição da imagem - só aparece em modo admin */}
               {isAdminMode && (
-                <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2">
-                  <HeaderImageUpload
-                    currentImage={currentHeaderImage}
-                    onImageChange={handleImageChange}
-                    onReset={handleImageReset}
-                  />
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setImageUploadOpen(true)}
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-auto bg-background/95 backdrop-blur"
+                >
+                  <ImageIcon className="h-3 w-3 mr-1" />
+                  Editar Imagem
+                </Button>
               )}
+            </div>
             </div>
             
             <Link to="/">
@@ -521,6 +513,14 @@ export const Navbar = () => {
         onOpenChange={setDailyRewardOpen}
         onClaimSuccess={forceRefresh}
       />
+      
+      {/* Header Image Upload Dialog (Admin only) */}
+      {isAdminMode && (
+        <HeaderImageUploadDialog
+          open={imageUploadOpen}
+          onOpenChange={setImageUploadOpen}
+        />
+      )}
     </nav>
     <BetaBanner />
     </>

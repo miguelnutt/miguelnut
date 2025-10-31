@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Shield, ArrowLeft } from "lucide-react";
 import { FaTwitch } from "react-icons/fa";
-import profileImage from "@/assets/profile-miguelnut.png";
+import { useHalloweenTheme } from "@/contexts/HalloweenThemeContext";
 
 
 export default function Login() {
@@ -22,6 +22,7 @@ export default function Login() {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
   const [factorId, setFactorId] = useState("");
+  const { headerProfileImage } = useHalloweenTheme();
 
   useEffect(() => {
     checkIfAdminExists();
@@ -239,7 +240,7 @@ export default function Login() {
           </Button>
           
           <img 
-            src={profileImage} 
+            src={headerProfileImage} 
             alt="Profile" 
             className="mx-auto h-20 w-20 rounded-full object-cover"
           />
