@@ -73,17 +73,25 @@ export const Navbar = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  toggleHalloween();
-                  toast({
-                    title: isHalloweenActive ? "Halloween DESATIVADO" : "Halloween ATIVO",
-                    description: isHalloweenActive 
-                      ? "Tema padrão restaurado" 
-                      : "Tema Halloween ativado em todo o site",
-                  });
+                onClick={async () => {
+                  try {
+                    await toggleHalloween();
+                    toast({
+                      title: !isHalloweenActive ? "Halloween ATIVO" : "Halloween DESATIVADO",
+                      description: !isHalloweenActive 
+                        ? "Tema Halloween ativado para todos os usuários" 
+                        : "Tema padrão restaurado para todos",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Erro ao alternar tema",
+                      description: "Não foi possível alternar o tema Halloween",
+                      variant: "destructive",
+                    });
+                  }
                 }}
                 className="rounded-full hover:bg-orange-500/20"
-                title={isHalloweenActive ? "Desativar Tema Halloween" : "Ativar Tema Halloween"}
+                title={isHalloweenActive ? "Desativar Tema Halloween (Global)" : "Ativar Tema Halloween (Global)"}
               >
                 <Ghost className={`h-5 w-5 ${isHalloweenActive ? 'text-orange-500' : ''}`} />
               </Button>
@@ -125,17 +133,25 @@ export const Navbar = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  toggleHalloween();
-                  toast({
-                    title: isHalloweenActive ? "Halloween DESATIVADO" : "Halloween ATIVO",
-                    description: isHalloweenActive 
-                      ? "Tema padrão restaurado" 
-                      : "Tema Halloween ativado em todo o site",
-                  });
+                onClick={async () => {
+                  try {
+                    await toggleHalloween();
+                    toast({
+                      title: !isHalloweenActive ? "Halloween ATIVO" : "Halloween DESATIVADO",
+                      description: !isHalloweenActive 
+                        ? "Tema Halloween ativado para todos os usuários" 
+                        : "Tema padrão restaurado para todos",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Erro ao alternar tema",
+                      description: "Não foi possível alternar o tema Halloween",
+                      variant: "destructive",
+                    });
+                  }
                 }}
                 className="rounded-full hover:bg-orange-500/20"
-                title={isHalloweenActive ? "Desativar Tema Halloween" : "Ativar Tema Halloween"}
+                title={isHalloweenActive ? "Desativar Tema Halloween (Global)" : "Ativar Tema Halloween (Global)"}
               >
                 <Ghost className={`h-5 w-5 ${isHalloweenActive ? 'text-orange-500' : ''}`} />
               </Button>
