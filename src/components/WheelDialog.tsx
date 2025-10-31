@@ -37,7 +37,7 @@ const colorThemes = {
   Pink: ["#AD0059", "#FDABDC", "#F7007E", "#FFF3F9"],
   Brown: ["#362300", "#8A744A", "#734C00", "#FBEED4"],
   Black: ["#061000", "#A9A9A9", "#4C4C4C", "#EFEFEF"],
-  Halloween: ["#1a0a00", "#8B5CF6", "#FF6B00", "#4C1D95"],
+  Halloween: ["#1a0a00", "#000000", "#FF6B00", "#4C1D95"],
 };
 
 export function WheelDialog({ open, onOpenChange, onSuccess, wheel }: WheelDialogProps) {

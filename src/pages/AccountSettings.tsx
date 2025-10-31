@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, ShoppingCart, Gem, Ticket, BadgeCheck, Link2, Link2Off } from "lucide-react";
+import { Loader2, Shield, ShieldCheck, Copy, CheckCheck, Eye, EyeOff, Coins, User as UserIcon, RefreshCw, Gift, Clock, AlertCircle, CheckCircle, XCircle, ShoppingCart, Gem, Ticket, BadgeCheck, Link2, Link2Off, Palette, Lock, Unlock } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminMode } from "@/contexts/AdminModeContext";
@@ -17,6 +17,10 @@ import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { PromotionalBar } from "@/components/PromotionalBar";
 import { RubiniCoinsResgateDialog } from "@/components/RubiniCoinsResgateDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useHalloweenTheme } from "@/contexts/HalloweenThemeContext";
+import { HeaderImageUploadDialog } from "@/components/admin/HeaderImageUploadDialog";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -49,6 +53,9 @@ export default function AccountSettings() {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [resgates, setResgates] = useState<any[]>([]);
   const [loadingResgates, setLoadingResgates] = useState(false);
+  const [headerImageDialogOpen, setHeaderImageDialogOpen] = useState(false);
+  
+  const { isHalloweenActive, toggleHalloween, themeLock, updateThemeLock } = useHalloweenTheme();
 
   useEffect(() => {
     checkUser();
@@ -1002,6 +1009,119 @@ export default function AccountSettings() {
             </CardContent>
           </Card>
           )}
+          
+          {/* Configurações de Tema - Apenas para admin */}
+          {isAdmin && isAdminMode && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <Palette className="h-5 w-5" />
+                Tema e Aparência
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Configure o tema global do site para todos os usuários
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Modo Halloween */}
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div className="flex-1">
+                  <Label htmlFor="halloween-mode-account" className="text-base font-semibold cursor-pointer">
+                    Modo Halloween
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Ativa o tema Halloween para todos os usuários
+                  </p>
+                </div>
+                <Switch 
+                  id="halloween-mode-account"
+                  checked={isHalloweenActive}
+                  onCheckedChange={async () => {
+                    try {
+                      await toggleHalloween();
+                      toast.success(isHalloweenActive ? "Tema Halloween desativado" : "Tema Halloween ativado");
+                    } catch (error) {
+                      toast.error("Erro ao alternar tema Halloween");
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Bloqueio de Tema */}
+              <div className="p-4 bg-muted rounded-lg space-y-3">
+                <div>
+                  <Label htmlFor="theme-lock-account" className="text-base font-semibold">
+                    Bloqueio de Tema
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Força todos os usuários a usarem apenas modo claro ou escuro
+                  </p>
+                </div>
+                <Select 
+                  value={themeLock || 'none'}
+                  onValueChange={async (value: string) => {
+                    try {
+                      const newLock = value === 'none' ? null : (value as 'light' | 'dark');
+                      await updateThemeLock(newLock);
+                      toast.success(newLock ? `Tema bloqueado em ${newLock === 'dark' ? 'escuro' : 'claro'} para todos` : 'Bloqueio de tema removido');
+                    } catch (error) {
+                      toast.error('Erro ao atualizar bloqueio de tema');
+                    }
+                  }}
+                >
+                  <SelectTrigger id="theme-lock-account">
+                    <SelectValue placeholder="Sem bloqueio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <Unlock className="h-4 w-4" />
+                        <span>Sem bloqueio</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="dark">
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4" />
+                        <span>Forçar modo escuro</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="light">
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4" />
+                        <span>Forçar modo claro</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {themeLock && (
+                  <p className="text-xs text-primary">
+                    ✓ Todos os usuários estão vendo apenas o modo {themeLock === 'dark' ? 'escuro' : 'claro'}
+                  </p>
+                )}
+              </div>
+
+              {/* Upload de Imagem do Header */}
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="mb-3">
+                  <Label className="text-base font-semibold">
+                    Imagem do Perfil no Header
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Altere a imagem do perfil exibida no topo do site
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => setHeaderImageDialogOpen(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Alterar Imagem do Header
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          )}
+          
           {/* Account Info - Apenas para admin */}
           {isAdmin && isAdminMode && (
             <Card>
@@ -1175,6 +1295,14 @@ export default function AccountSettings() {
             carregarSaldos();
             carregarResgates();
           }}
+        />
+      )}
+      
+      {/* Header Image Upload Dialog (Admin only) */}
+      {isAdmin && isAdminMode && (
+        <HeaderImageUploadDialog
+          open={headerImageDialogOpen}
+          onOpenChange={setHeaderImageDialogOpen}
         />
       )}
     </>
