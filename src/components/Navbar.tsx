@@ -13,6 +13,7 @@ import { UserBadge, UserBadgeLoading } from "@/components/UserBadge";
 import { TwitchLoginButton } from "@/components/TwitchLoginButton";
 import { DailyRewardDialog } from "@/components/DailyRewardDialog";
 import { AdminRubiniCoinsResgatesButton } from "@/components/admin/AdminRubiniCoinsResgatesButton";
+import { HeaderImageUpload } from "@/components/admin/HeaderImageUpload";
 import { useDailyRewardStatus } from "@/hooks/useDailyRewardStatus";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -25,6 +26,7 @@ export const Navbar = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dailyRewardOpen, setDailyRewardOpen] = useState(false);
+  const [currentHeaderImage, setCurrentHeaderImage] = useState(profileImage);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
   
@@ -41,6 +43,12 @@ export const Navbar = () => {
     if (savedTheme) {
       setTheme(savedTheme);
       document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    }
+
+    // Carregar imagem customizada do header
+    const customImage = localStorage.getItem("custom-header-image");
+    if (customImage) {
+      setCurrentHeaderImage(customImage);
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -68,6 +76,14 @@ export const Navbar = () => {
     navigate("/login");
   };
 
+  const handleImageChange = (newImageUrl: string) => {
+    setCurrentHeaderImage(newImageUrl);
+  };
+
+  const handleImageReset = () => {
+    setCurrentHeaderImage(profileImage);
+  };
+
 
 
 
@@ -78,30 +94,44 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 md:h-24 items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
-            <a 
-              href="https://www.twitch.tv/miguelnutt" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <div className="flex flex-col items-center gap-1 md:gap-1.5 cursor-pointer hover:opacity-80 transition-opacity">
-                <img 
-                  src={profileImage} 
-                  alt="Miguelnut Tibiano" 
-                  className={`h-10 w-10 md:h-16 md:w-16 rounded-full object-cover ring-2 md:ring-4 transition-all ${
-                    !liveLoading && isLive 
-                      ? 'ring-red-500 animate-pulse-glow' 
-                      : 'ring-gray-400'
-                  }`}
-                />
-                {!liveLoading && (
-                  <span className={`text-[9px] md:text-[11px] font-bold uppercase tracking-wider ${
-                    isLive ? 'text-red-500' : 'text-muted-foreground'
-                  }`}>
-                    {isLive ? 'Ao vivo' : 'Offline'}
-                  </span>
-                )}
-              </div>
-            </a>
+            <div className="relative">
+              <a 
+                href="https://www.twitch.tv/miguelnutt" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <div className="flex flex-col items-center gap-1 md:gap-1.5 cursor-pointer hover:opacity-80 transition-opacity">
+                  <img 
+                    src={currentHeaderImage} 
+                    alt="Miguelnut Tibiano" 
+                    className={`h-10 w-10 md:h-16 md:w-16 rounded-full object-cover ring-2 md:ring-4 transition-all ${
+                      !liveLoading && isLive 
+                        ? 'ring-red-500 animate-pulse-glow' 
+                        : 'ring-gray-400'
+                    }`}
+                  />
+                  {!liveLoading && (
+                    <span className={`text-[9px] md:text-[11px] font-bold uppercase tracking-wider ${
+                      isLive ? 'text-red-500' : 'text-muted-foreground'
+                    }`}>
+                      {isLive ? 'Ao vivo' : 'Offline'}
+                    </span>
+                  )}
+                </div>
+              </a>
+              
+              {/* Botão de edição da imagem - só aparece em modo admin */}
+              {isAdminMode && (
+                <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2">
+                  <HeaderImageUpload
+                    currentImage={currentHeaderImage}
+                    onImageChange={handleImageChange}
+                    onReset={handleImageReset}
+                  />
+                </div>
+              )}
+            </div>
+            
             <Link to="/">
               <span className="text-[27px] md:text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent animate-gradient-shift cursor-pointer hover:opacity-80 transition-opacity" style={{ backgroundSize: '200% 200%', filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25))' }}>
                 Miguelnut
