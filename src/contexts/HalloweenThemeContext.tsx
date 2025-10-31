@@ -8,6 +8,8 @@ interface HalloweenThemeContextType {
   loading: boolean;
   headerProfileImage: string;
   updateHeaderImage: (imageUrl: string) => Promise<void>;
+  themeLock: 'light' | 'dark' | null;
+  updateThemeLock: (lock: 'light' | 'dark' | null) => Promise<void>;
 }
 
 const HalloweenThemeContext = createContext<HalloweenThemeContextType | undefined>(undefined);
@@ -15,6 +17,7 @@ const HalloweenThemeContext = createContext<HalloweenThemeContextType | undefine
 export const HalloweenThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isHalloweenActive, setIsHalloweenActive] = useState(false);
   const [headerProfileImage, setHeaderProfileImage] = useState(profileImageDefault);
+  const [themeLock, setThemeLock] = useState<'light' | 'dark' | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Buscar configuração inicial do banco
@@ -23,13 +26,14 @@ export const HalloweenThemeProvider: React.FC<{ children: React.ReactNode }> = (
       try {
         const { data, error } = await supabase
           .from('site_settings')
-          .select('halloween_mode_enabled, header_profile_image_url')
+          .select('halloween_mode_enabled, header_profile_image_url, theme_lock')
           .single();
 
         if (error) throw error;
         
         if (data) {
           setIsHalloweenActive(data.halloween_mode_enabled || false);
+          setThemeLock(data.theme_lock || null);
           // Se a URL for válida e começar com data:image, usar ela, senão usar padrão
           const imageUrl = data.header_profile_image_url;
           if (imageUrl && imageUrl.startsWith('data:image/')) {
@@ -61,6 +65,9 @@ export const HalloweenThemeProvider: React.FC<{ children: React.ReactNode }> = (
           if (payload.new) {
             if ('halloween_mode_enabled' in payload.new) {
               setIsHalloweenActive(payload.new.halloween_mode_enabled || false);
+            }
+            if ('theme_lock' in payload.new) {
+              setThemeLock(payload.new.theme_lock || null);
             }
             if ('header_profile_image_url' in payload.new) {
               const imageUrl = payload.new.header_profile_image_url;
@@ -123,13 +130,31 @@ export const HalloweenThemeProvider: React.FC<{ children: React.ReactNode }> = (
     }
   };
 
+  const updateThemeLock = async (lock: 'light' | 'dark' | null) => {
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .update({ theme_lock: lock })
+        .eq('id', (await supabase.from('site_settings').select('id').single()).data?.id);
+
+      if (error) throw error;
+      
+      // O estado será atualizado via realtime subscription
+    } catch (error) {
+      console.error('Erro ao atualizar bloqueio de tema:', error);
+      throw error;
+    }
+  };
+
   return (
     <HalloweenThemeContext.Provider value={{ 
       isHalloweenActive, 
       toggleHalloween, 
       loading, 
       headerProfileImage,
-      updateHeaderImage
+      updateHeaderImage,
+      themeLock,
+      updateThemeLock
     }}>
       {children}
     </HalloweenThemeContext.Provider>

@@ -658,6 +658,7 @@ export type Database = {
           halloween_mode_enabled: boolean | null
           header_profile_image_url: string | null
           id: string
+          theme_lock: string | null
           updated_at: string | null
           video_start_time: number | null
           youtube_video_id: string | null
@@ -667,6 +668,7 @@ export type Database = {
           halloween_mode_enabled?: boolean | null
           header_profile_image_url?: string | null
           id?: string
+          theme_lock?: string | null
           updated_at?: string | null
           video_start_time?: number | null
           youtube_video_id?: string | null
@@ -676,6 +678,7 @@ export type Database = {
           halloween_mode_enabled?: boolean | null
           header_profile_image_url?: string | null
           id?: string
+          theme_lock?: string | null
           updated_at?: string | null
           video_start_time?: number | null
           youtube_video_id?: string | null

@@ -25,7 +25,7 @@ export const Navbar = () => {
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { status, sessionUserId, twitchUser, isAdmin, logout } = useAuth();
-  const { isHalloweenActive, toggleHalloween, headerProfileImage } = useHalloweenTheme();
+  const { isHalloweenActive, toggleHalloween, headerProfileImage, themeLock, updateThemeLock } = useHalloweenTheme();
   
   // Verificar status da recompensa diária - só quando auth estiver pronta
   const { hasRewardAvailable } = useDailyRewardStatus(
@@ -33,12 +33,20 @@ export const Navbar = () => {
   );
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark";
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    if (themeLock) {
+      // Se há bloqueio, forçar o tema bloqueado
+      setTheme(themeLock);
+      document.documentElement.classList.toggle("dark", themeLock === "dark");
+      localStorage.setItem("theme", themeLock);
+    } else {
+      // Sem bloqueio, usar preferência do usuário
+      const savedTheme = localStorage.getItem("theme") as "light" | "dark";
+      if (savedTheme) {
+        setTheme(savedTheme);
+        document.documentElement.classList.toggle("dark", savedTheme === "dark");
+      }
     }
-  }, []);
+  }, [themeLock]);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
@@ -250,7 +258,14 @@ export const Navbar = () => {
               <Link to="/tickets" className="text-sm font-medium transition-colors hover:text-primary">Tickets</Link>
 
               <div className="flex items-center gap-2 border-l border-border pl-6">
-                <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={toggleTheme} 
+                  className="rounded-full"
+                  disabled={!!themeLock}
+                  title={themeLock ? `Tema bloqueado em ${themeLock === 'dark' ? 'escuro' : 'claro'}` : 'Alternar tema'}
+                >
                   {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
                 </Button>
                 {renderAuthSection()}
@@ -259,7 +274,14 @@ export const Navbar = () => {
 
             {/* Mobile Menu Button */}
             <div className="flex md:hidden items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleTheme} 
+                className="rounded-full"
+                disabled={!!themeLock}
+                title={themeLock ? `Tema bloqueado em ${themeLock === 'dark' ? 'escuro' : 'claro'}` : 'Alternar tema'}
+              >
                 {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </Button>
               <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-full">

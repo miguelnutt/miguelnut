@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Youtube, FileText } from "lucide-react";
+import { Youtube, FileText, Palette, Lock, Unlock } from "lucide-react";
 import { supabase } from "@/lib/supabase-helper";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminMode } from "@/contexts/AdminModeContext";
@@ -24,6 +24,10 @@ import { AdminManageRubiniCoins } from "@/components/admin/AdminManageRubiniCoin
 import { AdminRubiniCoinsHistory } from "@/components/admin/AdminRubiniCoinsHistory";
 import { PromotionalBarConfig } from "@/components/admin/PromotionalBarConfig";
 import { StreamElementsLogsDialog } from "@/components/admin/StreamElementsLogsDialog";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useHalloweenTheme } from "@/contexts/HalloweenThemeContext";
+import { HeaderImageUploadDialog } from "@/components/admin/HeaderImageUploadDialog";
 
 export default function SiteSettings() {
   const navigate = useNavigate();
@@ -36,6 +40,9 @@ export default function SiteSettings() {
   const [showSpecialDialog, setShowSpecialDialog] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
   const [seLogsDialogOpen, setSeLogsDialogOpen] = useState(false);
+  const [headerImageDialogOpen, setHeaderImageDialogOpen] = useState(false);
+  
+  const { isHalloweenActive, toggleHalloween, themeLock, updateThemeLock } = useHalloweenTheme();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -138,6 +145,16 @@ export default function SiteSettings() {
     setYoutubeVideoId(videoId);
   };
 
+  const handleThemeLockChange = async (value: string) => {
+    try {
+      const newLock = value === 'none' ? null : (value as 'light' | 'dark');
+      await updateThemeLock(newLock);
+      toast.success(newLock ? `Tema bloqueado em ${newLock === 'dark' ? 'escuro' : 'claro'} para todos` : 'Bloqueio de tema removido');
+    } catch (error) {
+      toast.error('Erro ao atualizar bloqueio de tema');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -163,7 +180,106 @@ export default function SiteSettings() {
         </div>
 
         <div className="grid gap-6 max-w-2xl">
-          {/* Seção 1: Configurações do YouTube */}
+          {/* Seção 1: Tema e Aparência */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Tema e Aparência
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Modo Halloween */}
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div className="flex-1">
+                  <Label htmlFor="halloween-mode" className="text-base font-semibold">
+                    Modo Halloween
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Ativa o tema Halloween para todos os usuários do site
+                  </p>
+                </div>
+                <Switch 
+                  id="halloween-mode"
+                  checked={isHalloweenActive}
+                  onCheckedChange={async () => {
+                    try {
+                      await toggleHalloween();
+                      toast.success(isHalloweenActive ? "Tema Halloween desativado" : "Tema Halloween ativado");
+                    } catch (error) {
+                      toast.error("Erro ao alternar tema Halloween");
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Bloqueio de Tema */}
+              <div className="p-4 bg-muted rounded-lg space-y-3">
+                <div>
+                  <Label htmlFor="theme-lock" className="text-base font-semibold">
+                    Bloqueio de Tema
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Força todos os usuários a usarem apenas modo claro ou escuro
+                  </p>
+                </div>
+                <Select 
+                  value={themeLock || 'none'}
+                  onValueChange={handleThemeLockChange}
+                >
+                  <SelectTrigger id="theme-lock">
+                    <SelectValue placeholder="Sem bloqueio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <Unlock className="h-4 w-4" />
+                        <span>Sem bloqueio</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="dark">
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4" />
+                        <span>Forçar modo escuro</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="light">
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4" />
+                        <span>Forçar modo claro</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {themeLock && (
+                  <p className="text-xs text-primary">
+                    ✓ Todos os usuários estão vendo apenas o modo {themeLock === 'dark' ? 'escuro' : 'claro'}
+                  </p>
+                )}
+              </div>
+
+              {/* Upload de Imagem do Header */}
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="mb-3">
+                  <Label className="text-base font-semibold">
+                    Imagem do Perfil no Header
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Altere a imagem do perfil exibida no topo do site
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => setHeaderImageDialogOpen(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Alterar Imagem do Header
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Seção 2: Configurações do YouTube */}
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -328,6 +444,10 @@ export default function SiteSettings() {
       <StreamElementsLogsDialog
         open={seLogsDialogOpen}
         onOpenChange={setSeLogsDialogOpen}
+      />
+      <HeaderImageUploadDialog
+        open={headerImageDialogOpen}
+        onOpenChange={setHeaderImageDialogOpen}
       />
     </div>
   );

@@ -27,7 +27,7 @@ export const Navbar = () => {
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
   const { isLive, loading: liveLoading } = useTwitchStatus();
   const { user: twitchUser, loading: twitchLoading, logout: twitchLogout } = useTwitchAuth();
-  const { headerProfileImage } = useHalloweenTheme();
+  const { headerProfileImage, themeLock } = useHalloweenTheme();
   
   const { isAdmin } = useAuth();
   const { isAdminMode, toggleAdminMode, canUseAdminMode } = useAdminMode();
@@ -58,6 +58,7 @@ export const Navbar = () => {
   }, []);
 
   const toggleTheme = () => {
+    if (themeLock) return; // Não permite trocar se há bloqueio
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
@@ -169,6 +170,8 @@ export const Navbar = () => {
                 size="icon"
                 onClick={toggleTheme}
                 className="rounded-full"
+                disabled={!!themeLock}
+                title={themeLock ? `Tema bloqueado em ${themeLock === 'dark' ? 'escuro' : 'claro'}` : 'Alternar tema'}
               >
                 {theme === "light" ? (
                   <Moon className="h-5 w-5" />
@@ -306,6 +309,8 @@ export const Navbar = () => {
               size="icon"
               onClick={toggleTheme}
               className="rounded-full"
+              disabled={!!themeLock}
+              title={themeLock ? `Tema bloqueado em ${themeLock === 'dark' ? 'escuro' : 'claro'}` : 'Alternar tema'}
             >
               {theme === "light" ? (
                 <Moon className="h-4 w-4" />
