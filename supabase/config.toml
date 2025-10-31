@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.auto-consolidate-profiles]
 verify_jwt = false
+
+[functions.monitoring-metrics]
+verify_jwt = false
