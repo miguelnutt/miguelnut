@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { useHalloweenTheme } from "@/contexts/HalloweenThemeContext";
-import { Loader2, Upload, Link as LinkIcon } from "lucide-react";
+import { Loader2, Upload, RotateCcw } from "lucide-react";
+import profileImageDefault from "@/assets/profile-miguelnut.png";
 
 interface HeaderImageUploadDialogProps {
   open: boolean;
@@ -13,37 +13,82 @@ interface HeaderImageUploadDialogProps {
 }
 
 export const HeaderImageUploadDialog = ({ open, onOpenChange }: HeaderImageUploadDialogProps) => {
-  const [imageUrl, setImageUrl] = useState("");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { updateHeaderImage, headerProfileImage } = useHalloweenTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!imageUrl.trim()) {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
       toast({
-        title: "URL vazia",
-        description: "Por favor, insira uma URL de imagem válida",
+        title: "Arquivo inválido",
+        description: "Selecione apenas imagens (JPG, PNG, GIF, WebP)",
         variant: "destructive",
       });
       return;
     }
 
+    // Validar tamanho (máximo 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "A imagem deve ter no máximo 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Criar preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreviewImage(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUpload = async () => {
+    if (!previewImage) return;
+
     setLoading(true);
     
     try {
-      await updateHeaderImage(imageUrl);
+      await updateHeaderImage(previewImage);
       toast({
         title: "Imagem atualizada",
         description: "A imagem do header foi atualizada para todos os usuários",
       });
       onOpenChange(false);
-      setImageUrl("");
+      setPreviewImage(null);
     } catch (error) {
       console.error("Erro ao atualizar imagem:", error);
       toast({
         title: "Erro",
         description: "Não foi possível atualizar a imagem",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+      await updateHeaderImage(profileImageDefault);
+      toast({
+        title: "Imagem restaurada",
+        description: "Imagem padrão restaurada para todos os usuários",
+      });
+      onOpenChange(false);
+      setPreviewImage(null);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível restaurar a imagem",
         variant: "destructive",
       });
     } finally {
@@ -61,64 +106,60 @@ export const HeaderImageUploadDialog = ({ open, onOpenChange }: HeaderImageUploa
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="imageUrl">URL da Imagem</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="imageUrl"
-                  type="url"
-                  placeholder="https://exemplo.com/imagem.png"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+            <Label>Preview da Imagem</Label>
+            <div className="flex items-center justify-center p-4 border rounded-lg bg-muted/50">
+              <img 
+                src={previewImage || headerProfileImage} 
+                alt="Preview" 
+                className="h-20 w-20 rounded-full object-cover ring-2 ring-primary"
+              />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Cole a URL de uma imagem hospedada online
-            </p>
           </div>
 
-          {imageUrl && (
-            <div className="space-y-2">
-              <Label>Preview</Label>
-              <div className="flex items-center justify-center p-4 border rounded-lg bg-muted/50">
-                <img 
-                  src={imageUrl} 
-                  alt="Preview" 
-                  className="h-20 w-20 rounded-full object-cover ring-2 ring-primary"
-                  onError={(e) => {
-                    e.currentTarget.src = headerProfileImage;
-                    toast({
-                      title: "Erro ao carregar imagem",
-                      description: "A URL fornecida não é uma imagem válida",
-                      variant: "destructive",
-                    });
-                  }}
-                />
-              </div>
-            </div>
-          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
 
-          <DialogFooter>
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+            className="w-full"
+            disabled={loading}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Selecionar Imagem Local
+          </Button>
+
+          <p className="text-xs text-muted-foreground">
+            • Formatos: JPG, PNG, GIF, WebP<br />
+            • Tamanho máximo: 2MB<br />
+            • Recomendado: imagem quadrada
+          </p>
+
+          <DialogFooter className="gap-2">
             <Button
-              type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={handleReset}
               disabled={loading}
             >
-              Cancelar
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Restaurar Padrão
             </Button>
-            <Button type="submit" disabled={loading || !imageUrl.trim()}>
+            <Button
+              onClick={handleUpload}
+              disabled={loading || !previewImage}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Upload className="mr-2 h-4 w-4" />
-              Atualizar Imagem
+              Salvar Imagem
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
