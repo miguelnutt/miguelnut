@@ -13,6 +13,14 @@ import { useAdminMode } from "@/contexts/AdminModeContext";
 import confetti from "canvas-confetti";
 import rewardSound from "@/assets/achievement-unlocked-waterway-music-1-00-02.mp3";
 import { removeAtSymbol, prepareUsernameForSearch } from "@/lib/username-utils";
+import { 
+  validateSpinInput, 
+  generateSpinIdempotencyKey, 
+  validatePrizeAwarding,
+  createSpinAuditContext,
+  type ValidationResult 
+} from "@/lib/spin-validation";
+import { AlertTriangle, CheckCircle, Ticket } from "lucide-react";
 
 interface Recompensa {
   tipo: "Pontos de Loja" | "Tickets" | "Rubini Coins";
@@ -56,6 +64,86 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
   const [carregandoPontos, setCarregandoPontos] = useState(false);
   const [ticketsAtuais, setTicketsAtuais] = useState<number | null>(null);
   const [carregandoTickets, setCarregandoTickets] = useState(false);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [isValidatingUser, setIsValidatingUser] = useState(false);
+
+  // Função para validar usuário antes do spin
+  const validateUserBeforeSpin = async (): Promise<ValidationResult> => {
+    setIsValidatingUser(true);
+    setValidationWarnings([]);
+
+    try {
+      const validation = await validateSpinInput(
+        nomeUsuario,
+        twitchUser,
+        {
+          requireLogin: false, // Permitir usuários não logados por enquanto
+          allowTemporaryProfiles: true,
+          strictUsernameMatch: false // Permitir nomes diferentes por enquanto
+        }
+      );
+
+      if (validation.warnings) {
+        setValidationWarnings(validation.warnings);
+      }
+
+      return validation;
+    } finally {
+      setIsValidatingUser(false);
+    }
+  };
+
+  // Função melhorada para award de tickets usando função atômica
+  const awardTicketsAtomic = async (
+    userId: string, 
+    amount: number, 
+    spinId: string,
+    reason: string = "Prêmio da roleta"
+  ) => {
+    try {
+      const idempotencyKey = generateSpinIdempotencyKey(spinId, userId, "tickets");
+      
+      console.log("[Roulette] 🎫 Creditando tickets com função atômica:", {
+        userId,
+        amount,
+        idempotencyKey,
+        reason
+      });
+
+      const { data: awardData, error: awardError } = await supabase.functions.invoke('award-tickets-atomic', {
+        body: {
+          userId,
+          amount,
+          source: 'roulette',
+          reason,
+          idempotencyKey,
+          origem: 'roulette'
+        }
+      });
+
+      if (awardError) {
+        console.error("❌ Erro ao chamar award-tickets-atomic:", awardError);
+        throw new Error(`Erro ao creditar tickets: ${awardError.message}`);
+      }
+
+      if (!awardData?.success) {
+        console.error("❌ Award-tickets-atomic retornou erro:", awardData);
+        throw new Error(awardData?.error || "Erro desconhecido ao creditar tickets");
+      }
+
+      console.log("✅ Tickets creditados com sucesso:", awardData);
+      
+      // Atualizar UI com novo saldo
+      if (awardData.newBalance !== undefined) {
+        setTicketsAtuais(awardData.newBalance);
+      }
+
+      return awardData;
+    } catch (error) {
+      console.error("❌ Erro na função awardTicketsAtomic:", error);
+      throw error;
+    }
+  };
 
   // Função para buscar tickets atuais do usuário
   const buscarTicketsAtuais = async (nomeUsuario: string) => {
@@ -429,85 +517,28 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
         console.log("✅ Spin salvo com sucesso", spinData);
 
         const ticketsGanhos = parseInt(resultado.valor) || 1;
-        const idempotencyKey = `spin-${spinData.id}-tickets`;
-
-        console.log('🎫 [DEBUG] Iniciando concessão de tickets:', {
+        
+        console.log('🎫 [DEBUG] Iniciando concessão de tickets com função atômica:', {
           userId,
           ticketsGanhos,
-          idempotencyKey,
+          spinId: spinData.id,
           wheelName: wheel.nome
         });
 
         try {
-          const { data: awardData, error: awardError } = await supabase.functions.invoke('award-reward', {
-            body: {
-              userId,
-              type: 'tickets',
-              value: ticketsGanhos,
-              source: 'roulette',
-              idempotencyKey,
-              reason: `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
-            }
-          });
+          // Usar a nova função atômica
+          const awardResult = await awardTicketsAtomic(
+            userId,
+            ticketsGanhos,
+            spinData.id.toString(),
+            `Ganhou ${ticketsGanhos} ticket(s) na roleta ${wheel.nome}`
+          );
 
-          console.log('🎫 [DEBUG] Resposta do award-reward:', { awardData, awardError });
-
-          if (awardError) {
-            console.error('❌ [DEBUG] Error awarding tickets via award-reward:', awardError);
-            throw awardError;
-          }
-
-          console.log(`✅ [DEBUG] Tickets awarded via unified service:`, awardData);
+          console.log('✅ [DEBUG] Tickets creditados com função atômica:', awardResult);
           
-          // Usar o saldo retornado pelo award-reward diretamente para garantir precisão
-          console.log('🔄 [DEBUG] Atualizando saldo de tickets...');
-          if (awardData?.newBalance !== undefined) {
-            console.log('✅ [DEBUG] Usando saldo do award-reward:', awardData.newBalance);
-            setTicketsAtuais(awardData.newBalance);
-          } else {
-            // Fallback: buscar o saldo atual com retry
-            let tentativas = 0;
-            const maxTentativas = 3;
-            
-            while (tentativas < maxTentativas) {
-              try {
-                tentativas++;
-                console.log(`🔄 [DEBUG] Tentativa ${tentativas} de buscar saldo atualizado...`);
-                
-                // Aguardar um pouco para garantir que a transação foi processada
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
-                // Buscar o saldo atualizado diretamente do banco
-                const { data: identityData } = await supabase.functions.invoke('resolve-user-identity', {
-                  body: {
-                    searchTerm: prepareUsernameForSearch(nomeParaUsar),
-                    twitch_user_id: twitchUser?.id || null
-                  }
-                });
-
-                if (identityData?.canonicalProfile) {
-                  const { data: ticketsData } = await supabase
-                    .from('tickets')
-                    .select('tickets_atual')
-                    .eq('user_id', identityData.canonicalProfile.id)
-                    .maybeSingle();
-                  
-                  const novoSaldo = ticketsData?.tickets_atual || 0;
-                  console.log(`✅ [DEBUG] Saldo encontrado na tentativa ${tentativas}:`, novoSaldo);
-                  setTicketsAtuais(novoSaldo);
-                  break;
-                }
-              } catch (error) {
-                console.warn(`⚠️ [DEBUG] Erro na tentativa ${tentativas}:`, error);
-                if (tentativas === maxTentativas) {
-                  console.error('❌ [DEBUG] Falha ao atualizar saldo após todas as tentativas');
-                  // Como último recurso, calcular o saldo esperado
-                  const saldoEsperado = (ticketsAtuais || 0) + ticketsGanhos;
-                  console.log('🔄 [DEBUG] Usando saldo calculado como fallback:', saldoEsperado);
-                  setTicketsAtuais(saldoEsperado);
-                }
-              }
-            }
+          // O saldo já foi atualizado na função awardTicketsAtomic
+          if (awardResult.duplicate) {
+            toast.info("Transação já foi processada anteriormente");
           }
           
           // Indicar se foi para perfil temporário
@@ -704,13 +735,45 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
   };
 
   const spin = async () => {
-    // Validate input only if not in test mode
+    // Validações rigorosas antes do spin (exceto em modo teste)
     if (!isModoTeste) {
-      const validation = spinInputSchema.safeParse({ nomeUsuario });
-      if (!validation.success) {
-        toast.error(validation.error.errors[0].message);
+      // Validar entrada do usuário
+      const validation = await validateUserBeforeSpin();
+      if (!validation.isValid) {
+        toast.error(validation.error || "Erro de validação");
         return;
       }
+
+      // Mostrar avisos se houver
+      if (validation.warnings && validation.warnings.length > 0) {
+        for (const warning of validation.warnings) {
+          toast.warning(warning, { duration: 5000 });
+        }
+        
+        // Aguardar confirmação do usuário se houver avisos críticos
+        const hasLoggedUserMismatch = validation.warnings.some(w => 
+          w.includes("logado como") && w.includes("mas digitou")
+        );
+        
+        if (hasLoggedUserMismatch) {
+          const confirmed = window.confirm(
+            `${validation.warnings[0]}\n\nDeseja continuar mesmo assim?`
+          );
+          if (!confirmed) {
+            return;
+          }
+        }
+      }
+
+      // Criar contexto de auditoria
+      const auditContext = createSpinAuditContext(
+        validation.resolvedUsername || nomeUsuario,
+        twitchUser,
+        { tipo: "unknown", valor: "0" }, // Será atualizado após o sorteio
+        wheel?.id || ""
+      );
+      
+      console.log("[Roulette] 📋 Contexto de auditoria criado:", auditContext);
     }
 
     if (!wheel || wheel.recompensas.length === 0) {
@@ -867,15 +930,62 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
             )}
 
             {!isModoTeste && (
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="usuario">Usuário Twitch</Label>
-                <Input
-                  id="usuario"
-                  value={nomeUsuario}
-                  onChange={(e) => setNomeUsuario(e.target.value)}
-                  placeholder="@nome_do_usuario"
-                  disabled={spinning}
-                />
+                <div className="relative">
+                  <Input
+                    id="usuario"
+                    value={nomeUsuario}
+                    onChange={(e) => setNomeUsuario(e.target.value)}
+                    placeholder="@nome_do_usuario"
+                    disabled={spinning || isValidatingUser}
+                    className={`${
+                      validationWarnings.length > 0 
+                        ? 'border-yellow-500 focus:border-yellow-500' 
+                        : ''
+                    }`}
+                  />
+                  {isValidatingUser && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Avisos de validação */}
+                {validationWarnings.length > 0 && (
+                  <div className="space-y-1">
+                    {validationWarnings.map((warning, index) => (
+                      <div key={index} className="flex items-start gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">{warning}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Indicador de usuário logado */}
+                {twitchUser && (
+                  <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Usuário logado: <span className="font-medium">{twitchUser.display_name}</span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Indicador de tickets atuais */}
+                {!carregandoTickets && ticketsAtuais !== null && (
+                  <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm text-blue-700 dark:text-blue-300">Tickets atuais:</span>
+                    </div>
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      {ticketsAtuais}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -891,14 +1001,71 @@ export function SpinDialog({ open, onOpenChange, wheel, testMode = false, logged
               </div>
             )}
 
-            <Button
-              onClick={spin}
-              disabled={spinning || (isAdmin && isAdminMode && !isModoTeste && !nomeUsuario.trim())}
-              className="w-full bg-gradient-primary shadow-glow"
-              size="lg"
-            >
-              {spinning ? "Girando..." : isModoTeste ? "🎮 Testar Roleta" : "Girar Roleta"}
-            </Button>
+            <div className="space-y-3">
+              {/* Indicadores de pré-requisitos */}
+              {!isModoTeste && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    {nomeUsuario.trim() ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    )}
+                    <span className={nomeUsuario.trim() ? "text-green-700 dark:text-green-300" : "text-yellow-700 dark:text-yellow-300"}>
+                      {nomeUsuario.trim() ? "Usuário informado" : "Informe o usuário Twitch"}
+                    </span>
+                  </div>
+                  
+                  {wheel?.recompensas && wheel.recompensas.length > 0 ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-green-700 dark:text-green-300">
+                        {wheel.recompensas.length} recompensas configuradas
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm">
+                      <AlertTriangle className="h-4 w-4 text-red-500" />
+                      <span className="text-red-700 dark:text-red-300">
+                        Nenhuma recompensa configurada
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button
+                onClick={spin}
+                disabled={
+                  spinning || 
+                  isValidatingUser ||
+                  (isAdmin && isAdminMode && !isModoTeste && !nomeUsuario.trim()) ||
+                  (!wheel?.recompensas || wheel.recompensas.length === 0)
+                }
+                className={`w-full shadow-glow transition-all duration-200 ${
+                  spinning || isValidatingUser
+                    ? "bg-gray-400 cursor-not-allowed" 
+                    : "bg-gradient-primary hover:scale-105"
+                }`}
+                size="lg"
+              >
+                {spinning ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Girando...
+                  </div>
+                ) : isValidatingUser ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Validando...
+                  </div>
+                ) : isModoTeste ? (
+                  "🎮 Testar Roleta"
+                ) : (
+                  "🎯 Girar Roleta"
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

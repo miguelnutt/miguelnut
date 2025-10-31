@@ -4,17 +4,20 @@ import {
   FileText, 
   ArrowLeft, 
   Search,
-  Shield
+  Shield,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase-helper";
 import { searchUsername, normalizeUsername } from "@/lib/username-utils";
+import MonitoringDashboard from "@/components/admin/MonitoringDashboard";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -234,7 +237,7 @@ const AdminDashboard = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Shield className="h-6 w-6 text-purple-600" />
-          <h1 className="text-3xl font-bold">Logs do Sistema</h1>
+          <h1 className="text-3xl font-bold">Painel Administrativo</h1>
         </div>
         <Button
           variant="outline"
@@ -246,7 +249,20 @@ const AdminDashboard = () => {
         </Button>
       </div>
 
-      <Card>
+      <Tabs defaultValue="logs" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="logs" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Logs do Sistema
+          </TabsTrigger>
+          <TabsTrigger value="monitoring" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Monitoramento
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="logs" className="space-y-6">
+          <Card>
         <CardHeader>
           <CardTitle>Logs do Sistema</CardTitle>
           <CardDescription>Visualize todos os logs importantes do sistema</CardDescription>
@@ -445,6 +461,12 @@ const AdminDashboard = () => {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="monitoring" className="space-y-6">
+          <MonitoringDashboard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
