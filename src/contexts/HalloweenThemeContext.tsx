@@ -30,7 +30,13 @@ export const HalloweenThemeProvider: React.FC<{ children: React.ReactNode }> = (
         
         if (data) {
           setIsHalloweenActive(data.halloween_mode_enabled || false);
-          setHeaderProfileImage(data.header_profile_image_url || profileImageDefault);
+          // Se a URL for válida e começar com data:image, usar ela, senão usar padrão
+          const imageUrl = data.header_profile_image_url;
+          if (imageUrl && imageUrl.startsWith('data:image/')) {
+            setHeaderProfileImage(imageUrl);
+          } else {
+            setHeaderProfileImage(profileImageDefault);
+          }
         }
       } catch (error) {
         console.error('Erro ao buscar configurações:', error);
@@ -57,7 +63,12 @@ export const HalloweenThemeProvider: React.FC<{ children: React.ReactNode }> = (
               setIsHalloweenActive(payload.new.halloween_mode_enabled || false);
             }
             if ('header_profile_image_url' in payload.new) {
-              setHeaderProfileImage(payload.new.header_profile_image_url || profileImageDefault);
+              const imageUrl = payload.new.header_profile_image_url;
+              if (imageUrl && imageUrl.startsWith('data:image/')) {
+                setHeaderProfileImage(imageUrl);
+              } else {
+                setHeaderProfileImage(profileImageDefault);
+              }
             }
           }
         }
