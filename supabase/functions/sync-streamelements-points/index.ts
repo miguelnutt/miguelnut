@@ -84,7 +84,7 @@ serve(async (req) => {
           console.log(`💰 Saldo ANTES (tentativa ${tentativaAtual}): ${saldoAntes} pontos`);
           
           // Verificar se há saldo suficiente para débito
-          if (points < 0 && saldoAntes < Math.abs(points)) {
+          if (points < 0 && saldoAntes !== null && saldoAntes < Math.abs(points)) {
             ultimoErro = `Saldo insuficiente: usuário tem ${saldoAntes} pontos, tentando debitar ${Math.abs(points)}`;
             console.error(`❌ ${ultimoErro}`);
             break; // Não tentar novamente se não há saldo suficiente

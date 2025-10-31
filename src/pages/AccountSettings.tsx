@@ -314,7 +314,7 @@ export default function AccountSettings() {
       setTickets(currentTickets);
       
       // VERIFICAÇÃO ADICIONAL: Se não há tickets no perfil ativo, verificar se há tickets em perfis inativos
-      if (currentTickets === 0 && twitchUser?.twitch_username) {
+      if (currentTickets === 0 && twitchUser?.login) {
         console.log('🔍 Verificando tickets em perfis inativos...');
         
         try {
@@ -322,7 +322,7 @@ export default function AccountSettings() {
           const { data: inactiveProfiles } = await supabase
             .from('profiles')
             .select('id')
-            .eq('twitch_username', prepareUsernameForSearch(twitchUser.twitch_username))
+            .eq('twitch_username', prepareUsernameForSearch(twitchUser.login))
             .eq('is_active', false);
 
           if (inactiveProfiles && inactiveProfiles.length > 0) {

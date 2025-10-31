@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
     }
 
     // Se o histórico tem user_id, ajustar o saldo
+    let novoSaldo: number | null = null;
     if (historyRecord.user_id) {
       const { data: balance } = await supabase
         .from('rubini_coins_balance')
@@ -57,7 +58,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (balance) {
-        const novoSaldo = balance.saldo - historyRecord.variacao;
+        novoSaldo = balance.saldo - historyRecord.variacao;
         
         // Não permitir saldo negativo
         if (novoSaldo < 0) {

@@ -78,6 +78,25 @@ All colors MUST be HSL.
     --shadow-glow: 0 0 40px hsl(223 100% 55% / 0.25);
     --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
   }
+
+  /* Halloween Theme Overrides */
+  .halloween-theme {
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 0%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 0%;
+    --gradient-primary: linear-gradient(135deg, hsl(25 95% 53%), hsl(39 100% 50%));
+    --shadow-glow: 0 0 40px hsl(25 95% 53% / 0.3);
+  }
+
+  .halloween-theme.dark {
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    --gradient-primary: linear-gradient(135deg, hsl(25 95% 53%), hsl(39 100% 50%));
+    --shadow-glow: 0 0 50px hsl(25 95% 53% / 0.4);
+  }
 }
 
 @layer base {
@@ -106,4 +125,52 @@ All colors MUST be HSL.
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
+
+  /* Halloween Animations */
+  @keyframes halloween-glow {
+    0%, 100% {
+      text-shadow: 0 0 10px hsl(25 95% 53% / 0.5), 0 0 20px hsl(25 95% 53% / 0.3);
+    }
+    50% {
+      text-shadow: 0 0 20px hsl(25 95% 53% / 0.8), 0 0 30px hsl(25 95% 53% / 0.5);
+    }
+  }
+
+  @keyframes halloween-text-sweep {
+    0% {
+      background-position: -100% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .halloween-theme h1,
+  .halloween-theme h2,
+  .halloween-theme h3 {
+    background: linear-gradient(
+      90deg,
+      currentColor 0%,
+      currentColor 30%,
+      hsl(25 95% 53%) 50%,
+      currentColor 70%,
+      currentColor 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: halloween-text-sweep 3s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .halloween-theme h1,
+    .halloween-theme h2,
+    .halloween-theme h3 {
+      animation: none;
+      background: currentColor;
+      -webkit-text-fill-color: inherit;
+    }
+  }
 }
+
