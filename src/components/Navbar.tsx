@@ -38,12 +38,32 @@ export const Navbar = () => {
   );
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark";
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    if (themeLock) {
+      // Se há bloqueio, forçar o tema bloqueado
+      setTheme(themeLock);
+      if (themeLock === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      localStorage.setItem("theme", themeLock);
+    } else {
+      // Sem bloqueio, usar preferência do usuário
+      const savedTheme = localStorage.getItem("theme") as "light" | "dark";
+      if (savedTheme) {
+        setTheme(savedTheme);
+        if (savedTheme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      } else {
+        document.documentElement.classList.add("dark");
+      }
     }
+  }, [themeLock]);
 
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });

@@ -36,14 +36,22 @@ export const Navbar = () => {
     if (themeLock) {
       // Se há bloqueio, forçar o tema bloqueado
       setTheme(themeLock);
-      document.documentElement.classList.toggle("dark", themeLock === "dark");
+      if (themeLock === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
       localStorage.setItem("theme", themeLock);
     } else {
       // Sem bloqueio, usar preferência do usuário
       const savedTheme = localStorage.getItem("theme") as "light" | "dark";
       if (savedTheme) {
         setTheme(savedTheme);
-        document.documentElement.classList.toggle("dark", savedTheme === "dark");
+        if (savedTheme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
       }
     }
   }, [themeLock]);
